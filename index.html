@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="MAS-PromptBench: a benchmark for system-prompt optimization in multi-agent LLM systems (MAS). We study whether, when, and by how much prompt optimization improves MAS performance across tasks, topologies, communication protocols, and team sizes.">
+  <meta property="og:title" content="MAS-PromptBench: When Does Prompt Optimization Improve Multi-Agent LLM Systems?"/>
+  <meta property="og:description" content="A benchmark and systematic study of system-prompt optimization for multi-agent LLM systems. Gains range from +24 to -16 points depending on configuration."/>
+  <meta property="og:url" content=""/>
+  <meta property="og:image" content="static/images/fig_motivation.png" />
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+
+  <meta name="twitter:title" content="MAS-PromptBench: When Does Prompt Optimization Improve Multi-Agent LLM Systems?">
+  <meta name="twitter:description" content="A benchmark and systematic study of system-prompt optimization for multi-agent LLM systems.">
+  <meta name="twitter:image" content="static/images/fig_motivation.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="keywords" content="multi-agent systems, prompt optimization, system prompt, LLM, GEPA, MIPRO, benchmark, MAS, agentic AI, coordination, topology">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>MAS-PromptBench</title>
+  <link rel="icon" type="image/png" href="static/images/favicon.png">
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet">
+
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1/font/bootstrap-icons.min.css">
+  <link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script src="static/js/bulma-carousel.min.js"></script>
+  <script src="static/js/bulma-slider.min.js"></script>
+  <script src="static/js/index.js"></script>
+
+  <!-- MathJax for equations -->
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+
+  <!-- Chart.js for animated bar charts -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+  <style>
+    :root {
+      --pa-blue: #1f4e8c;
+      --pa-blue-2: #3b82c4;
+      --pa-ink: #1a2330;
+      --pa-body: #3f4b5b;
+      --pa-muted: #6b7888;
+      --pa-tint: #f6fafe;
+      --pa-line: #e9eff6;
+      --pa-shadow: 0 6px 28px rgba(31, 78, 140, 0.08);
+      --pa-shadow-hover: 0 14px 40px rgba(31, 78, 140, 0.16);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16.5px;
+      color: var(--pa-body);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-optical-sizing: auto;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      letter-spacing: -0.003em;
+    }
+    .container.is-max-desktop { max-width: 960px; }
+
+    h1, h2, h3, h4, .title, .subtitle { font-family: 'Inter', sans-serif; color: var(--pa-ink); letter-spacing: -0.014em; }
+    .content p { line-height: 1.72; color: var(--pa-body); }
+    .content ul li { line-height: 1.72; }
+
+    /* ---------- Section rhythm ---------- */
+    section.pa-section { padding: 4.5rem 1.5rem; }
+    section.pa-tint { background: var(--pa-tint); }
+    .section-heading { position: relative; display: inline-block; margin-bottom: 2.6rem !important; }
+    .section-heading::after {
+      content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+      bottom: -0.8rem; width: 52px; height: 4px; border-radius: 2px;
+      background: linear-gradient(90deg, var(--pa-blue), var(--pa-blue-2));
+    }
+
+    /* ---------- Hero ---------- */
+    .pa-hero {
+      background: radial-gradient(1200px 480px at 50% -10%, #e7f1fb 0%, #f4f9fe 45%, #ffffff 100%);
+      padding: 5rem 1.5rem 3.5rem;
+    }
+    .pa-eyebrow {
+      display: inline-block; letter-spacing: 0.16em; text-transform: uppercase;
+      font-size: 0.72rem; font-weight: 700; color: var(--pa-blue);
+      background: #e9f2fb; padding: 0.4rem 0.9rem; border-radius: 999px; margin-bottom: 1.25rem;
+    }
+    .brand-title {
+      font-style: italic;
+      font-weight: 800; letter-spacing: -0.025em; font-size: 3.7rem; line-height: 1.04;
+      background: linear-gradient(120deg, #1f4e8c 0%, #2f6fb3 55%, #3b82c4 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.6rem !important;
+    }
+    .paper-subtitle { color: var(--pa-ink); font-weight: 600; line-height: 1.3; }
+    .pa-tagline { color: var(--pa-muted); }
+    .publication-authors { font-family: 'Inter', sans-serif; font-size: 1.25rem; color: var(--pa-muted); letter-spacing: 0.01em; }
+    .publication-authors .author-block { color: var(--pa-body); font-weight: 600; }
+    .publication-authors .author-block a { display: inline-block; color: var(--pa-ink); text-decoration: none; transition: color .18s ease, transform .18s ease; }
+    .publication-authors .author-block a:hover { color: var(--pa-blue-2); transform: translateY(-3px) scale(1.06); }
+
+    /* ---------- Link buttons (pills) ---------- */
+    .publication-links .link-block a {
+      border: 1px solid var(--pa-line) !important;
+      border-radius: 999px !important;
+      background: #fff;
+      color: var(--pa-ink) !important;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(31, 78, 140, 0.06);
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+      padding: 0.7em 1.4em !important;
+    }
+    .publication-links .link-block a:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--pa-shadow-hover);
+      border-color: #c9dcf0 !important;
+    }
+    .publication-links .icon img { width: 1.35em !important; height: 1.35em !important; }
+
+    /* ---------- Central question ---------- */
+    .central-q {
+      position: relative; max-width: 720px; margin: 2rem auto 0;
+      padding: 1.6rem 1.8rem; border-radius: 16px;
+      background: linear-gradient(135deg, #f1f7fd, #eaf2fb);
+      font-style: italic; font-size: 1.42rem; line-height: 1.55;
+      color: var(--pa-blue); text-align: center; box-shadow: var(--pa-shadow);
+    }
+    .central-q::before {
+      content: '\201C'; font-family: Georgia, serif; font-style: normal;
+      position: absolute; top: -0.4rem; left: 1rem; font-size: 3.2rem;
+      color: rgba(31, 78, 140, 0.18); line-height: 1;
+    }
+
+    /* ---------- Contribution cards ---------- */
+    .contrib {
+      height: 100%; background: #fff; border-radius: 16px;
+      padding: 1.9rem 1.7rem; box-shadow: var(--pa-shadow); text-align: left;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .contrib:hover { transform: translateY(-5px); box-shadow: var(--pa-shadow-hover); }
+    .contrib-num {
+      width: 2.5rem; height: 2.5rem; border-radius: 50%;
+      background: linear-gradient(135deg, var(--pa-blue), var(--pa-blue-2));
+      color: #fff; font-weight: 700; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
+      box-shadow: 0 6px 16px rgba(31, 78, 140, 0.28);
+    }
+    .contrib h4 { color: var(--pa-ink); font-weight: 700; margin-bottom: 0.55rem; font-size: 1.25rem; }
+    .contrib p { color: var(--pa-body); line-height: 1.7; }
+
+    /* ---------- Factor cards ---------- */
+    .factor-card {
+      background: #fff; border-radius: 18px; padding: 2rem 2.1rem;
+      margin-bottom: 1.9rem; box-shadow: var(--pa-shadow); text-align: left;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .factor-card:hover { transform: translateY(-4px); box-shadow: var(--pa-shadow-hover); }
+    .factor-card h3 { color: var(--pa-ink); font-weight: 700; margin-bottom: 0.9rem; }
+    .factor-card p { line-height: 1.8; }
+    .factor-chip {
+      display: inline-block; background: #eaf2fb; color: var(--pa-blue);
+      font-weight: 700; font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.32rem 0.85rem; border-radius: 999px; margin-bottom: 0.85rem;
+    }
+
+    /* ---------- Takeaway callout ---------- */
+    .takeaway {
+      position: relative; background: linear-gradient(135deg, #f3f8fd, #ebf3fb);
+      border-radius: 14px; border-left: 4px solid var(--pa-blue);
+      padding: 1.15rem 1.3rem 1.15rem 3.4rem; margin-top: 1.6rem; text-align: left;
+      line-height: 1.7;
+    }
+    .takeaway::before {
+      content: '💡'; position: absolute; left: 1.1rem; top: 1.05rem; font-size: 1.2rem;
+    }
+    .takeaway .tk-label { color: var(--pa-blue); font-weight: 700; }
+
+    /* ---------- Tables ---------- */
+    .pa-table-wrap { border-radius: 16px; overflow: hidden; box-shadow: var(--pa-shadow); background: #fff; }
+    table.pa-table { width: 100%; border-collapse: collapse; margin: 0; background: #fff; }
+    table.pa-table thead th {
+      background: #eef4fb; color: var(--pa-blue); font-family: 'Inter', sans-serif;
+      font-weight: 700; border: none; padding: 0.95rem 1.1rem; text-align: left;
+    }
+    table.pa-table td { border: none; border-top: 1px solid var(--pa-line); padding: 0.85rem 1.1rem; color: var(--pa-body); vertical-align: middle; }
+    table.pa-table tbody tr { transition: background .18s ease; }
+    table.pa-table tbody tr:hover { background: #f7fbff; }
+    table.pa-table .num { font-weight: 700; color: var(--pa-blue); text-align: center; font-size: 1.05rem; }
+    .pos { color: #1b8a4b; font-weight: 700; }
+    .neg { color: #c0392b; font-weight: 700; }
+
+    /* ---------- Task results table ---------- */
+    .task-table-wrap { overflow-x: auto; border-radius: 16px; box-shadow: var(--pa-shadow); background: #fff; margin: 1.4rem 0 1rem; -webkit-overflow-scrolling: touch; }
+    table.task-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.82rem; background: #fff; }
+    table.task-table thead th { background: #f3f7fc; color: var(--pa-ink); font-family: 'Inter', sans-serif; font-weight: 700;
+      padding: 0.7rem 0.55rem; text-align: center; border-bottom: 2px solid var(--pa-line); line-height: 1.25; white-space: nowrap; }
+    table.task-table thead th .fw { display: block; font-weight: 500; font-size: 0.71rem; color: var(--pa-muted); }
+    table.task-table th.avg, table.task-table td.avg { background: #eef4fb; }
+    table.task-table td { padding: 0.5rem 0.55rem; text-align: center; vertical-align: middle; border-top: 1px solid var(--pa-line); white-space: nowrap; }
+    table.task-table tbody tr:hover { background: #f9fcff; }
+    table.task-table tbody tr:hover td.avg { background: #e7eff9; }
+    table.task-table td.grp { font-style: italic; font-weight: 700; color: var(--pa-blue); background: #f7fbff; text-align: center; width: 1%; }
+    table.task-table td.task { text-align: center; font-weight: 600; color: var(--pa-ink); }
+    table.task-table tr.grp-start td { border-top: 2px solid #d4deea; }
+    table.task-table tr.avg-row td { background: #eef4fb; font-weight: 700; border-top: 2px solid #d4deea; }
+    table.task-table tr.avg-row td.task { color: var(--pa-ink); }
+    table.task-table tr.avg-row:hover td { background: #e7eff9; }
+    table.task-table .bo { color: var(--pa-body); }
+    table.task-table .d { display: block; font-size: 0.72rem; font-weight: 700; margin-top: 0.08rem; }
+    table.task-table .d.g { color: #2f6db3; }
+    table.task-table .d.l { color: #e07b39; }
+    table.task-table .d.z { color: #9aa6b4; }
+    .task-cap { color: var(--pa-muted); font-size: 0.85rem; line-height: 1.55; margin: 0.2rem 0 0.4rem; text-align: left; }
+    .task-cap .lg-g { color: #2f6db3; font-weight: 700; }
+    .task-cap .lg-l { color: #e07b39; font-weight: 700; }
+    .task-cap .lg-z { color: #9aa6b4; font-weight: 700; }
+
+    /* ---------- Figures ---------- */
+    figure.pa-fig { margin: 0; }
+    figure.pa-fig img {
+      max-width: 100%; height: auto; border-radius: 14px;
+      box-shadow: var(--pa-shadow); background: #fff; padding: 0.4rem;
+    }
+    figcaption.pa-cap { margin-top: 1rem; color: var(--pa-muted); font-size: 0.95rem; line-height: 1.6; }
+
+    /* ---------- Animated overview scene ---------- */
+    .ov-scene { max-width: 660px; margin: 0 auto; }
+
+    /* horizontal layout (Optimizer -> Task -> MAS, left to right) */
+    .ov-scene.ov-h { max-width: 100%; }
+    .ov-h .ov-rowwrap { position: relative; width: 100%; overflow: hidden; padding: 0; }
+    .ov-h .ov-row { position: relative; left: 50%; display: flex; align-items: center; gap: .55rem; width: max-content;
+      transform: translateX(-50%); transform-origin: center top; }
+    .ov-h .ov-card, .ov-h .ov-loop, .ov-h .ov-arrow, .ov-h .ov-masgroup { flex: 0 0 auto; }
+    .ov-h .ov-loop { margin: 0 .1rem; }
+    .ov-h .ov-arrow { margin: 0 .1rem; }
+    .ov-h .ov-arrow svg { width: 46px; height: 24px; }
+    .ov-h .ov-masgroup { display: flex; flex-direction: column; align-items: center; }
+    .ov-h .ov-masgroup .ov-label { margin: 0 0 .5rem; white-space: nowrap; }
+    /* horizontal moving packet */
+    .ov-h .ov-arrow-dot { top: 50%; left: 6%; margin-left: 0; transform: translateY(-50%); }
+    .ov-scene.ov-h.play .ov-arrow-dot { animation: ov-drop-h 1.8s ease-in-out 1.2s infinite; }
+    @keyframes ov-drop-h {
+      0% { left: 2%; opacity: 0; }
+      18% { opacity: 1; }
+      82% { opacity: 1; }
+      100% { left: 88%; opacity: 0; }
+    }
+    .ov-card { background: #fff; border: 1.6px solid #e4e9f0; border-radius: 18px;
+      padding: 1.05rem 1.15rem 1.15rem; box-shadow: 0 12px 32px rgba(31, 78, 140, .08); }
+    .ov-head { display: flex; flex-direction: column; align-items: center; gap: .35rem; margin-bottom: .85rem; }
+    .ov-ic { width: 2.4rem; height: 2.4rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--c, #9aa6b4); color: var(--c, #9aa6b4); font-size: 1.2rem; background: #fff; }
+    .ov-head h4 { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1rem; color: var(--pa-ink); margin: 0; }
+    .ov-cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+    .ov-sub { border: 1.5px solid #e2e8f0; border-radius: 12px; padding: .65rem .55rem; }
+    .ov-sub-title { text-align: center; font-family: 'Inter', sans-serif; font-weight: 700; font-size: .84rem; color: var(--pa-ink); margin-bottom: .5rem; }
+    .ov-panel { border: 1.6px solid var(--c); border-radius: 14px; padding: .7rem .6rem .75rem; background: var(--cb, #fff); }
+    .ov-panel .ov-head { gap: .3rem; margin-bottom: .6rem; }
+    .ov-panel .ov-ic { width: 2.1rem; height: 2.1rem; font-size: 1.05rem; }
+    .ov-panel-title { text-align: center; font-family: 'Inter', sans-serif; font-weight: 700; font-size: .82rem; color: var(--c); margin: 0; line-height: 1.2; }
+    .ov-pills { display: flex; flex-direction: column; gap: .32rem; }
+    .ov-pill { text-align: center; font-size: .72rem; font-weight: 600; color: #fff; background: var(--c, #b3b9c4); border-radius: 7px; padding: .32rem .4rem; }
+    .ov-task .ov-pill { background: #b3b9c4; }
+    .ov-dots { text-align: center; color: #9aa6b4; font-weight: 700; letter-spacing: .18em; margin-top: .45rem; font-size: .9rem; }
+    .ov-arrow { position: relative; display: flex; justify-content: center; margin: .5rem 0 .15rem; }
+    .ov-arrow svg { width: 26px; height: 34px; overflow: visible; }
+    .ov-arrow path { fill: none; stroke: #3f4b5b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .ov-label { text-align: center; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--pa-ink); margin: .3rem 0 .7rem; }
+    .ov-loop { display: flex; justify-content: center; margin: .65rem 0; }
+    .ov-loop span { position: relative; width: 2.1rem; height: 2.1rem; border-radius: 50%; border: 2px solid #c0506f; color: #c0506f;
+      display: flex; align-items: center; justify-content: center; background: #fff; font-size: .9rem; }
+    .ov-opt .ov-pills-row { display: flex; align-items: center; justify-content: center; gap: 1.2rem; }
+    .ov-opt .ov-pills-row .ov-pill { padding: .34rem 1.5rem; }
+
+    /* reveal cascade */
+    .ov-rise { opacity: 0; transform: translateY(22px); transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .2, 1); }
+    .ov-scene.play .ov-rise { opacity: 1; transform: none; }
+    .ov-scene.play .ov-rise.d1 { transition-delay: .05s; }
+    .ov-scene.play .ov-rise.d2 { transition-delay: .30s; }
+    .ov-scene.play .ov-rise.d3 { transition-delay: .42s; }
+    .ov-scene.play .ov-rise.d4 { transition-delay: .52s; }
+    .ov-scene.play .ov-rise.d5 { transition-delay: .95s; }
+    .ov-scene.play .ov-rise.d6 { transition-delay: 1.08s; }
+    .ov-scene.play .ov-rise.d7 { transition-delay: 1.35s; }
+
+    .ov-pill { opacity: 0; transform: translateY(8px); transition: opacity .42s ease, transform .42s ease; }
+    .ov-scene.play .ov-pill { opacity: 1; transform: none; }
+    .ov-scene.play .ov-task .ov-pills .ov-pill:nth-child(1) { transition-delay: .34s; }
+    .ov-scene.play .ov-task .ov-pills .ov-pill:nth-child(2) { transition-delay: .42s; }
+    .ov-scene.play .ov-task .ov-pills .ov-pill:nth-child(3) { transition-delay: .50s; }
+    .ov-scene.play .ov-mas .ov-pills .ov-pill:nth-child(1) { transition-delay: .66s; }
+    .ov-scene.play .ov-mas .ov-pills .ov-pill:nth-child(2) { transition-delay: .74s; }
+    .ov-scene.play .ov-mas .ov-pills .ov-pill:nth-child(3) { transition-delay: .82s; }
+    .ov-scene.play .ov-mas .ov-pills .ov-pill:nth-child(4) { transition-delay: .90s; }
+    .ov-scene.play .ov-mas .ov-pills .ov-pill:nth-child(5) { transition-delay: .98s; }
+    .ov-scene.play .ov-opt .ov-pill { transition-delay: 1.18s; }
+
+    .ov-arrow path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .55s ease; }
+    .ov-scene.play .ov-arrow path { stroke-dashoffset: 0; transition-delay: .34s; }
+
+    @keyframes ov-spin { to { transform: rotate(360deg); } }
+    .ov-scene.play .ov-loop span i { display: inline-block; animation: ov-spin 3.5s linear 1s infinite; }
+
+    /* (1) data packet flowing down the Task -> MAS connector */
+    .ov-arrow-dot { position: absolute; left: 50%; top: 6%; width: 7px; height: 7px; margin-left: -3.5px;
+      border-radius: 50%; background: #b3b9c4; box-shadow: 0 0 8px 2px rgba(154, 162, 176, .55); opacity: 0; pointer-events: none; }
+    .ov-scene.play .ov-arrow-dot { animation: ov-drop 1.8s ease-in-out 1.2s infinite; }
+    @keyframes ov-drop {
+      0% { top: 4%; opacity: 0; }
+      18% { opacity: 1; }
+      82% { opacity: 1; }
+      100% { top: 78%; opacity: 0; }
+    }
+
+    /* (2) living feedback loop: pulsing ring + orbiting packet around the optimizer loop icon */
+    .ov-loop span::before { content: ""; position: absolute; inset: -2px; border-radius: 50%;
+      border: 2px solid #c0506f; opacity: 0; pointer-events: none; }
+    .ov-scene.play .ov-loop span::before { animation: ov-ring 2.2s ease-out 1.2s infinite; }
+    @keyframes ov-ring {
+      0% { transform: scale(1); opacity: .55; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+    .ov-loop span::after { content: ""; position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; margin: -3px;
+      border-radius: 50%; background: #c0506f; box-shadow: 0 0 6px 1px rgba(192, 80, 111, .7); opacity: 0; pointer-events: none; }
+    .ov-scene.play .ov-loop span::after { animation: ov-orbit 3.5s linear 1s infinite; }
+    @keyframes ov-orbit {
+      0% { opacity: 1; transform: rotate(0deg) translateX(16px); }
+      100% { opacity: 1; transform: rotate(360deg) translateX(16px); }
+    }
+
+    /* prettier optimizer rocket: gradient fill, soft glow, gentle launch bob */
+    /* polished icon glyphs: soft colored glow, solid fill */
+    .ov-ic i { filter: drop-shadow(0 1px 1.5px color-mix(in srgb, var(--c, #9aa6b4), transparent 70%)); }
+    .ov-loop span i { filter: drop-shadow(0 1px 1.5px rgba(192, 80, 111, .3)); }
+
+    /* (3) axis spotlight cycling through the three MAS panels */
+    @keyframes ov-spotlight {
+      0%, 30%, 100% { transform: translateY(0); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+      8%, 22% { transform: translateY(-5px); box-shadow: 0 12px 26px var(--cg, rgba(80, 100, 130, .3)), 0 0 0 3px var(--cg, rgba(80, 100, 130, .3)); }
+    }
+    .ov-scene.play .ov-mas .ov-panel { animation: ov-spotlight 6s ease-in-out infinite; }
+    .ov-scene.play .ov-mas .ov-panel:nth-child(1) { animation-delay: 1.6s; }
+    .ov-scene.play .ov-mas .ov-panel:nth-child(2) { animation-delay: 3.6s; }
+    .ov-scene.play .ov-mas .ov-panel:nth-child(3) { animation-delay: 5.6s; }
+
+    .ov-scene.no-anim .ov-rise, .ov-scene.no-anim .ov-pill, .ov-scene.no-anim .ov-arrow path { transition: none !important; }
+    .ov-scene.no-anim .ov-loop span i, .ov-scene.no-anim .ov-loop span::before, .ov-scene.no-anim .ov-loop span::after,
+    .ov-scene.no-anim .ov-arrow-dot, .ov-scene.no-anim .ov-mas .ov-panel, .ov-scene.no-anim .ov-opt .ov-ic i { animation: none !important; }
+
+    /* ---------- Equation box ---------- */
+    .equation-box {
+      background: var(--pa-tint); border: 1px solid var(--pa-line); border-radius: 14px;
+      padding: 0.4rem 1rem; margin: 1.2rem 0; overflow-x: auto;
+    }
+
+    /* ---------- Definition list (topologies) ---------- */
+    .deflist { text-align: left; margin-top: 0.5rem; }
+    .deflist .def-item { padding: 0.85rem 0; border-bottom: 1px solid var(--pa-line); line-height: 1.7; }
+    .deflist .def-item:last-child { border-bottom: none; }
+    .deflist .term { color: var(--pa-blue); font-weight: 700; }
+
+    /* ---------- BibTeX ---------- */
+    #BibTeX .container { position: relative; }
+    #BibTeX pre {
+      background: #0f1b2d; color: #e7eefb; border-radius: 14px; padding: 1.4rem 1.5rem;
+      box-shadow: var(--pa-shadow); overflow-x: auto;
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13.5px; line-height: 1.65;
+    }
+    #BibTeX pre code { color: #e7eefb; background: transparent; font-family: inherit; }
+    #copy-btn { transition: background .2s ease, transform .2s ease; }
+    #copy-btn:hover { transform: translateY(-2px); }
+
+    /* ---------- Scroll reveal ---------- */
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
+      .reveal.is-visible { opacity: 1; transform: none; }
+      .factor-card:nth-child(2) { transition-delay: .04s; }
+      .factor-card:nth-child(3) { transition-delay: .08s; }
+    }
+
+    /* ---------- Stat cards (Benchmark at a Glance) ---------- */
+    .stat-card {
+      height: 100%; background: #fff; border: 1px solid var(--pa-line); border-radius: 18px;
+      padding: 1.6rem 1.5rem; text-align: left; box-shadow: var(--pa-shadow);
+      transition: transform .25s ease, box-shadow .25s ease; position: relative; overflow: hidden;
+      display: grid; grid-template-columns: auto 1fr;
+      grid-template-areas: "icon num" "label label" "chips chips";
+      column-gap: 1rem; align-items: center;
+    }
+    .stat-card:hover { transform: translateY(-6px); box-shadow: var(--pa-shadow-hover); }
+    .stat-card:hover .stat-icon { transform: scale(1.06) rotate(-3deg); }
+    .stat-card:hover .stat-chips span { background: #e4eefb; }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; right: 0; width: 130px; height: 130px;
+      background: radial-gradient(circle at top right, rgba(47, 109, 179, 0.10), transparent 70%);
+    }
+    .stat-icon {
+      grid-area: icon;
+      width: 3.1rem; height: 3.1rem; border-radius: 15px; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--pa-blue), var(--pa-blue-2));
+      color: #fff; font-size: 1.25rem; box-shadow: 0 6px 16px rgba(31, 78, 140, 0.28);
+      transition: transform .25s ease;
+    }
+    .stat-num {
+      grid-area: num; justify-self: start;
+      font-family: 'Inter', sans-serif; font-weight: 800; font-size: 2.9rem; line-height: 1; letter-spacing: -0.02em;
+      color: var(--pa-blue);
+      background: linear-gradient(120deg, var(--pa-blue), var(--pa-blue-2));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-label { grid-area: label; align-self: start; font-family: 'Inter', sans-serif; font-weight: 700; color: var(--pa-ink); margin: 1rem 0 0.85rem; font-size: 1.18rem; }
+    .stat-chips { grid-area: chips; align-self: start; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .stat-chips span {
+      font-size: 0.86rem; background: #eef4fb; color: #3f5878; border-radius: 999px;
+      padding: 0.26rem 0.66rem; font-weight: 600; transition: background .18s ease;
+    }
+    .stat-highlight {
+      margin-top: 2rem; border-radius: 20px; padding: 2.2rem 1.5rem; text-align: center;
+      background: linear-gradient(120deg, #1f4e8c 0%, #2f6fb3 60%, #3b82c4 100%);
+      color: #fff; box-shadow: 0 16px 44px rgba(31, 78, 140, 0.30);
+    }
+    .stat-highlight .big {
+      font-family: 'Inter', sans-serif; font-weight: 800; font-size: 3.6rem; line-height: 1; letter-spacing: -0.02em;
+    }
+    .stat-highlight .sub { opacity: 0.92; margin-top: 0.5rem; font-size: 1.08rem; }
+
+    /* ---------- MAS animated scene (original wide-banner layout) ---------- */
+    .mas-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+    .mas-banner { display: flex; align-items: center; justify-content: center; gap: 0.7rem; }
+    .mas-flow { display: flex; align-items: center; justify-content: center; gap: 0.35rem; flex-wrap: nowrap; }
+    .mas-flow.mas-left { flex: 1 1 57%; min-width: 0; }
+    .mas-divider { flex: 0 0 auto; align-self: stretch; width: 0; border-left: 2.5px dashed #b9c4d2; margin: 0.3rem 0.15rem; }
+    .mas-right { flex: 1 1 43%; min-width: 0; display: flex; align-items: center; }
+    .mas-col { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex: 0 0 auto; }
+    .mas-col .flow-label { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.88rem; color: var(--pa-ink); white-space: nowrap; }
+    .mas-col .ico-clip { width: 32px; height: auto; }
+    .mas-flow .flow-arrow { flex: 0 0 auto; width: 36px; }
+    .mas-flow .flow-arrow svg { width: 100%; height: 22px; overflow: visible; }
+    .farrow { fill: none; stroke: #3f4b5b; stroke-width: 3; stroke-linecap: round; }
+
+    .mas-box { flex: 1 1 auto; min-width: 0; max-width: 460px; position: relative; background: #fff;
+      border: 2.5px solid #1a2330; border-radius: 20px; padding: 1.1rem 0.55rem 0.55rem; box-shadow: var(--pa-shadow); }
+    .mas-box-title { text-align: center; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--pa-ink); margin-bottom: 0.05rem; }
+    .mas-graph { position: relative; width: 100%; aspect-ratio: 1000 / 720; }
+    .mas-edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .edge { fill: none; stroke: #7a5cb5; stroke-width: 7; stroke-linecap: round; }
+    .agent { position: absolute; width: 16%; transform: translate(-50%, -50%) scale(.5); opacity: 0;
+      transition: opacity .5s ease, transform .55s cubic-bezier(.2, .8, .3, 1.3); text-align: center; overflow: visible; }
+    .agent img { width: 100%; display: block; filter: drop-shadow(0 3px 6px rgba(31, 78, 140, .12)); }
+    .agent .ag-lab { display: block; font-size: 0.48rem; color: #5b6b7c; font-family: 'Inter', sans-serif; font-weight: 600; white-space: nowrap; margin-top: 0; }
+    .bub { position: absolute; width: 8%; transform: translate(-50%, -50%) scale(0); transition: transform .4s cubic-bezier(.2, .8, .3, 1.5); }
+
+    .mas-scene.play .edge { stroke-dashoffset: 0; }
+    .mas-scene.play .farrow { stroke-dashoffset: 0; }
+    .mas-scene.play .agent { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .mas-scene.play .bub { transform: translate(-50%, -50%) scale(1); }
+    .mas-scene.play .farrow.in { transition-delay: .05s; }
+    .mas-scene.play .a1 { transition-delay: .15s; }
+    .mas-scene.play .e1, .mas-scene.play .e2 { transition-delay: .45s; }
+    .mas-scene.play .a2, .mas-scene.play .a5 { transition-delay: .45s; }
+    .mas-scene.play .e3, .mas-scene.play .e4, .mas-scene.play .e5 { transition-delay: .8s; }
+    .mas-scene.play .a3, .mas-scene.play .a4 { transition-delay: .8s; }
+    .mas-scene.play .bub { transition-delay: 1.15s; }
+    .mas-scene.play .farrow.out { transition-delay: 1.05s; }
+    .mas-scene.no-anim *, .mas-scene.no-anim .edge, .mas-scene.no-anim .farrow { transition: none !important; }
+
+    .factors-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; width: 100%; }
+    .fpanel { border-radius: 13px; padding: 0.6rem 0.7rem; border: 1.6px solid var(--fp); background: #fff; text-align: center;
+      display: flex; flex-direction: column;
+      box-shadow: var(--pa-shadow); opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
+    .mas-scene.play .fpanel { opacity: 1; transform: none; }
+    .mas-scene.play .fpanel:nth-child(1) { transition-delay: .2s; }
+    .mas-scene.play .fpanel:nth-child(2) { transition-delay: .32s; }
+    .mas-scene.play .fpanel:nth-child(3) { transition-delay: .44s; }
+    .mas-scene.play .fpanel:nth-child(4) { transition-delay: .56s; }
+    .fpanel h4 { font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 0.45rem; font-size: 0.8rem; color: var(--pa-ink); }
+    .fpanel .pills { display: flex; flex-direction: column; gap: 0.28rem; margin: auto 0; }
+    .fpanel .pills span { font-size: 0.68rem; font-weight: 600; border-radius: 7px; padding: 0.26rem 0.5rem; color: #fff; background: var(--fp); text-align: center; }
+    .fpanel.team .pills { display: grid; grid-template-columns: 1fr 1fr; gap: 0.28rem; }
+
+    @media screen and (max-width: 768px) {
+      .mas-banner { flex-wrap: wrap; }
+      .mas-flow.mas-left { flex-basis: 100%; flex-wrap: wrap; }
+      .mas-divider { display: none; }
+      .mas-right { flex-basis: 100%; }
+      .mas-box { max-width: 100%; flex-basis: 100%; order: 2; }
+    }
+
+    /* ---------- Topology animated panels ---------- */
+    .topo-grid { display: flex; gap: 0.6rem; align-items: stretch; }
+    .topo-card { flex: 1 1 0; min-width: 0; border: 1.6px solid var(--tc); border-radius: 15px; overflow: hidden;
+      background: #fff; box-shadow: var(--pa-shadow); display: flex; flex-direction: column;
+      opacity: 0; transform: translateY(20px); transition: opacity .5s ease, transform .5s ease; }
+    .topo-scene.play .topo-card { opacity: 1; transform: none; }
+    .topo-scene.play .topo-card:nth-child(1) { transition-delay: .05s; }
+    .topo-scene.play .topo-card:nth-child(2) { transition-delay: .15s; }
+    .topo-scene.play .topo-card:nth-child(3) { transition-delay: .25s; }
+    .topo-scene.play .topo-card:nth-child(4) { transition-delay: .35s; }
+    .topo-scene.play .topo-card:nth-child(5) { transition-delay: .45s; }
+    .topo-head { background: var(--tc); color: #fff; font-family: 'Inter', sans-serif; font-weight: 700; text-align: center; padding: .5rem .25rem; font-size: .84rem; }
+    .topo-body { position: relative; width: 100%; aspect-ratio: 100 / 150; background: #ffffff; }
+    .topo-edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .tedge { fill: none; stroke: var(--tc); stroke-width: 2.4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+    .ti { position: absolute; transform: translate(-50%, -50%) scale(.4); opacity: 0;
+      transition: opacity .45s ease, transform .5s cubic-bezier(.2, .8, .3, 1.3); transition-delay: .35s; }
+    .topo-scene.play .ti { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .ti.bot { width: 30%; filter: drop-shadow(0 2px 4px rgba(31, 78, 140, .12)); }
+    .ti.task { width: 15%; }
+    .ti.sol { width: 17%; }
+    .ti.spark { width: 12%; transition-delay: .55s; }
+    .topo-legend { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1.3rem;
+      margin-top: 1.3rem; padding: .7rem 1rem; border: 1px solid var(--pa-line); border-radius: 14px; background: #fff; box-shadow: var(--pa-shadow); }
+    .topo-legend .lg { display: flex; align-items: center; gap: .45rem; font-size: .84rem; color: var(--pa-ink); font-weight: 600; font-family: 'Inter', sans-serif; }
+    .topo-legend img { height: 24px; width: auto; }
+    @media screen and (max-width: 768px) {
+      .topo-grid { flex-wrap: wrap; }
+      .topo-card { flex: 1 1 30%; }
+      .topo-legend { gap: .7rem; font-size: .72rem; }
+    }
+
+    /* ---------- Traveling-packet animation ---------- */
+    @media (prefers-reduced-motion: no-preference) {
+      .pkt { animation: pkt-travel linear infinite; }
+      @keyframes pkt-travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+    }
+
+    /* ---------- Charts ---------- */
+    .chart-card {
+      background: #fff; border-radius: 18px; padding: 1.6rem 1.6rem 1.1rem;
+      box-shadow: var(--pa-shadow);
+    }
+    .chart-title { font-family: 'Inter', sans-serif; font-weight: 700; color: var(--pa-ink); margin-bottom: 0.4rem; }
+    .chart-box { position: relative; width: 100%; height: 340px; }
+    .chart-box.tall { height: 420px; }
+    .chart-toggle {
+      display: inline-flex; gap: 0.35rem; background: #eef4fb;
+      padding: 0.3rem; border-radius: 999px; margin: 0 auto 1.1rem;
+    }
+    .chart-toggle button {
+      border: none; background: transparent; color: var(--pa-muted); font-weight: 600;
+      padding: 0.4rem 1rem; border-radius: 999px; cursor: pointer;
+      transition: all .2s ease; font-family: 'Inter', sans-serif; font-size: 0.92rem;
+    }
+    .chart-toggle button.active { background: #fff; color: var(--pa-blue); box-shadow: 0 2px 8px rgba(31, 78, 140, 0.14); }
+
+    @media screen and (max-width: 768px) {
+      .brand-title { font-size: 2.7rem; }
+      section.pa-section { padding: 3rem 1.1rem; }
+      .chart-box { height: 300px; }
+      .chart-box.tall { height: 360px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================ HERO ============================ -->
+<section class="pa-hero">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column has-text-centered">
+        <span class="pa-eyebrow reveal">Benchmark &middot; Multi-Agent LLM Systems</span>
+        <h1 class="brand-title reveal">MAS-PromptBench</h1>
+        <h2 class="subtitle is-3 paper-subtitle reveal">
+          When Does Prompt Optimization Improve Multi-Agent LLM Systems?
+        </h2>
+        <p class="is-size-5 pa-tagline reveal" style="margin-bottom: 0;">
+          A benchmark for system-prompt optimization in multi-agent LLM systems
+        </p>
+        <!-- <p class="publication-authors reveal" style="margin-top: 1.1rem;">
+          <span class="author-block"><a href="https://juyangbai.github.io/" target="_blank">Juyang Bai</a></span> and
+          <span class="author-block"><a href="https://laixishi.github.io/index.html" target="_blank">Laixi Shi</a></span>
+        </p> -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ LINKS ============================ -->
+<section style="padding: 0 1.5rem 1rem;">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column has-text-centered">
+        <div class="publication-links reveal">
+          <span class="link-block">
+            <a href="#" target="_blank" class="external-link button is-normal">
+              <span class="icon"><img src="static/images/document.gif" alt="Paper icon"></span>
+              <span>Paper</span>
+            </a>
+          </span>
+          <span class="link-block">
+            <a href="https://github.com/juyangbai/MAS-PromptBench" target="_blank" class="external-link button is-normal">
+              <span class="icon"><img src="static/images/coding.gif" alt="Code icon"></span>
+              <span>Code</span>
+            </a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TEASER ============================ -->
+<section class="pa-section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full reveal">
+        <div class="columns">
+          <div class="column is-half">
+            <div class="chart-card">
+              <p class="chart-title has-text-centered">Single Agent</p>
+              <div class="chart-box"><canvas id="chart-single"></canvas></div>
+            </div>
+          </div>
+          <div class="column is-half">
+            <div class="chart-card">
+              <p class="chart-title has-text-centered">Multi-Agent Systems</p>
+              <div class="chart-box"><canvas id="chart-mas"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <p class="pa-cap has-text-centered" style="max-width: 800px; margin: 1.1rem auto 0;">
+          Prompt-optimization gains using a state-of-the-art optimizer GEPA in single-agent and multi-agent settings.
+          While GEPA consistently improves single-agent performance across all five diverse tasks, its natural
+          multi-agent extension yields highly variable effects across tasks and workflow topologies, ranging from
+          large gains to severe performance drops.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ RESEARCH QUESTION ============================ -->
+<section class="pa-section pa-tint">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths reveal">
+        <div class="central-q">
+          How much can prompt optimization help in MAS,<br>and how does its effect vary across configurations?
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CONTRIBUTIONS ============================ -->
+<section class="pa-section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full reveal">
+        <h2 class="title is-3 section-heading">Contributions</h2>
+      </div>
+    </div>
+    <div class="columns is-multiline">
+      <div class="column is-one-third reveal">
+        <div class="contrib">
+          <div class="contrib-num">1</div>
+          <h4>MAS-PromptBench: a benchmark for MAS prompt optimization</h4>
+          <p>
+            A comprehensive benchmark for evaluating system-prompt optimizers for MAS. It spans diverse MAS
+            configurations across task domains (reasoning, coding, tool calling), five workflow topologies (both
+            existing and newly constructed systems), communication protocols from free-form to highly structured
+            coordination, varying team sizes, and two default prompt optimizers &mdash; a foundation for proposing,
+            analyzing, and comparing system-prompt optimization algorithms under controlled MAS configurations.
+          </p>
+        </div>
+      </div>
+      <div class="column is-one-third reveal">
+        <div class="contrib">
+          <div class="contrib-num">2</div>
+          <h4>Prompt optimization gains and failures for MAS</h4>
+          <p>
+            Systematically evaluating a natural multi-agent extension of GEPA, a state-of-the-art single-agent prompt
+            optimizer, against default prompts. The results highlight the promise of prompt optimization for MAS:
+            improvements reach up to <span class="pos">+24.0</span> points. Yet they also reveal the need for principled
+            algorithms tailored to multi-agent settings, as performance can drop by as much as
+            <span class="neg">&minus;16.0</span> points for certain configurations.
+          </p>
+        </div>
+      </div>
+      <div class="column is-one-third reveal">
+        <div class="contrib">
+          <div class="contrib-num">3</div>
+          <h4>Insights into when prompt optimization works for MAS</h4>
+          <p>
+            Optimization shows greater potential when tasks have explicit, controllable, and verifiable agent-local
+            behaviors, and when communication protocols impose an explicit shared structure that makes agent
+            interactions easier to control and transfer; it also needs to be workflow-topology-aware. Optimization
+            becomes harder as team size grows &mdash; confirming the challenges of scaling MAS prompt optimization and
+            motivating more scalable, robust algorithms.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ BENCHMARK AT A GLANCE ============================ -->
+<section class="pa-section pa-tint">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full reveal">
+        <h2 class="title is-3 section-heading">Benchmark at a Glance</h2>
+        <p class="content" style="margin-bottom: 2rem;">
+          <a href="https://github.com/juyangbai/MAS-PromptBench/tree/main" target="_blank"
+            style="color: var(--pa-blue); font-weight: 700; text-decoration: underline; background: #eaf2fb; padding: 0 .28em; border-radius: 4px;">MAS-PromptBench</a>
+          varies each configuration axis independently while holding the others fixed.
+        </p>
+
+        <div class="columns is-multiline">
+          <div class="column is-one-third">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+              <div class="stat-num" data-count="9">0</div>
+              <div class="stat-label">Tasks</div>
+              <div class="stat-chips"><span>GPQA-Diamond</span><span>HotpotQA</span><span>MATH</span><span>LiveCodeBench</span><span>APPS</span><span>SWE-Bench Verified</span><span>BFCL</span><span>ToolHop</span><span>API-Bank</span></div>
+            </div>
+          </div>
+          <div class="column is-one-third">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+              <div class="stat-num" data-count="4">0</div>
+              <div class="stat-label">Frameworks</div>
+              <div class="stat-chips"><span>LangGraph</span><span>CrewAI</span><span>AutoGen</span><span>OpenAI Agents SDK</span></div>
+            </div>
+          </div>
+          <div class="column is-one-third">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-project-diagram"></i></div>
+              <div class="stat-num" data-count="5">0</div>
+              <div class="stat-label">Topologies</div>
+              <div class="stat-chips"><span>Single</span><span>Independent</span><span>Sequential</span><span>Centralized</span><span>Decentralized</span></div>
+            </div>
+          </div>
+          <div class="column is-one-third">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-users"></i></div>
+              <div class="stat-num" data-count="4">0</div>
+              <div class="stat-label">Team Sizes</div>
+              <div class="stat-chips"><span>2</span><span>4</span><span>8</span><span>10</span></div>
+            </div>
+          </div>
+          <div class="column is-one-third">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-comments"></i></div>
+              <div class="stat-num" data-count="3">0</div>
+              <div class="stat-label">Communication Protocols</div>
+              <div class="stat-chips"><span>Freeform</span><span>Semi-structured</span><span>Structured</span></div>
+            </div>
+          </div>
+          <div class="column is-one-third">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-magic"></i></div>
+              <div class="stat-num" data-count="2">0</div>
+              <div class="stat-label">Optimizers</div>
+              <div class="stat-chips"><span>GEPA</span><span>MIPRO</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-highlight">
+          <div class="big"><span data-count="104">0</span></div>
+          <div class="sub">optimized configuration cells &mdash; each a paired baseline vs.&nbsp;optimized evaluation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ MAS FORMULATION + 4 FACTORS ============================ -->
+<section class="pa-section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full reveal">
+        <h2 class="title is-3 section-heading">Multi-Agent Systems &amp; Four Factors</h2>
+
+        <div id="overview-scene" class="ov-scene ov-h">
+          <div class="ov-rowwrap">
+            <div class="ov-row">
+
+              <div class="ov-card ov-opt ov-rise d1" style="--c:#cf5b7a;--cb:#fdf2f5;border-color:#cf5b7a">
+                <div class="ov-head">
+                  <span class="ov-ic"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i></span>
+                  <h4 style="color:#cf5b7a">Optimizer</h4>
+                </div>
+                <div class="ov-pills">
+                  <span class="ov-pill">GEPA</span>
+                  <span class="ov-pill">MIPRO</span>
+                </div>
+                <div class="ov-dots">&bull;&bull;&bull;</div>
+              </div>
+
+              <div class="ov-loop ov-rise d2"><span><i class="fas fa-sync-alt"></i></span></div>
+
+              <div class="ov-card ov-task ov-rise d3">
+                <div class="ov-head">
+                  <span class="ov-ic"><i class="fas fa-clipboard-list"></i></span>
+                  <h4>Task Dataset</h4>
+                </div>
+                <div class="ov-cols3">
+                  <div class="ov-sub">
+                    <div class="ov-sub-title">Reasoning</div>
+                    <div class="ov-pills">
+                      <span class="ov-pill">GPQA-Diamond</span>
+                      <span class="ov-pill">HotpotQA</span>
+                      <span class="ov-pill">MATH</span>
+                    </div>
+                  </div>
+                  <div class="ov-sub">
+                    <div class="ov-sub-title">Coding</div>
+                    <div class="ov-pills">
+                      <span class="ov-pill">LiveCodeBench</span>
+                      <span class="ov-pill">APPS</span>
+                      <span class="ov-pill">SWE-Bench</span>
+                    </div>
+                  </div>
+                  <div class="ov-sub">
+                    <div class="ov-sub-title">Tool-Calling</div>
+                    <div class="ov-pills">
+                      <span class="ov-pill">BFCL</span>
+                      <span class="ov-pill">ToolHop</span>
+                      <span class="ov-pill">API-Bank</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="ov-dots">&bull;&bull;&bull;</div>
+              </div>
+
+              <div class="ov-arrow ov-rise d4">
+                <svg viewBox="0 0 32 24"><path pathLength="1" d="M2 12 H26 M19 5 L27 12 L19 19"></path></svg>
+                <span class="ov-arrow-dot"></span>
+              </div>
+
+              <div class="ov-masgroup ov-rise d5">
+                <div class="ov-label">Multi-Agent LLM System</div>
+                <div class="ov-card ov-mas">
+                  <div class="ov-cols3">
+                    <div class="ov-panel" style="--c:#b048b0;--cb:#faf4fb;--cg:rgba(176,72,176,.32)">
+                      <div class="ov-head">
+                        <span class="ov-ic"><i class="fas fa-project-diagram"></i></span>
+                        <div class="ov-panel-title">Workflow Topology</div>
+                      </div>
+                      <div class="ov-pills">
+                        <span class="ov-pill">Single</span>
+                        <span class="ov-pill">Sequential</span>
+                        <span class="ov-pill">Independent</span>
+                        <span class="ov-pill">Centralized</span>
+                        <span class="ov-pill">Decentralized</span>
+                      </div>
+                      <div class="ov-dots">&bull;&bull;&bull;</div>
+                    </div>
+                    <div class="ov-panel" style="--c:#e0922b;--cb:#fff8ef;--cg:rgba(224,146,43,.32)">
+                      <div class="ov-head">
+                        <span class="ov-ic"><i class="fas fa-comment-dots"></i></span>
+                        <div class="ov-panel-title">Communication Protocol</div>
+                      </div>
+                      <div class="ov-pills">
+                        <span class="ov-pill">Freeform</span>
+                        <span class="ov-pill">Semi-structured</span>
+                        <span class="ov-pill">Structured</span>
+                      </div>
+                      <div class="ov-dots">&bull;&bull;&bull;</div>
+                    </div>
+                    <div class="ov-panel" style="--c:#3f8fbf;--cb:#f1f8fc;--cg:rgba(63,143,191,.32)">
+                      <div class="ov-head">
+                        <span class="ov-ic"><i class="fas fa-users"></i></span>
+                        <div class="ov-panel-title">Team Size</div>
+                      </div>
+                      <div class="ov-pills">
+                        <span class="ov-pill">2</span>
+                        <span class="ov-pill">4</span>
+                        <span class="ov-pill">8</span>
+                        <span class="ov-pill">10</span>
+                      </div>
+                      <div class="ov-dots">&bull;&bull;&bull;</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <p class="pa-cap has-text-centered ov-rise d6" style="max-width: 900px; margin: 1.5rem auto 0;">
+            Overview of benchmark MAS-PromptBench. Given an input task, a multi-agent system produces a final solution
+            through interactions among LLM-based agents. MAS-PromptBench measures prompt-optimization gains across four
+            axes: task distribution, workflow topology, communication protocol, and team size.
+          </p>
+
+        </div>
+        <div class="content has-text-justified" style="margin: 2rem auto 0; max-width: 780px;">
+          <p>
+            We model a MAS as a tuple $\mathcal{M} = (\mathcal{A}, G, P)$: a collection of agents $\mathcal{A}$, an
+            inter-agent coordination workflow $G$, and a communication protocol $P$. Each agent pairs a frozen LLM with a
+            learnable system prompt. With model weights fixed, system-prompt optimization maximizes the expected task
+            score over the joint prompts. Fixing an optimizer and the base model, and with a configuration
+            $(\mathcal{T}, G, n, P)$, we measure the <b>prompt-optimization gain</b> $\Delta$ as the difference between
+            the optimized ($\pi^\star$) and unoptimized ($\pi^0$) system scores:
+          </p>
+        </div>
+        <div class="equation-box" style="max-width: 780px; margin-left: auto; margin-right: auto;">
+          $$\Delta(\mathcal{T}, G, n, P) = \mathbb{E}_{(x,y)\sim\mathcal{T}}\big[\,\mu(\mathcal{M}(x;\pi^\star), y) - \mu(\mathcal{M}(x;\pi^0), y)\,\big]$$
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TOPOLOGIES ============================ -->
+<section class="pa-section pa-tint">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full reveal">
+        <h2 class="title is-3 section-heading">Workflow Topologies</h2>
+        <div id="topo-scene" class="topo-scene">
+          <svg class="mas-defs" aria-hidden="true">
+            <defs>
+              <marker id="ah-topo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="#46505f"></path>
+              </marker>
+            </defs>
+          </svg>
+
+          <div class="topo-grid">
+            <!-- Single -->
+            <div class="topo-card" style="--tc:#3454b4">
+              <div class="topo-head">Single</div>
+              <div class="topo-body">
+                <svg class="topo-edges" viewBox="0 0 100 150">
+                  <path class="tedge" pathLength="1" d="M25 75 L36 75" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M65 75 L74 75" marker-end="url(#ah-topo)"></path>
+                </svg>
+                <img class="ti task" style="left:16%;top:50%" src="static/images/scene_task.png" alt="Task">
+                <img class="ti bot" style="left:50%;top:50%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti spark" style="left:61%;top:37%" src="static/images/scene_sparkle.png" alt="">
+                <img class="ti sol" style="left:84%;top:50%" src="static/images/scene_solution.png" alt="Solution">
+              </div>
+            </div>
+
+            <!-- Sequential -->
+            <div class="topo-card" style="--tc:#7b3fb0">
+              <div class="topo-head">Sequential</div>
+              <div class="topo-body">
+                <svg class="topo-edges" viewBox="0 0 100 150">
+                  <path class="tedge" pathLength="1" d="M50 22.5 L50 31.5" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 55.5 L50 64.5" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 88.5 L50 97.5" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 120 L50 129" marker-end="url(#ah-topo)"></path>
+                </svg>
+                <img class="ti task" style="left:50%;top:9%" src="static/images/scene_task.png" alt="Task">
+                <img class="ti bot" style="left:50%;top:28%;width:24%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti spark" style="left:63%;top:21%" src="static/images/scene_sparkle.png" alt="">
+                <img class="ti bot" style="left:50%;top:50%;width:24%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti bot" style="left:50%;top:72%;width:24%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti sol" style="left:50%;top:91%" src="static/images/scene_solution.png" alt="Solution">
+              </div>
+            </div>
+
+            <!-- Independent -->
+            <div class="topo-card" style="--tc:#2f9e6b">
+              <div class="topo-head">Independent</div>
+              <div class="topo-body">
+                <svg class="topo-edges" viewBox="0 0 100 150">
+                  <path class="tedge" pathLength="1" d="M20 27 L20 63" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 27 L50 63" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M80 27 L80 63" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M20 87 L20 123" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 87 L50 123" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M80 87 L80 123" marker-end="url(#ah-topo)"></path>
+                </svg>
+                <img class="ti task" style="left:20%;top:11%;width:13%" src="static/images/scene_task.png" alt="Task">
+                <img class="ti task" style="left:50%;top:11%;width:13%" src="static/images/scene_task.png" alt="Task">
+                <img class="ti task" style="left:80%;top:11%;width:13%" src="static/images/scene_task.png" alt="Task">
+                <img class="ti bot" style="left:20%;top:50%;width:22%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti bot" style="left:50%;top:50%;width:22%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti bot" style="left:80%;top:50%;width:22%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti spark" style="left:29%;top:40%;width:10%" src="static/images/scene_sparkle.png" alt="">
+                <img class="ti spark" style="left:59%;top:40%;width:10%" src="static/images/scene_sparkle.png" alt="">
+                <img class="ti spark" style="left:89%;top:40%;width:10%" src="static/images/scene_sparkle.png" alt="">
+                <img class="ti sol" style="left:20%;top:89%;width:14%" src="static/images/scene_solution.png" alt="Solution">
+                <img class="ti sol" style="left:50%;top:89%;width:14%" src="static/images/scene_solution.png" alt="Solution">
+                <img class="ti sol" style="left:80%;top:89%;width:14%" src="static/images/scene_solution.png" alt="Solution">
+              </div>
+            </div>
+
+            <!-- Centralized -->
+            <div class="topo-card" style="--tc:#e07b2a">
+              <div class="topo-head">Centralized</div>
+              <div class="topo-body">
+                <svg class="topo-edges" viewBox="0 0 100 150">
+                  <path class="tedge" pathLength="1" d="M50 21 L50 31.5" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 57 L24 86" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 57 L50 86" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 57 L76 86" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M22 105 L22 126" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M50 105 L50 126" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M78 105 L78 126" marker-end="url(#ah-topo)"></path>
+                </svg>
+                <img class="ti task" style="left:50%;top:9%;width:14%" src="static/images/scene_task.png" alt="Task">
+                <img class="ti bot" style="left:50%;top:30%;width:24%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti spark" style="left:62%;top:22%" src="static/images/scene_sparkle.png" alt="">
+                <img class="ti bot" style="left:22%;top:62%;width:21%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti bot" style="left:50%;top:62%;width:21%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti bot" style="left:78%;top:62%;width:21%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti sol" style="left:22%;top:90%;width:13%" src="static/images/scene_solution.png" alt="Solution">
+                <img class="ti sol" style="left:50%;top:90%;width:13%" src="static/images/scene_solution.png" alt="Solution">
+                <img class="ti sol" style="left:78%;top:90%;width:13%" src="static/images/scene_solution.png" alt="Solution">
+              </div>
+            </div>
+
+            <!-- Decentralized -->
+            <div class="topo-card" style="--tc:#2a9d9d">
+              <div class="topo-head">Decentralized</div>
+              <div class="topo-body">
+                <svg class="topo-edges" viewBox="0 0 100 150">
+                  <path class="tedge" pathLength="1" d="M43 46.5 L57 46.5" marker-start="url(#ah-topo)" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M43 97.5 L57 97.5" marker-start="url(#ah-topo)" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M32 61.5 L32 82.5" marker-start="url(#ah-topo)" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M68 61.5 L68 82.5" marker-start="url(#ah-topo)" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M41 58.5 L59 85.5" marker-start="url(#ah-topo)" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M59 58.5 L41 85.5" marker-start="url(#ah-topo)" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M23 46.5 L14 46.5" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M23 97.5 L14 97.5" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M77 46.5 L86 46.5" marker-end="url(#ah-topo)"></path>
+                  <path class="tedge" pathLength="1" d="M77 97.5 L86 97.5" marker-end="url(#ah-topo)"></path>
+                </svg>
+                <img class="ti sol" style="left:8%;top:31%;width:11%" src="static/images/scene_solution.png" alt="Solution">
+                <img class="ti sol" style="left:8%;top:65%;width:11%" src="static/images/scene_solution.png" alt="Solution">
+                <img class="ti bot" style="left:32%;top:31%;width:18%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti bot" style="left:68%;top:31%;width:18%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti bot" style="left:32%;top:65%;width:18%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti bot" style="left:68%;top:65%;width:18%" src="static/images/scene_robot.png" alt="Agent">
+                <img class="ti spark" style="left:43%;top:22%;width:9%" src="static/images/scene_sparkle.png" alt="">
+                <img class="ti spark" style="left:79%;top:22%;width:9%" src="static/images/scene_sparkle.png" alt="">
+                <img class="ti sol" style="left:92%;top:31%;width:11%" src="static/images/scene_solution.png" alt="Solution">
+                <img class="ti sol" style="left:92%;top:65%;width:11%" src="static/images/scene_solution.png" alt="Solution">
+              </div>
+            </div>
+          </div>
+
+          <div class="topo-legend">
+            <span class="lg"><img src="static/images/scene_robot.png" alt="">LLM Agent</span>
+            <span class="lg"><img src="static/images/scene_sparkle.png" alt="">Expertise</span>
+            <span class="lg"><img src="static/images/scene_task.png" alt="">Task</span>
+            <span class="lg"><img src="static/images/scene_solution.png" alt="">Solution</span>
+            <span class="lg"><svg width="42" height="14" viewBox="0 0 42 14"><path d="M2 7 H32" stroke="#46505f" stroke-width="2" fill="none"></path><path d="M31 3 L39 7 L31 11 z" fill="#46505f"></path></svg>Communication</span>
+          </div>
+
+          <p class="pa-cap has-text-centered" style="max-width: 820px; margin: 1.1rem auto 0;">
+            The five coordination structures evaluated by our protocol. Arrows indicate message flow; nodes are agents.
+          </p>
+        </div>
+        <div class="deflist" style="margin-top: 1.6rem;">
+          <div class="def-item"><span class="term">Single.</span> A single agent solves the task alone &mdash; the reference for whether coordination adds value.</div>
+          <div class="def-item"><span class="term">Independent.</span> $n$ agents solve the task in parallel without messaging; outputs are aggregated by majority vote.</div>
+          <div class="def-item"><span class="term">Sequential.</span> Agents form a directed chain $A_1 \to A_2 \to \cdots \to A_n$; each output is the next agent's input.</div>
+          <div class="def-item"><span class="term">Centralized.</span> A coordinator dispatches subtasks to workers and synthesizes their outputs; workers do not communicate directly.</div>
+          <div class="def-item"><span class="term">Decentralized.</span> All agents exchange messages over a fully connected graph for a fixed number of rounds.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FINDINGS ============================ -->
+<section class="pa-section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full reveal">
+        <h2 class="title is-3 section-heading">Findings</h2>
+        <p class="content" style="margin-bottom: 2rem;">When does a better local prompt become a better <i>system</i>? Each factor controls a different stage of that transfer.</p>
+      </div>
+    </div>
+
+    <!-- Task -->
+    <div class="factor-card reveal">
+      <span class="factor-chip">Factor 1 &middot; Task</span>
+      <h3 class="title is-4">Explicit, verifiable tasks gain more</h3>
+      <p>
+        Coding and tool-calling tasks gain more &mdash; and more consistently &mdash; than reasoning tasks, because their
+        structured interfaces (code, tests, function calls) preserve local improvements across handoffs. Domain averages
+        capture it: coding <span class="pos">+3.7</span> and tool-calling <span class="pos">+4.3</span> points, versus only
+        <span class="pos">+1.3</span> for reasoning. The peaks are large too &mdash; up to <span class="pos">+24.0</span> on
+        Sequential BFCL &mdash; while reasoning tops out near <span class="pos">+8.0</span>.
+      </p>
+
+      <div class="task-table-wrap">
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th colspan="2"></th>
+              <th>Single<span class="fw">LangGraph</span></th>
+              <th>Independent<span class="fw">LangGraph</span></th>
+              <th>Sequential<span class="fw">CrewAI</span></th>
+              <th>Centralized<span class="fw">AutoGen</span></th>
+              <th>Decentralized<span class="fw">OpenAI SDK</span></th>
+              <th class="avg">Average</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="grp-start">
+              <td class="grp" rowspan="3">Reasoning</td>
+              <td class="task">GPQA-Diamond Acc.</td>
+              <td><span class="bo">54.0 / 58.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">73.0 / 73.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">53.0 / 56.0</span><span class="d g">+3.0</span></td>
+              <td><span class="bo">74.0 / 74.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">60.0 / 60.0</span><span class="d z">0.0</span></td>
+              <td class="avg"><span class="bo">62.8 / 64.2</span><span class="d g">+1.4</span></td>
+            </tr>
+            <tr>
+              <td class="task">HotpotQA EM</td>
+              <td><span class="bo">26.0 / 39.0</span><span class="d g">+13.0</span></td>
+              <td><span class="bo">27.0 / 26.0</span><span class="d l">&minus;1.0</span></td>
+              <td><span class="bo">27.0 / 27.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">20.0 / 22.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">16.0 / 18.0</span><span class="d g">+2.0</span></td>
+              <td class="avg"><span class="bo">23.2 / 26.4</span><span class="d g">+3.2</span></td>
+            </tr>
+            <tr>
+              <td class="task">MATH Acc.</td>
+              <td><span class="bo">49.0 / 51.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">76.0 / 60.0</span><span class="d l">&minus;16.0</span></td>
+              <td><span class="bo">58.0 / 62.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">63.0 / 69.0</span><span class="d g">+6.0</span></td>
+              <td><span class="bo">66.0 / 66.0</span><span class="d z">0.0</span></td>
+              <td class="avg"><span class="bo">62.4 / 61.6</span><span class="d l">&minus;0.8</span></td>
+            </tr>
+
+            <tr class="grp-start">
+              <td class="grp" rowspan="3">Coding</td>
+              <td class="task">LiveCodeBench pass@1</td>
+              <td><span class="bo">12.0 / 12.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">14.0 / 18.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">12.0 / 18.0</span><span class="d g">+6.0</span></td>
+              <td><span class="bo">14.0 / 16.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">8.0 / 12.0</span><span class="d g">+4.0</span></td>
+              <td class="avg"><span class="bo">12.0 / 15.2</span><span class="d g">+3.2</span></td>
+            </tr>
+            <tr>
+              <td class="task">APPS pass@1</td>
+              <td><span class="bo">52.0 / 66.0</span><span class="d g">+14.0</span></td>
+              <td><span class="bo">74.0 / 78.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">62.0 / 80.0</span><span class="d g">+18.0</span></td>
+              <td><span class="bo">62.0 / 76.0</span><span class="d g">+14.0</span></td>
+              <td><span class="bo">74.0 / 74.0</span><span class="d z">0.0</span></td>
+              <td class="avg"><span class="bo">64.8 / 74.8</span><span class="d g">+10.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">SWE-Bench Verified</td>
+              <td><span class="bo">33.3 / 30.0</span><span class="d l">&minus;3.3</span></td>
+              <td><span class="bo">36.7 / 33.3</span><span class="d l">&minus;3.4</span></td>
+              <td><span class="bo">33.3 / 30.0</span><span class="d l">&minus;3.3</span></td>
+              <td><span class="bo">16.7 / 20.0</span><span class="d g">+3.3</span></td>
+              <td><span class="bo">40.0 / 36.7</span><span class="d l">&minus;3.3</span></td>
+              <td class="avg"><span class="bo">32.0 / 30.0</span><span class="d l">&minus;2.0</span></td>
+            </tr>
+
+            <tr class="grp-start">
+              <td class="grp" rowspan="3">Tool-Calling</td>
+              <td class="task">BFCL Acc.</td>
+              <td><span class="bo">84.0 / 88.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">88.0 / 88.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">60.0 / 84.0</span><span class="d g">+24.0</span></td>
+              <td><span class="bo">96.0 / 96.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">84.0 / 88.0</span><span class="d g">+4.0</span></td>
+              <td class="avg"><span class="bo">82.4 / 88.8</span><span class="d g">+6.4</span></td>
+            </tr>
+            <tr>
+              <td class="task">ToolHop Acc.</td>
+              <td><span class="bo">62.0 / 64.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">62.0 / 68.0</span><span class="d g">+6.0</span></td>
+              <td><span class="bo">66.0 / 73.0</span><span class="d g">+7.0</span></td>
+              <td><span class="bo">68.0 / 69.0</span><span class="d g">+1.0</span></td>
+              <td><span class="bo">67.0 / 71.0</span><span class="d g">+4.0</span></td>
+              <td class="avg"><span class="bo">65.0 / 69.0</span><span class="d g">+4.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">API-Bank Acc.</td>
+              <td><span class="bo">77.0 / 79.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">74.0 / 76.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">60.0 / 66.0</span><span class="d g">+6.0</span></td>
+              <td><span class="bo">77.0 / 72.0</span><span class="d l">&minus;5.0</span></td>
+              <td><span class="bo">62.0 / 69.0</span><span class="d g">+7.0</span></td>
+              <td class="avg"><span class="bo">70.0 / 72.4</span><span class="d g">+2.4</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="task-cap">
+        Prompt-optimization gains of MAS-GEPA for nine diverse tasks on popular existing MAS frameworks. Each cell reports
+        baseline / optimized performance, followed by the signed change $\Delta$ in percentage points.
+        <span class="lg-g">Blue</span> indicates improvement, <span class="lg-l">orange</span> indicates regression, and
+        <span class="lg-z">gray</span> indicates no change.
+      </p>
+      <div class="takeaway">
+        <span class="tk-label">Takeaway.</span> Prompt optimization shows greater potential on tasks with explicit,
+        controllable, and verifiable agent-local behaviors, such as coding and tool-calling, than on reasoning tasks.
+      </div>
+    </div>
+
+    <!-- Topology -->
+    <div class="factor-card reveal">
+      <span class="factor-chip">Factor 2 &middot; Workflow Topology</span>
+      <h3 class="title is-4">Multi-agent systems need topology-awareness</h3>
+      <p>
+        Every multi-agent topology gains less than the single-agent baseline (<span class="pos">+4.2</span> points), with all
+        four peaking at just <span class="pos">+2.3</span> &mdash; MAS is simply harder to optimize. Gains also swing by
+        topology: the same optimizer lifts Sequential API-Bank by <span class="pos">+9.0</span> yet drops Centralized by
+        <span class="neg">&minus;5.0</span>. The swings have structure &mdash; <b>Independent</b> can erase gains as parallel
+        agents overwrite one another (MATH <span class="neg">&minus;16.0</span>), while <b>Centralized</b> amplifies both wins
+        and losses (APPS <span class="pos">+14.0</span>, HotpotQA <span class="neg">&minus;9.0</span>) &mdash; motivating
+        topology-aware optimization rather than one-size-fits-all.
+      </p>
+
+      <div class="task-table-wrap">
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Single</th>
+              <th>Independent</th>
+              <th>Sequential</th>
+              <th>Centralized</th>
+              <th>Decentralized</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="task">GPQA (Acc.)</td>
+              <td><span class="bo">54.0 / 58.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">73.0 / 73.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">75.0 / 78.0</span><span class="d g">+3.0</span></td>
+              <td><span class="bo">70.0 / 70.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">71.0 / 71.0</span><span class="d z">0.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">HotpotQA (EM)</td>
+              <td><span class="bo">26.0 / 39.0</span><span class="d g">+13.0</span></td>
+              <td><span class="bo">27.0 / 26.0</span><span class="d l">&minus;1.0</span></td>
+              <td><span class="bo">29.0 / 28.0</span><span class="d l">&minus;1.0</span></td>
+              <td><span class="bo">19.0 / 10.0</span><span class="d l">&minus;9.0</span></td>
+              <td><span class="bo">20.0 / 32.0</span><span class="d g">+12.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">MATH (Acc.)</td>
+              <td><span class="bo">49.0 / 51.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">76.0 / 60.0</span><span class="d l">&minus;16.0</span></td>
+              <td><span class="bo">74.0 / 74.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">66.0 / 69.0</span><span class="d g">+3.0</span></td>
+              <td><span class="bo">81.0 / 81.0</span><span class="d z">0.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">LiveCodeBench (pass@1)</td>
+              <td><span class="bo">12.0 / 12.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">14.0 / 18.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">16.0 / 16.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">16.0 / 16.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">18.0 / 18.0</span><span class="d z">0.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">APPS (pass@1)</td>
+              <td><span class="bo">52.0 / 66.0</span><span class="d g">+14.0</span></td>
+              <td><span class="bo">74.0 / 78.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">82.0 / 84.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">70.0 / 84.0</span><span class="d g">+14.0</span></td>
+              <td><span class="bo">86.0 / 86.0</span><span class="d z">0.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">SWE-Bench Verified (Resolved)</td>
+              <td><span class="bo">33.3 / 30.0</span><span class="d l">&minus;3.3</span></td>
+              <td><span class="bo">36.7 / 33.3</span><span class="d l">&minus;3.4</span></td>
+              <td><span class="bo">33.3 / 26.7</span><span class="d l">&minus;6.6</span></td>
+              <td><span class="bo">30.0 / 33.3</span><span class="d g">+3.3</span></td>
+              <td><span class="bo">36.7 / 36.7</span><span class="d z">0.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">BFCL (Acc.)</td>
+              <td><span class="bo">84.0 / 88.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">88.0 / 88.0</span><span class="d z">0.0</span></td>
+              <td><span class="bo">84.0 / 80.0</span><span class="d l">&minus;4.0</span></td>
+              <td><span class="bo">92.0 / 96.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">88.0 / 88.0</span><span class="d z">0.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">ToolHop (Acc.)</td>
+              <td><span class="bo">62.0 / 64.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">62.0 / 68.0</span><span class="d g">+6.0</span></td>
+              <td><span class="bo">71.0 / 73.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">66.0 / 70.0</span><span class="d g">+4.0</span></td>
+              <td><span class="bo">65.0 / 71.0</span><span class="d g">+6.0</span></td>
+            </tr>
+            <tr>
+              <td class="task">API-Bank (Acc.)</td>
+              <td><span class="bo">77.0 / 79.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">74.0 / 76.0</span><span class="d g">+2.0</span></td>
+              <td><span class="bo">61.0 / 70.0</span><span class="d g">+9.0</span></td>
+              <td><span class="bo">77.0 / 72.0</span><span class="d l">&minus;5.0</span></td>
+              <td><span class="bo">65.0 / 68.0</span><span class="d g">+3.0</span></td>
+            </tr>
+            <tr class="avg-row">
+              <td class="task">Average</td>
+              <td><span class="bo">49.9 / 54.1</span><span class="d g">+4.2</span></td>
+              <td><span class="bo">58.3 / 57.8</span><span class="d l">&minus;0.5</span></td>
+              <td><span class="bo">58.4 / 58.9</span><span class="d g">+0.5</span></td>
+              <td><span class="bo">56.2 / 57.8</span><span class="d g">+1.6</span></td>
+              <td><span class="bo">59.0 / 61.3</span><span class="d g">+2.3</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="task-cap">
+        Prompt-optimization gains of MAS-GEPA for five workflow topologies. Each cell reports baseline / optimized
+        performance, followed by the signed change $\Delta$ in percentage points. <span class="lg-g">Blue</span> indicates
+        improvement, <span class="lg-l">orange</span> indicates regression, and <span class="lg-z">gray</span> indicates no change.
+      </p>
+      <div class="takeaway">
+        <span class="tk-label">Takeaway.</span> Multi-agent systems need <b>topology-aware</b> prompt optimizers.
+      </div>
+    </div>
+
+    <!-- Communication -->
+    <div class="factor-card reveal">
+      <span class="factor-chip">Factor 3 &middot; Communication Protocol</span>
+      <h3 class="title is-4">Shared structure gives optimization more room</h3>
+      <div class="chart-card" style="margin: 1.2rem 0;">
+        <div class="has-text-centered">
+          <div class="chart-toggle" id="toggle-comm">
+            <button data-ds="hotpot" class="active">HotpotQA</button>
+            <button data-ds="lcb">LiveCodeBench</button>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="chart-comm"></canvas></div>
+        <p class="pa-cap has-text-centered" style="margin-top: 0.8rem;">
+          Prompt-optimization gain &Delta; (pp) by communication protocol, grouped by topology. Adding structure improves gain transfer.
+        </p>
+      </div>
+      <p>
+        <b>More structure means larger gains:</b> the average rises from <span class="pos">+1.6</span> (Freeform) to
+        <span class="pos">+2.4</span> (Semi-structured) to <span class="pos">+4.3</span> (Structured). The effect is largest
+        on evidence-passing tasks like <b>HotpotQA</b>, where downstream agents must reuse upstream outputs, and weakest on
+        <b>LiveCodeBench</b>, where executable code and tests decide correctness regardless of message format.
+      </p>
+      <div class="takeaway">
+        <span class="tk-label">Takeaway.</span> Communication protocols with explicit shared structure make agent
+        interactions easier to control and transfer, giving MAS prompt optimization more room to improve.
+      </div>
+    </div>
+
+    <!-- Team size -->
+    <div class="factor-card reveal">
+      <span class="factor-chip">Factor 4 &middot; Team Size</span>
+      <h3 class="title is-4">Larger teams make optimization harder</h3>
+      <div class="chart-card" style="margin: 1.2rem 0;">
+        <div class="has-text-centered">
+          <div class="chart-toggle" id="toggle-teamsize">
+            <button data-ds="hotpot" class="active">HotpotQA</button>
+            <button data-ds="lcb">LiveCodeBench</button>
+          </div>
+        </div>
+        <div class="chart-box tall"><canvas id="chart-teamsize"></canvas></div>
+        <p class="pa-cap has-text-centered" style="margin-top: 0.8rem;">
+          Prompt-optimization gain &Delta; (pp) across team sizes by topology. The dashed line is the mean across
+          topologies &mdash; gains decay as teams grow.
+        </p>
+      </div>
+      <p>
+        As teams grow ($n \in \{2,4,8,10\}$), gains generally <b>shrink</b> &mdash; the average falls from
+        <span class="pos">+2.4</span> at $n{=}2$ to <span class="neg">&minus;2.1</span> at $n{=}10$ &mdash; as agent-local
+        improvements get diluted across more handoffs and intermediate states. Topology mediates the effect: Centralized
+        HotpotQA collapses (<span class="pos">+5.0</span> &rarr; <span class="neg">&minus;12.0</span>), while Decentralized
+        HotpotQA stays nonnegative at every size.
+      </p>
+      <div class="takeaway">
+        <span class="tk-label">Takeaway.</span> Larger team size increases the challenge of prompt optimization for MAS:
+        local agent improvements may fail to produce system-level gains.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ BIBTEX ============================ -->
+<section class="pa-section" id="BibTeX">
+  <div class="container is-max-desktop content reveal">
+    <h2 class="title is-3 section-heading">BibTeX</h2>
+    <pre><code id="bibtex-code">@article{maspromptbench2026,
+  title  = {When Does Prompt Optimization Improve Multi-Agent LLM Systems?},
+  author = {Anonymous Authors},
+  year   = {2026}
+}</code></pre>
+    <button id="copy-btn" onclick="copyBibTeX()" style="position: absolute; top: 64px; right: 24px; background: #2f6fb3; color: white; border: none; padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 14px;">
+      <i class="fas fa-copy"></i> Copy
+    </button>
+  </div>
+</section>
+
+<script>
+function copyBibTeX() {
+  const code = document.getElementById('bibtex-code').textContent;
+  navigator.clipboard.writeText(code).then(function() {
+    const btn = document.getElementById('copy-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    btn.style.background = '#48c774';
+    setTimeout(function() {
+      btn.innerHTML = originalText;
+      btn.style.background = '#2f6fb3';
+    }, 2000);
+  });
+}
+
+// Scroll-reveal animation
+(function () {
+  var els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window) ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    els.forEach(function (e) { e.classList.add('is-visible'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) { en.target.classList.add('is-visible'); io.unobserve(en.target); }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  els.forEach(function (e) { io.observe(e); });
+})();
+
+// ---------------- Count-up stat numbers ----------------
+(function () {
+  var nums = document.querySelectorAll('[data-count]');
+  function run(el) {
+    var target = parseFloat(el.getAttribute('data-count')), dur = 1300, start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1), eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(eased * target);
+      if (p < 1) requestAnimationFrame(step); else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  }
+  if (!('IntersectionObserver' in window) ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    nums.forEach(function (n) { n.textContent = n.getAttribute('data-count'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { run(e.target); io.unobserve(e.target); } });
+  }, { threshold: 0.5 });
+  nums.forEach(function (n) { io.observe(n); });
+})();
+
+// ---------------- Scene play-on-scroll (MAS + topology) ----------------
+(function () {
+  var scenes = document.querySelectorAll('#mas-scene, #topo-scene, #overview-scene');
+  if (!scenes.length) return;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !('IntersectionObserver' in window)) {
+    scenes.forEach(function (s) { s.classList.add('play'); if (reduce) s.classList.add('no-anim'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('play'); io.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  scenes.forEach(function (s) { io.observe(s); });
+})();
+
+// ---------------- Scale the horizontal overview scene to fit the page ----------------
+(function () {
+  var wrap = document.querySelector('#overview-scene.ov-h .ov-rowwrap');
+  var row = wrap && wrap.querySelector('.ov-row');
+  if (!wrap || !row) return;
+  function fit() {
+    row.style.transform = 'translateX(-50%)';
+    var natural = row.offsetWidth;
+    var avail = wrap.clientWidth;
+    var s = natural > 0 ? Math.min(1, avail / natural) : 1;
+    row.style.transform = 'translateX(-50%) scale(' + s + ')';
+    wrap.style.height = (row.offsetHeight * s) + 'px';
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fit); }
+})();
+
+// ---------------- Animated bar charts (Chart.js) ----------------
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof Chart === 'undefined') return;
+  if (window.ChartDataLabels) Chart.register(window.ChartDataLabels);
+
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  Chart.defaults.color = '#3f4b5b';
+
+  var C = { blue: '#2f6db3', green: '#2e9e6b', purple: '#7d5bbe', orange: '#e07b39', teal: '#3ba6a0' };
+
+  function dl(size) {
+    return {
+      anchor: 'end', align: 'end', offset: 2, clamp: true,
+      color: function (c) { return c.dataset.borderColor || c.dataset.backgroundColor; },
+      font: { weight: '700', size: size || 11 },
+      formatter: function (v) { return v > 0 ? ('+' + v) : (v === 0 ? '0' : ('' + v)); }
+    };
+  }
+  function baseOpts(o) {
+    o = o || {};
+    return {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 18, bottom: 2 } },
+      animation: {
+        duration: 1100, easing: 'easeOutQuart',
+        delay: function (ctx) { return (ctx.type === 'data' && ctx.mode === 'default') ? ctx.dataIndex * 55 + ctx.datasetIndex * 80 : 0; }
+      },
+      plugins: {
+        legend: {
+          display: o.legend !== false, position: 'bottom',
+          labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 14, boxWidth: 12, font: { family: "'Inter', sans-serif", size: 12 } }
+        },
+        tooltip: { callbacks: { label: function (c) { var v = c.parsed.y; return ' ' + c.dataset.label + ': ' + (v > 0 ? '+' : '') + v + ' pp'; } } },
+        datalabels: dl(o.dlSize)
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: "'Inter', sans-serif" } } },
+        y: {
+          suggestedMin: o.ymin, suggestedMax: o.ymax,
+          grid: { color: 'rgba(31,78,140,0.08)' }, ticks: { color: '#6b7888' },
+          title: { display: true, text: 'Gain Δ (pp)', color: '#6b7888', font: { family: "'Inter', sans-serif" } }
+        }
+      }
+    };
+  }
+  function whenVisible(el, cb) {
+    if (!('IntersectionObserver' in window)) { cb(); return; }
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { cb(); io.unobserve(e.target); } });
+    }, { threshold: 0.25 });
+    io.observe(el);
+  }
+  function lazyChart(id, config) {
+    var cv = document.getElementById(id); if (!cv) return null;
+    var holder = { chart: null };
+    whenVisible(cv, function () { holder.chart = new Chart(cv.getContext('2d'), config); });
+    return holder;
+  }
+
+  var TASKS = ['GPQA', 'HotpotQA', 'MATH', 'APPS', 'BFCL'];
+
+  // 1. Motivation — Single Agent
+  lazyChart('chart-single', {
+    type: 'bar',
+    data: { labels: TASKS, datasets: [{ label: 'Single', data: [4, 13, 2, 14, 4], backgroundColor: C.blue, borderColor: C.blue, borderRadius: 6, maxBarThickness: 46 }] },
+    options: baseOpts({ legend: false, ymin: -18, ymax: 18 })
+  });
+
+  // 2. Motivation — Multi-Agent
+  lazyChart('chart-mas', {
+    type: 'bar',
+    data: {
+      labels: TASKS, datasets: [
+        { label: 'Independent', data: [0, -1, -16, 4, 0], backgroundColor: C.green, borderColor: C.green, borderRadius: 6, maxBarThickness: 30 },
+        { label: 'Centralized', data: [0, -9, 3, 14, 4], backgroundColor: C.orange, borderColor: C.orange, borderRadius: 6, maxBarThickness: 30 }
+      ]
+    },
+    options: baseOpts({ ymin: -18, ymax: 18 })
+  });
+
+  // 3. Communication
+  var PROTO = ['Freeform', 'Semi-structured', 'Structured'];
+  var TOPOS = ['Independent', 'Sequential', 'Centralized', 'Decentralized'];
+  var TCOLORS = [C.green, C.purple, C.orange, C.teal];
+  var commData = {
+    hotpot: [[8, 4, 6], [0, 7, 9], [1, 6, 10], [-2, 8, 1]],
+    lcb: [[2, 0, 4], [0, -4, -2], [4, -2, 6], [0, 0, 0]]
+  };
+  var commHolder = lazyChart('chart-comm', {
+    type: 'bar',
+    data: { labels: PROTO, datasets: TOPOS.map(function (l, i) { return { label: l, data: commData.hotpot[i], backgroundColor: TCOLORS[i], borderColor: TCOLORS[i], borderRadius: 5, maxBarThickness: 34 }; }) },
+    options: baseOpts({ ymin: -6, ymax: 12, dlSize: 9 })
+  });
+
+  // 4. Team size
+  var SIZES = ['n=2', 'n=4', 'n=8', 'n=10'];
+  var tsBars = {
+    hotpot: [[0, -1, 1, 2], [6, -1, 3, -6], [5, -9, -9, -12], [6, 12, 0, 3]],
+    lcb: [[0, 4, -2, -6], [0, 0, -2, 0], [2, 0, 0, 2], [0, 0, 2, 0]]
+  };
+  var tsMean = { hotpot: [4.25, 0.25, -1.25, -3.25], lcb: [0.5, 1.0, -0.5, -1.0] };
+  var tsHolder = lazyChart('chart-teamsize', {
+    type: 'bar',
+    data: {
+      labels: SIZES,
+      datasets: TOPOS.map(function (l, i) { return { label: l, data: tsBars.hotpot[i], backgroundColor: TCOLORS[i], borderColor: TCOLORS[i], borderRadius: 4, maxBarThickness: 24, order: 2 }; })
+        .concat([{
+          type: 'line', label: 'Mean across topologies', data: tsMean.hotpot,
+          borderColor: '#1a2330', backgroundColor: '#1a2330', borderDash: [6, 5], borderWidth: 2,
+          pointStyle: 'triangle', pointRadius: 6, pointBackgroundColor: '#fff', pointBorderColor: '#1a2330',
+          datalabels: { display: false }, order: 1
+        }])
+    },
+    options: baseOpts({ ymin: -14, ymax: 14, dlSize: 9 })
+  });
+
+  // Dataset toggles
+  function wireToggle(toggleId, holder, bars, mean) {
+    var box = document.getElementById(toggleId); if (!box) return;
+    box.addEventListener('click', function (e) {
+      var btn = e.target.closest('button'); if (!btn || !holder.chart) return;
+      var ds = btn.getAttribute('data-ds');
+      box.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      var ch = holder.chart;
+      for (var i = 0; i < 4; i++) { ch.data.datasets[i].data = bars[ds][i]; }
+      if (mean) { ch.data.datasets[4].data = mean[ds]; }
+      ch.update();
+    });
+  }
+  wireToggle('toggle-comm', commHolder, commData, null);
+  wireToggle('toggle-teamsize', tsHolder, tsBars, tsMean);
+});
+</script>
+<!--End BibTex citation -->
+
+<!-- Traveling packets along arrows (offset-path) -->
+<script>
+(function () {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var NS = "http://www.w3.org/2000/svg";
+  function scaleOf(svg) {
+    var r = svg.getBoundingClientRect();
+    var v = svg.viewBox && svg.viewBox.baseVal;
+    return r.width ? r.width / ((v && v.width) || 100) : 1;
+  }
+  // Draw a filled triangle arrowhead with its tip at (ax,ay), pointing along (dx,dy).
+  function arrowhead(svg, ax, ay, dx, dy, sizePx, scale, color) {
+    var n = Math.hypot(dx, dy) || 1;
+    var ux = dx / n, uy = dy / n, px = -uy, py = ux;
+    var L = sizePx / scale, W = (sizePx * 0.9) / scale;
+    var bx = ax - L * ux, by = ay - L * uy;
+    var tri = document.createElementNS(NS, 'polygon');
+    tri.setAttribute('points',
+      ax.toFixed(2) + ',' + ay.toFixed(2) + ' ' +
+      (bx + (W / 2) * px).toFixed(2) + ',' + (by + (W / 2) * py).toFixed(2) + ' ' +
+      (bx - (W / 2) * px).toFixed(2) + ',' + (by - (W / 2) * py).toFixed(2));
+    tri.setAttribute('fill', color);
+    svg.appendChild(tri);
+  }
+  function inject() {
+    // uniform packet speed: calibrate so the first topology arrow takes ~2.0s
+    var refSpeed = 10.8, ref = document.querySelector('.topo-edges .tedge');
+    if (ref) { try { var rl = ref.getTotalLength() * scaleOf(ref.ownerSVGElement); if (rl > 0) refSpeed = rl / 2.0; } catch (e) {} }
+    document.querySelectorAll('.edge, .tedge, .farrow').forEach(function (path, i) {
+      var svg = path.ownerSVGElement; if (!svg) return;
+      var d = path.getAttribute('d'); if (!d) return;
+      var biDir = path.hasAttribute('marker-start');
+      path.removeAttribute('marker-end');    // drop unreliable cross-SVG markers
+      path.removeAttribute('marker-start');
+      var rect = svg.getBoundingClientRect();
+      var vb = svg.viewBox && svg.viewBox.baseVal;
+      var vbW = (vb && vb.width) || rect.width || 100;
+      var vbH = (vb && vb.height) || rect.height || 100;
+      var scale = rect.width ? rect.width / vbW : 1;
+      var stroke = getComputedStyle(path).stroke;
+      if (!stroke || stroke === 'none') stroke = '#444441';
+
+      var total = 0; try { total = path.getTotalLength(); } catch (e) {}
+
+      // traveling packet(s): one for one-way edges; two opposite-direction for
+      // two-way (agent-agent) edges so the bidirectional flow is visible
+      if (total > 0) {
+        var rx = Math.max(1.4, 4.6 * vbW / rect.width);
+        var ry = Math.max(1.4, 4.6 * vbH / rect.height);
+        var dur = Math.max(0.8, Math.min(9, (total * scale / refSpeed) || 2.4));
+        for (var k = 0; k < (biDir ? 2 : 1); k++) {
+          var dot = document.createElementNS(NS, 'ellipse');
+          dot.setAttribute('rx', rx.toFixed(2));
+          dot.setAttribute('ry', ry.toFixed(2));
+          dot.setAttribute('fill', stroke);
+          dot.setAttribute('class', 'pkt');
+          dot.style.offsetPath = "path('" + d + "')";
+          dot.style.offsetRotate = "0deg";
+          dot.style.animationDuration = dur.toFixed(2) + 's';
+          dot.style.animationDelay = (k === 1 ? (dur / 2) : (0.7 + (i % 6) * 0.28)) + 's';
+          if (k === 1) dot.style.animationDirection = 'reverse';
+          svg.appendChild(dot);
+        }
+      }
+
+      // arrowhead(s) on top — both ends for two-way (agent-agent) edges, one end otherwise
+      if (total > 0) {
+        var pe = path.getPointAtLength(total), peN = path.getPointAtLength(Math.max(0, total - 1));
+        arrowhead(svg, pe.x, pe.y, pe.x - peN.x, pe.y - peN.y, 8, scale, stroke);
+        if (biDir) {
+          var ps = path.getPointAtLength(0), psN = path.getPointAtLength(Math.min(total, 1));
+          arrowhead(svg, ps.x, ps.y, ps.x - psN.x, ps.y - psN.y, 8, scale, stroke);
+        }
+      }
+    });
+  }
+  if (document.readyState !== 'loading') inject();
+  else document.addEventListener('DOMContentLoaded', inject);
+})();
+</script>
+
+  </body>
+  </html>
