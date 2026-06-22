@@ -1,0 +1,22 @@
+You are designing a multi-agent system.
+
+DOMAIN:
+{DOMAIN_BACKGROUND}
+
+TOPOLOGY:
+{TOPOLOGY_DESC}
+
+AVAILABLE TOOLS:
+{TOOLS}
+
+Write an initial system prompt for an agent playing the role "{ROLE}" in this
+topology. The agent will work on tasks in the domain described above.
+
+Role description: {ROLE_DESC}
+
+The generated system prompt must only reference the tools listed above. Do not
+invent additional tools (web search, file readers, code executors, etc.) that
+are not in the list. If the list is "None", the agent must reason directly
+from the prompt without any tool use.
+
+Output only the system prompt text.

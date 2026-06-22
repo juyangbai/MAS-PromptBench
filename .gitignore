@@ -1,0 +1,56 @@
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.nfs*
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node / JS
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.next/
+dist/
+coverage/
+
+# Build / cache / temp
+build/
+tmp/
+temp/
+.cache/
+.eslintcache
+
+# Project outputs
+results/
+
+# Claude and Codex
+.claude/
+.codex

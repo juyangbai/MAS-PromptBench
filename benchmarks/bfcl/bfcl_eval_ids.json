@@ -1,0 +1,33 @@
+{
+  "dataset": "bfcl",
+  "sample": "mixed 25 (10 simple, 5 multiple, 5 parallel, 5 parallel_multiple)",
+  "n": 25,
+  "source": "report eval artifact (results/<run>/bfcl/single_langgraph/results.jsonl)",
+  "ids": [
+    "multiple_0",
+    "multiple_1",
+    "multiple_2",
+    "multiple_3",
+    "multiple_4",
+    "parallel_0",
+    "parallel_1",
+    "parallel_2",
+    "parallel_3",
+    "parallel_4",
+    "parallel_multiple_0",
+    "parallel_multiple_1",
+    "parallel_multiple_2",
+    "parallel_multiple_3",
+    "parallel_multiple_4",
+    "simple_0",
+    "simple_1",
+    "simple_2",
+    "simple_3",
+    "simple_4",
+    "simple_5",
+    "simple_6",
+    "simple_7",
+    "simple_8",
+    "simple_9"
+  ]
+}

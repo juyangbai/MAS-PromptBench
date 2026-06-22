@@ -1,0 +1,340 @@
+# Per (topology, benchmark, role) catalog. The prompt generator in
+# configs/generate_role_prompts.py reads this + domains.yaml + tools.yaml +
+# meta_prompt.txt and writes one prompt file per tuple at
+#     configs/prompts/<topology>/<benchmark>/<role>.txt
+#
+# Each topology has a `description` (what the topology is) and a `benchmarks`
+# dict keyed by benchmark name. Each benchmark has its OWN set of role
+# names + descriptions — role types are benchmark-specific because the
+# natural division of labor differs across tasks (a SWE "patcher" is not
+# the same role as a MATH "computer").
+#
+# Uncomment a topology block to make it active for the generator.
+
+topologies:
+
+  single:
+    description: "One agent solves the task end-to-end with tool access. Self-terminating react loop, no hand-off."
+    benchmarks:
+      gpqa:     { solver: "Reads a graduate-level science MCQ and emits one of A/B/C/D." }
+      math:     { solver: "Solves a competition math problem and emits the final answer in \\boxed{...}." }
+      hotpotqa: { solver: "Answers a multi-hop question by searching Wikipedia and emitting a short-form answer." }
+      lcb:      { solver: "Writes a complete Python program that passes the hidden test cases." }
+      apps:     { solver: "Writes a complete Python program that passes the hidden test cases." }
+      bfcl:     { solver: "Emits the function call(s) that satisfy the user request per the provided schema." }
+      swe:      { solver: "Produces a unified diff resolving a GitHub issue against the cloned repository." }
+      toolhop:  { solver: "Solves a multi-hop tool-use question by calling dynamic function tools and emitting the exact final answer." }
+      apibank:  { solver: "Predicts the next API call for a dialogue using supplied API descriptions or ToolSearcher evidence, and emits one bracketed API call." }
+
+  independent:
+    description: >
+      4 solver agents (N=4 by default, override with INDEPENDENT_N_AGENTS)
+      run in parallel with no communication. Each replica differs only
+      by sampling seed (seeds 0..N-1). Outputs are aggregated by task-
+      appropriate consensus (majority vote for discrete answers,
+      best-of-N selection for generative tasks).
+    benchmarks:
+      gpqa:
+        solver: "Answers an MCQ end-to-end and emits one of A/B/C/D. Majority vote over letters selects the ensemble answer."
+      math:
+        solver: "Solves a competition math problem and emits the final answer in \\boxed{...}. Consensus over Hendrycks-normalized answers selects the ensemble answer."
+      hotpotqa:
+        solver: "Searches Wikipedia and emits a short-form answer. Majority vote over normalized answers selects the ensemble answer."
+      lcb:
+        coder: "Writes a complete Python program that passes the hidden test cases. Best-of-N: first candidate passing all tests is returned."
+      apps:
+        coder: "Writes a complete Python program that passes the hidden test cases. Best-of-N: first candidate passing all tests is returned."
+      bfcl:
+        caller: "Emits the function call(s) matching the provided schema. AST-match consensus over canonical call forms selects the ensemble call."
+      swe:
+        patcher: "Produces a unified diff resolving a GitHub issue. Best-of-N: first candidate with FAIL_TO_PASS=1 AND PASS_TO_PASS=1 is returned."
+      toolhop:
+        solver: "Calls the dynamic tools needed to answer a multi-hop question. Best-of-N: consensus over exact normalized final answers selects the ensemble answer."
+      apibank:
+        solver: "Predicts the next API call from dialogue history, supplied API descriptions, or ToolSearcher evidence. Consensus over canonical API calls selects the ensemble answer."
+
+  sequential:
+    description: >
+      Linear pipeline of 4 specialist agents per benchmark. Each stage
+      receives the previous stage's output as its context and hands off
+      to the next. No parallelism, no back-edges. Stages are benchmark-
+      specific.
+    benchmarks:
+      gpqa:
+        analyzer: "Reads the MCQ, identifies the scientific principles at play, and enumerates how each option would be derived."
+        solver: "Applies the analyzer's principles to choose one option; emits a tentative letter + reasoning."
+        critic: "Challenges the solver's pick: looks for concrete errors in the reasoning and, for each rejected option, explains why it would still be defensible."
+        verifier: "Reconciles the solver's and critic's positions; emits the final letter."
+        question_clarifier: "Restates the MCQ in plain language; identifies KEY_TERMS and TYPE (qualitative reasoning, calculation, recall)."
+        domain_expert: "Provides BACKGROUND (3-5 lines of relevant facts/principles) needed to answer the question."
+        alternative_explorer: "For each of the OTHER 3 letter choices the solver did not pick, writes 1-2 lines on why it is incorrect (or arguments for it); concludes KEEP <letter> or SWITCH TO <letter>."
+        consistency_checker: "Cross-checks the critic's reasoning against the original question + background facts; flags any contradiction with the chosen letter."
+        evidence_gatherer: "Lists facts/evidence supporting OR opposing each of the 4 letter choices, building on the domain expert's background."
+        confidence_reporter: "After consistency_checker runs, scores the chain's confidence (HIGH/MEDIUM/LOW) and states the strongest residual counter-argument."
+      math:
+        decomposer: "Breaks the problem into a short ordered list of computational sub-steps."
+        computer: "Executes each sub-step in order, using the calculator tool for arithmetic."
+        checker: "Re-derives the final quantity via an alternative path (symbolic when possible, otherwise a different decomposition) to cross-check the computer."
+        verifier: "Reconciles the computer's and checker's results; emits the final \\boxed{...}."
+        problem_reader: "Reads the LaTeX-formatted problem and restates it in plain English; identifies TARGET (the quantity sought)."
+        algebraist: "Handles symbolic manipulation BEFORE numeric computation: simplifies expressions, manipulates equations, sets up the calculation. May use calculator for mid-derivation numeric checks."
+        arithmetic_checker: "Independently re-evaluates 1-3 key numeric steps from the computer's output via calculator; reports AGREE/DISAGREE per step."
+        alternative_solver: "Re-derives the answer via a DIFFERENT method/path than the prior chain used; outputs the alternative derivation + the answer it yields."
+        unit_normalizer: "After the algebraist sets up expressions, normalizes units/dimensions across the calculation so the computer doesn't mix incompatible units."
+        simplifier: "After alternative_solver re-derives the answer, simplifies the final form (reduce fractions, rationalize denominators, factor radicals)."
+      hotpotqa:
+        planner: "Identifies the entities in the question and plans a 2-3 hop Wikipedia search strategy before any retrieval happens."
+        retriever: "Executes the planner's queries via wikipedia_search/wikipedia_page; returns a structured fact dossier."
+        reasoner: "Chains facts from the retriever's dossier into an explicit logical path to the answer."
+        writer: "Emits the concise final short-form answer."
+        query_decomposer: "Decomposes the multi-hop question into 1-3 ordered sub-queries, each answerable with a single Wikipedia lookup; notes dependencies between sub-queries."
+        searcher: "Broadly searches Wikipedia for entities mentioned in the planner's sub-queries via wikipedia_search; outputs candidate titles + 1-line summaries per entity."
+        evidence_filter: "Filters the retriever's evidence dump down to facts that bear on the original question; outputs a numbered list of relevant facts with sources."
+        citation_compiler: "After the reasoner drafts an answer, maps each claim to the supporting evidence (CLAIM_1 -> EVIDENCE_<n>; ...)."
+        entity_disambiguator: "After the searcher returns candidate Wikipedia titles, picks the right one per entity (handles duplicate names like multiple people/places); uses wikipedia_search for clarifier queries."
+        answer_simplifier: "After the writer drafts a candidate answer, strips preamble/explanations/qualifications down to the shortest factual answer string."
+      lcb:
+        analyzer: "Reads the problem and chooses a correct algorithmic approach (data structures, complexity, edge cases)."
+        coder: "Implements the approach in Python following the required stdin/functional I/O format."
+        tester: "Constructs 3-5 targeted test cases and runs the coder's program against them via python_exec; reports failures."
+        debugger: "Fixes any failures the tester reported; emits the final Python program."
+        requirements_parser: "Reads the problem to extract MODE (stdin or call-based), INPUT_FORMAT, OUTPUT_FORMAT, CONSTRAINTS, and OBVIOUS_EDGE_CASES."
+        algorithm_designer: "Proposes an algorithm in pseudocode with time/space complexity and rationale."
+        edge_case_thinker: "Enumerates 5-10 specific edge cases the implementation should handle, after the coder drafts code."
+        code_reviewer: "Final stage. Reviews the debugger's output and emits the FINAL fenced ```python``` block."
+        complexity_analyzer: "Analyzes the time/space complexity of the coder's draft (Big-O bounds + bottleneck); flags if too slow."
+        optimizer: "After the debugger fixes correctness, suggests 1-3 micro-optimizations and validates each via python_exec."
+      apps:
+        analyzer: "Reads the problem and chooses a correct algorithmic approach (data structures, complexity, edge cases)."
+        coder: "Implements the approach in Python following the required stdin/call-based I/O format."
+        tester: "Constructs 3-5 targeted test cases and runs the coder's program against them via python_exec; reports failures."
+        debugger: "Fixes any failures the tester reported; emits the final Python program."
+        requirements_parser: "Reads the problem and extracts INPUT_FORMAT, OUTPUT_FORMAT, CONSTRAINTS, and OBVIOUS_EDGE_CASES into a structured summary; does NOT propose an algorithm."
+        algorithm_designer: "Given the problem analysis, proposes an algorithm in pseudocode with time/space complexity and rationale; does NOT write Python."
+        edge_case_thinker: "After the coder drafts code, enumerates 5-10 specific edge cases the implementation should handle (empty input, max bounds, off-by-one, etc.)."
+        code_reviewer: "Final stage. Reviews the debugger's output for correctness, efficiency, and style; emits the FINAL fenced ```python``` block as the submitted answer."
+        complexity_analyzer: "Analyzes the time/space complexity of the coder's draft. Outputs Big-O bounds + the bottleneck function/loop and flags if too slow for the constraints."
+        optimizer: "After the debugger fixes correctness, suggests 1-3 micro-optimizations (loop hoisting, vectorization, better data structures); validates each via python_exec before recommending."
+      bfcl:
+        analyzer: "Parses the user request to extract intent, entities, and any implicit constraints."
+        inspector: "Reads the provided function schema(s) and maps the analyzer's intent onto a specific function + argument plan."
+        caller: "Emits the call(s) per the inspector's plan, matching the schema types exactly."
+        verifier: "Validates the caller's output against the schema (name exists, required params present, types coerce)."
+        intent_extractor: "Parses the user request to extract intent (one sentence) and the entities/values referenced; does NOT inspect the schemas yet."
+        schema_indexer: "Indexes the available function schemas: numbered list of <fn_name> -> <one-line purpose>; flags the schema(s) that match the intent."
+        arg_planner: "Given the chosen function and entities, plans the exact argument values to pass; outputs a per-arg spec with types."
+        type_validator: "Validates the caller's emitted JSON against the schema (name, required params, type correctness); if correct, repeats unchanged; otherwise emits a corrected fenced ```json``` block."
+        disambiguator: "Resolves ambiguous user references (pronouns, vague nouns, missing values) into concrete values; flags any unresolvable items."
+        value_enricher: "Decides which of the schema's optional parameters would meaningfully improve the call; outputs ENRICHED_ARGS with rationale."
+      swe:
+        investigator: "Explores the repo with list_dir/search_repo/file_read, localizes the bug, and hands off a pointer (file + line range + root cause)."
+        planner: "Designs the fix strategy from the investigator's pointer: which lines change, how the fix relates to the failing test."
+        patcher: "Writes the code edit following the planner's strategy."
+        tester: "Runs the test suite (local or in-container) against the patched repo and reports whether FAIL_TO_PASS tests pass."
+        issue_parser: "Parses the GitHub issue to extract EXPECTED, ACTUAL, REPRO, FILES_MENTIONED."
+        root_cause_analyzer: "After the investigator localizes the bug, diagnoses the underlying root cause in one paragraph using file_read for confirmation."
+        patch_reviewer: "After the patcher emits an edit, reviews the diff for correctness and minimality (no unrelated edits); outputs APPROVE / REQUEST_CHANGES."
+        regression_checker: "After the tester runs the failing tests, runs the broader test directory containing the modified file via shell_exec; reports REGRESSION_FREE or specific failures."
+        test_designer: "After the patcher emits an edit, proposes 1-3 unit tests that would catch the original bug AND a regression; reads the patched file via file_read."
+        commit_summarizer: "After regression_checker finishes, writes a clean commit message: SUBJECT (one line) + BODY (paragraph) explaining root cause + fix + tests."
+      toolhop:
+        planner: "Reads the ToolHop question, identifies the needed intermediate values, and proposes the tool-call chain to execute."
+        caller: "Executes the planned dynamic tool calls, records returned values, and proposes the exact final answer when enough evidence is available."
+        checker: "Checks the caller's tool chain and returned values for mistakes, missing hops, and formatting issues."
+        verifier: "Final-stage ToolHop solver. Reconciles the planner, caller, and checker outputs, calls any missing tools if needed, and emits the exact final answer."
+        question_parser: "Parses the ToolHop question to extract entities, requested answer type, expected output format, and obvious constraints before tool planning."
+        dependency_mapper: "Builds a dependency graph for the required hops: which tool output feeds which later tool argument, and which values are still missing."
+        tool_schema_inspector: "Inspects the dynamic tool schemas, summarizes each tool's inputs/outputs, and flags schema constraints that the caller must respect."
+        result_auditor: "Audits intermediate tool results for unsupported jumps, wrong argument reuse, inconsistent values, and missing follow-up calls."
+        alternative_chain_explorer: "Explores a different plausible tool-call chain or fallback route and reports whether it supports or contradicts the current candidate answer."
+        answer_normalizer: "Normalizes the final ToolHop answer into the benchmark's expected short format, preserving exact dates, names, and numeric values."
+      apibank:
+        dialogue_reader: "Reads the API-Bank dialogue history and extracts the user goal, prior API results, and unresolved next-step requirement."
+        schema_mapper: "Maps the dialogue_reader findings to available API descriptions or ToolSearcher evidence, and selects the likely next API."
+        argument_planner: "Plans exact argument values for the selected API using dialogue evidence and prior API outputs."
+        verifier: "Final-stage API-Bank solver. Checks dialogue evidence, chooses the next API or ToolSearcher when needed, validates arguments against the schema, and emits one bracketed API call."
+        intent_extractor: "Extracts the user's current intent, referenced entities, and unresolved action from the dialogue before choosing an API."
+        toolsearcher_planner: "Decides whether ToolSearcher is required before a target API can be called, and plans grounded search keywords when it is required."
+        api_result_interpreter: "Interprets prior API_RESULT entries, including ToolSearcher outputs, and lists concrete values available for future API arguments."
+        type_validator: "Checks candidate API arguments against the available schema types, required fields, and evidence in the dialogue."
+        ambiguity_resolver: "Resolves ambiguous user references, pronouns, missing values, and competing API candidates; flags only truly unavailable values."
+        call_normalizer: "Normalizes the final API-Bank call into exactly one bracketed API call with canonical keyword arguments and no surrounding prose."
+
+  centralized:
+    description: >
+      Star topology: 4 agents per benchmark — 1 manager + 3 specialist
+      workers. Workers never speak to each other; the manager delegates,
+      validates results, and may loop until the task is complete. The
+      manager sees the whole conversation; each worker sees ONLY the
+      manager's current delegation (not other workers' outputs or each
+      other's histories).
+    # IMPLEMENTATION NOTE — AutoGen's SelectorGroupChat (the standard
+    # centralized pattern in AutoGen; see its selector-group-chat.ipynb
+    # tutorial) shares a single conversation history across all agents.
+    # `selector_func` gates WHO SPEAKS NEXT (workers can never address
+    # each other; control always returns to the manager after any worker
+    # turn) but does NOT filter CONTEXT — workers can read prior
+    # workers' messages in the shared transcript. The strict
+    # "each worker sees ONLY the manager's current delegation" wording
+    # above describes a tighter context-isolation model (closer to
+    # LangGraph's Agent Supervisor or CrewAI's hierarchical process);
+    # the AutoGen-idiomatic implementation trades that stricter
+    # isolation for framework alignment. If stricter isolation is
+    # required for the cross-topology comparison, it would need a
+    # bespoke per-worker dispatcher, not SelectorGroupChat.
+    benchmarks:
+      gpqa:
+        manager: "Reads the MCQ, plans the dispatch (analysis, candidate-answer selection, verification), and synthesizes the final letter."
+        analyzer_worker: "Analyzes the principles + per-option derivations for the manager; returns a structured analysis."
+        solver_worker: "Picks one letter + rationale given the manager's instruction and the analyzer's output."
+        verifier_worker: "Sanity-checks the solver's letter against the analyzer's output; confirms or flags."
+        domain_expert_worker: "Specialist in providing domain background. Returns BACKGROUND (3-5 lines of facts/principles) needed to answer; may use calculator for quick checks."
+        alternative_solver_worker: "Specialist in 'what if?' analysis. For each of the OTHER 3 letter choices, briefly argues why it could be wrong/right; outputs KEEP <letter> or SWITCH TO <letter>."
+        critic_worker: "Specialist in challenging the candidate answer. Finds the weakest step in the reasoning and attacks it; outputs CHALLENGE + IMPLICATION."
+        consistency_check_worker: "Specialist in cross-checking reasoning against background. Identifies any contradictions; outputs CONSISTENT or INCONSISTENT with the specific issue."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (analyzer, solver, verifier, domain_expert, alternative_solver, critic, consistency_check); plans the dispatch and emits the final letter (Answer: X)."
+        evidence_gatherer_worker: "Specialist in evidence collection. For each of the 4 letter choices, lists 1-2 lines of SUPPORTING / OPPOSING evidence."
+        confidence_reporter_worker: "Specialist in confidence assessment. Scores the candidate answer's confidence (HIGH/MEDIUM/LOW) + the strongest counter-argument."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + evidence_gatherer + confidence_reporter); emits the final letter."
+      math:
+        manager: "Plans the arithmetic flow, dispatches decomposition/computation/verification, and assembles the final \\boxed{...}."
+        decomposer_worker: "Breaks the problem into ordered sub-steps for the manager."
+        computation_worker: "Executes one arithmetic sub-step via the calculator tool and returns the result."
+        verifier_worker: "Re-derives the final quantity via an alternative path per manager instruction."
+        problem_reader_worker: "Specialist in parsing the LaTeX problem. Returns RESTATEMENT (plain English) + TARGET (quantity sought) on manager request."
+        algebraist_worker: "Specialist in symbolic manipulation. Simplifies expressions and manipulates equations; outputs algebraic setup ready for numeric evaluation."
+        arithmetic_check_worker: "Specialist in numeric verification. Re-evaluates 1-3 key steps via calculator; reports AGREE/DISAGREE per step + verified results."
+        alternative_solver_worker: "Specialist in re-deriving via an alternative path. Re-derives the answer using a different method; outputs alternative derivation + the answer."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (decomposer, computation, verifier, problem_reader, algebraist, arithmetic_check, alternative_solver); emits the final \\boxed{...}."
+        unit_normalizer_worker: "Specialist in unit/dimension normalization. Converts an expression to a consistent unit system; returns UNIT_TABLE + normalized expression."
+        simplifier_worker: "Specialist in algebraic simplification. Reduces fractions, rationalizes denominators, factors radicals; returns SIMPLIFIED form + equivalence note."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + unit_normalizer + simplifier); emits the final \\boxed{...}."
+      hotpotqa:
+        manager: "Plans the multi-hop retrieval, dispatches per-hop searches + reasoning, and writes the final short-form answer."
+        retriever_worker: "Performs one Wikipedia search/page lookup per manager instruction and returns structured facts."
+        reasoner_worker: "Chains facts from the retriever's output into a derivation per manager instruction."
+        writer_worker: "Formats the final short-form answer per manager instruction."
+        query_decomposer_worker: "Specialist in breaking multi-hop questions into ordered sub-queries (1-3) with their dependency order, on manager request."
+        searcher_worker: "Specialist in broad Wikipedia search. Calls wikipedia_search to gather candidate titles for an entity + 1-line summaries."
+        evidence_filter_worker: "Specialist in filtering retrieved evidence down to relevant facts. Discards tangential facts; returns a numbered list with sources."
+        citation_worker: "Specialist in citation mapping. Maps each claim in a candidate answer to the supporting evidence; outputs CLAIM_1 -> EVIDENCE_<n> mapping."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (retriever, reasoner, writer, query_decomposer, searcher, evidence_filter, citation); emits the final short-form answer."
+        entity_disambiguator_worker: "Specialist in entity disambiguation. Picks the right Wikipedia title from candidates; uses wikipedia_search for clarifier queries if needed."
+        answer_simplifier_worker: "Specialist in answer simplification. Strips preamble/explanations/qualifications from a candidate answer to the shortest factual form."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + entity_disambiguator + answer_simplifier); emits the final short-form answer."
+      lcb:
+        manager: "Plans the solution, dispatches analysis/implementation/testing, and emits the final program."
+        analyzer_worker: "Analyzes the problem and returns an algorithmic approach (structures, complexity, edge cases)."
+        coder_worker: "Writes a code fragment implementing the manager's spec."
+        tester_worker: "Runs the manager's supplied test inputs against the candidate code via python_exec."
+        design_worker: "Specialist in algorithm design. Proposes an algorithm with brief complexity analysis on manager request; may prototype via python_exec."
+        edge_case_worker: "Specialist in edge-case enumeration. Lists 5-10 cases for the manager's draft code and runs each via python_exec."
+        debug_worker: "Specialist in debugging. Traces a failing test case via python_exec; outputs ROOT_CAUSE + a fixed code block."
+        review_worker: "Specialist in final code review. Runs sample tests + edge cases on the candidate final code via python_exec; outputs APPROVE or SUGGEST_CHANGES."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (analyzer, coder, tester, design, edge_case, debug, review); plans the work and emits the final fenced ```python``` block."
+        complexity_analyzer_worker: "Specialist in complexity analysis. Returns TIME_COMPLEXITY + SPACE_COMPLEXITY + the bottleneck for a given code snippet."
+        optimizer_worker: "Specialist in micro-optimization. Identifies 1-3 optimizations for working code; validates via python_exec."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + complexity_analyzer + optimizer); emits the final fenced ```python``` block."
+      apps:
+        manager: "Plans the solution, dispatches analysis/implementation/testing, and emits the final program."
+        analyzer_worker: "Analyzes the problem and returns an algorithmic approach (structures, complexity, edge cases)."
+        coder_worker: "Writes a code fragment implementing the manager's spec."
+        tester_worker: "Runs the manager's supplied test inputs against the candidate code via python_exec."
+        design_worker: "Specialist in algorithm design. Proposes an algorithm with brief complexity analysis on manager request; may prototype via python_exec."
+        edge_case_worker: "Specialist in edge-case enumeration. Lists 5-10 cases for the manager's draft code and runs each via python_exec."
+        debug_worker: "Specialist in debugging. Traces a failing test case via python_exec; outputs ROOT_CAUSE + a fixed code block."
+        review_worker: "Specialist in final code review. Runs sample tests + edge cases on the candidate final code via python_exec; outputs APPROVE or SUGGEST_CHANGES."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (analyzer, coder, tester, design, edge_case, debug, review); plans the work, dispatches, validates, and emits the final fenced ```python``` block."
+        complexity_analyzer_worker: "Specialist in complexity analysis. On manager request, returns TIME_COMPLEXITY + SPACE_COMPLEXITY + the bottleneck function/loop for a given code snippet."
+        optimizer_worker: "Specialist in micro-optimization. Identifies 1-3 optimizations for working code; validates correctness via python_exec; outputs SUGGESTIONS + optimized code."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + complexity_analyzer + optimizer); plans the work, dispatches, validates, and emits the final fenced ```python``` block."
+      bfcl:
+        manager: "Reads the schema(s) + user request, plans the call, dispatches composition + validation, and emits the final call(s)."
+        inspector_worker: "Reads the schema for the manager and returns an argument plan."
+        caller_worker: "Composes the tool call matching the schema per the manager's instruction."
+        validator_worker: "Checks the caller's output against the schema (name exists, required params present, types valid)."
+        intent_worker: "Specialist in user-intent extraction. Returns a one-sentence intent + list of entities/values mentioned, on manager request."
+        schema_indexer_worker: "Specialist in cataloging available function schemas. Returns a numbered list of <fn_name> -> <one-line purpose> with the schemas matching the intent flagged."
+        arg_planner_worker: "Specialist in argument value planning. For each required parameter of the chosen function, decides the value to pass."
+        type_check_worker: "Specialist in type validation. Checks function name, required params, types, value coercion of a candidate JSON; outputs VALID or INVALID + corrected JSON."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (inspector, caller, validator, intent, schema_indexer, arg_planner, type_check); plans the call, dispatches, validates, and emits the final canonical JSON."
+        disambiguator_worker: "Specialist in resolving ambiguous user references (pronouns, vague nouns) into concrete values; flags unresolvable items."
+        value_enricher_worker: "Specialist in choosing optional argument values. Given the arg spec + schema optionals, decides which optionals to include with rationale."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + disambiguator + value_enricher); plans the call, dispatches, validates, and emits the final canonical JSON."
+      swe:
+        manager: "Plans the investigation, dispatches reading/searching + editing + testing, and assembles the final diff."
+        navigator_worker: "Reads a file or searches the repo per manager instruction and returns a concise summary."
+        patcher_worker: "Writes one targeted code edit per manager instruction and returns the resulting patch fragment."
+        tester_worker: "Runs the repo's tests against the candidate patched workdir and reports results."
+        issue_parser_worker: "Specialist in parsing the GitHub issue. Extracts EXPECTED, ACTUAL, REPRO, FILES_MENTIONED from the issue text."
+        root_cause_worker: "Specialist in root-cause analysis. Diagnoses the underlying root cause in one paragraph using file_read."
+        patch_review_worker: "Specialist in patch review. Checks correctness, minimality, style preservation of a candidate diff via file_read; outputs APPROVE or REQUEST_CHANGES."
+        regression_check_worker: "Specialist in regression testing. Runs the broader test directory containing the modified file via shell_exec; reports REGRESSION_FREE or specific failures."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (navigator, patcher, tester, issue_parser, root_cause, patch_review, regression_check); emits the final patch (via git diff HEAD on the workdir)."
+        test_designer_worker: "Specialist in regression-test design. Proposes 1-3 unit tests that would catch the original bug AND a regression, reading the patched file via file_read."
+        commit_summarizer_worker: "Specialist in commit-message authoring. Outputs SUBJECT (one line) + BODY (paragraph) explaining root cause + fix + tests."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + test_designer + commit_summarizer); emits the final patch."
+      toolhop:
+        manager: "Coordinates ToolHop solving end-to-end: inspects worker reports, chooses the dynamic tool-call chain, validates intermediate tool outputs, and emits the exact final answer."
+        planner_worker: "Specialist in ToolHop decomposition. Identifies required hops, dependencies, and which dynamic tools should be called."
+        caller_worker: "Specialist in ToolHop execution. Calls dynamic tools as needed and returns candidate intermediate values and a candidate final answer."
+        validator_worker: "Specialist in ToolHop validation. Checks candidate tool outputs and final answer formatting, flags mistakes, and proposes corrections."
+        question_parser_worker: "Specialist in parsing ToolHop questions. Extracts entities, requested answer type, constraints, and expected answer formatting for the manager."
+        dependency_mapper_worker: "Specialist in multi-hop dependency mapping. Shows which tool outputs must feed later tool arguments and where information is still missing."
+        tool_schema_worker: "Specialist in dynamic tool schemas. Summarizes available tools, required parameters, return values, and schema pitfalls for the manager."
+        result_auditor_worker: "Specialist in auditing intermediate results. Checks whether the candidate tool chain supports the answer without skipped hops or wrong argument reuse."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (planner, caller, validator, question_parser, dependency_mapper, tool_schema, result_auditor); validates the chain and emits the exact final answer."
+        alternative_chain_worker: "Specialist in alternative ToolHop routes. Proposes a different valid tool chain or fallback and reports whether it supports the current answer."
+        answer_normalizer_worker: "Specialist in final-answer normalization. Converts the supported answer into the exact short ToolHop format expected by the scorer."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + alternative_chain + answer_normalizer); validates all evidence and emits the exact final answer."
+      apibank:
+        manager: "Coordinates API-Bank API-call prediction: reads worker reports, maps evidence to API schemas or ToolSearcher, validates arguments, and emits one bracketed API call."
+        inspector_worker: "Specialist in API-Bank dialogue and schema inspection. Extracts the next-step requirement and likely matching API from available descriptions or ToolSearcher evidence."
+        caller_worker: "Specialist in API-Bank call composition. Produces a candidate bracketed API call with argument values grounded in the dialogue."
+        validator_worker: "Specialist in API-Bank validation. Checks candidate API name, required arguments, argument types, and evidence consistency."
+        intent_worker: "Specialist in user-intent extraction. Reads the dialogue and returns the current unresolved intent, referenced entities, and target action."
+        toolsearcher_worker: "Specialist in ToolSearcher decisions. Determines whether ToolSearcher is the correct next API and proposes grounded search keywords when needed."
+        api_result_worker: "Specialist in prior API-result interpretation. Extracts usable values from previous API_RESULT entries, including ToolSearcher outputs."
+        type_check_worker: "Specialist in API schema type checking. Validates required arguments, optional arguments, value types, and evidence grounding for a candidate call."
+        manager_r8: "r=8 manager. Coordinates 7 specialist workers (inspector, caller, validator, intent, toolsearcher, api_result, type_check); validates evidence and emits one bracketed API call."
+        ambiguity_worker: "Specialist in resolving ambiguous dialogue references and competing API choices; recommends the best-supported interpretation or UNKNOWN only when unavoidable."
+        call_normalizer_worker: "Specialist in final API-call normalization. Converts the selected API and arguments into exactly one bracketed call with canonical keyword arguments."
+        manager_r10: "r=10 manager. Coordinates 9 specialist workers (the r=8 set + ambiguity + call_normalizer); validates evidence and emits one bracketed API call."
+
+  decentralized:
+    description: >
+      4 peer agents (N=4 by default) debate over R rounds. In round 0
+      each peer answers independently. In every later round, each peer
+      sees the other peers' previous-round answers and revises its own.
+      The final answer is the round-R majority (for discrete outputs)
+      or the round-R consensus (for generative outputs).
+    benchmarks:
+      gpqa:
+        debater: "Answers the MCQ in round 0; in later rounds, reads peers' letters + rationales and revises its own only when peer reasoning outweighs its own."
+      math:
+        debater: "Solves the math problem in round 0 with a boxed answer; in later rounds, compares peers' intermediate steps and either confirms or corrects its own final answer."
+      hotpotqa:
+        debater: "Answers in round 0 with supporting evidence; in later rounds, merges or overrides its answer when peers cite stronger Wikipedia evidence."
+      lcb:
+        debater: "Writes code in round 0; in later rounds, critiques peers' programs (test failures, edge cases) and refines its own implementation."
+      apps:
+        debater: "Writes code in round 0; in later rounds, critiques peers' programs (test failures, edge cases) and refines its own implementation."
+      bfcl:
+        debater: "Emits a call in round 0; in later rounds, compares peers' calls argument-by-argument and adjusts its own when peer reasoning is more consistent with the schema."
+      swe:
+        debater: "Proposes a patch in round 0; in later rounds, reads peers' patches, critiques their correctness or completeness, and produces an updated diff."
+      toolhop:
+        debater: "Answers a ToolHop question in round 0 by calling dynamic tools; in later rounds, compares peers' tool chains and final answers, then revises when peer evidence is stronger."
+      apibank:
+        debater: "Predicts the next API call in round 0, including ToolSearcher when needed; in later rounds, compares peers' API choices and argument evidence, then revises when peer reasoning is stronger."
+
+  decentralized_openai:
+    description: >
+      4 peer agents (N=4 by default) debate over R rounds. In round 0
+      each peer answers independently. In every later round, each peer
+      sees the other peers' previous-round answers and revises its own.
+      The final answer is the round-R majority (for discrete outputs)
+      or the round-R consensus (for generative outputs).
+    benchmarks:
+      math:
+        debater: "Solves the math problem in round 0 with a boxed answer; in later rounds, compares peers' intermediate steps and either confirms or corrects its own final answer."

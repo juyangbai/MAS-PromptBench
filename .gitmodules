@@ -1,0 +1,12 @@
+[submodule "frameworks/langgraph"]
+	path = frameworks/langgraph
+	url = https://github.com/langchain-ai/langgraph.git
+[submodule "frameworks/crewAI"]
+	path = frameworks/crewAI
+	url = https://github.com/crewAIInc/crewAI.git
+[submodule "frameworks/autogen"]
+	path = frameworks/autogen
+	url = https://github.com/microsoft/autogen.git
+[submodule "frameworks/llm_multiagent_debate"]
+	path = frameworks/llm_multiagent_debate
+	url = https://github.com/composable-models/llm_multiagent_debate.git

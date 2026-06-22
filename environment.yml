@@ -1,0 +1,46 @@
+name: mas-promptbench
+channels:
+  - conda-forge
+  - nvidia
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - setuptools
+  - wheel
+  - numpy>=1.26
+  - pandas>=2.2
+  # CUDA toolchain (nvcc + headers) for flashinfer JIT compilation.
+  - cuda-nvcc=12.8
+  - cuda-cudart-dev=12.8
+  - cuda-nvrtc-dev=12.8
+  - cuda-cccl=12.8
+  - pip:
+      # Shared modern SDK baseline for langgraph + crewAI + autogen.
+      - openai>=2.0.0,<3
+      - pydantic>=2.11,<3
+      - pydantic-settings>=2.10,<3
+      - httpx>=0.28,<0.29
+      - tokenizers>=0.21,<1
+      - chromadb>=1.1,<2
+      - protobuf>=5.29,<6
+      - langchain-core>=1.3.0a2,<2
+      - langchain-openai>=1.0.0a,<2
+      # HotpotQA retrieval tool.
+      - wikipedia>=1.4,<2
+      # Benchmark dataset loading.
+      - datasets>=2.20,<4
+      # SWE-bench official evaluation harness (Docker-based, optional).
+      - swebench>=4.0,<5
+      # BFCL official AST checker (pulls ~35 transitive deps; only
+      # `ast_checker` + `MODEL_CONFIG_MAPPING` are actually used).
+      - bfcl-eval>=2026.3.23
+      # Prompt optimization (GEPA optimizer for per-(topology, dataset) prompts).
+      - dspy>=2.6,<3
+      - -e ./frameworks/langgraph/libs/langgraph
+      - -e ./frameworks/crewAI/lib/crewai
+      - -e ./frameworks/autogen/python/packages/autogen-core
+      - -e ./frameworks/autogen/python/packages/autogen-ext[openai]
+      - -e ./frameworks/autogen/python/packages/autogen-agentchat
+      # Local model serving.
+      - vllm>=0.19

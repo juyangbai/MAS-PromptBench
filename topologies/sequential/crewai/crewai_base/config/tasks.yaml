@@ -1,0 +1,35 @@
+research_task:
+  description: >
+    Conduct thorough research on {topic}. Find the most relevant developments,
+    primary sources, and notable perspectives given the current year is {current_year}.
+  expected_output: >
+    A list of 10 bullet points capturing the most relevant findings on {topic},
+    each with a brief one-sentence justification.
+  agent: researcher
+
+analysis_task:
+  description: >
+    Review the researcher's findings and synthesize them into structured insights.
+    Group related points into themes, surface trade-offs, and call out open questions.
+  expected_output: >
+    A structured analysis with 3-5 themes. For each theme: a short summary,
+    supporting points from the research, and any trade-offs or open questions.
+  agent: analyst
+
+writing_task:
+  description: >
+    Using the analyst's insights, draft a long-form report on {topic}.
+    Each theme should become a full section with concrete examples.
+  expected_output: >
+    A complete draft report in markdown, with an intro, one section per theme,
+    and a conclusion. Do not include code-fence markers.
+  agent: writer
+
+editing_task:
+  description: >
+    Edit the writer's draft into a publication-ready report. Tighten prose,
+    fix inconsistencies, ensure logical flow, and verify the report stays on topic.
+  expected_output: >
+    A polished, publication-ready report in markdown. Same structure as the draft
+    but tighter, clearer, and free of redundancy. No code-fence markers.
+  agent: editor

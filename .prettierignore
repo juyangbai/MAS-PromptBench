@@ -1,0 +1,3 @@
+# Preserve raw HTML (centered logo header, figures) and hand-formatted tables.
+# Prettier strips <div align="center"> / <img> blocks and rewrites tables.
+README.md

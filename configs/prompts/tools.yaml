@@ -1,0 +1,110 @@
+# Tool catalog per (topology, dataset).
+# Entries are intentionally minimal (name + one-line purpose) to leave room
+# for a downstream prompt optimizer to refine.
+
+_none: &none "None."
+
+_single_base_placeholder: &single_base_placeholder |
+  - add: add two numbers.
+  - multiply: multiply two numbers.
+  - web_search: mock web search.
+
+_calculator: &calculator |
+  - calculator: evaluate a numeric expression.
+
+_calculator_equation: &calculator_equation |
+  - calculator: evaluate a concrete numeric Python expression.
+  - solve_equation: solve one-variable algebraic or trigonometric equations using plain SymPy/Python syntax.
+
+_single_hotpotqa_wikipedia: &single_hotpotqa_wikipedia |
+  - wikipedia_search: search Wikipedia; returns titles and short summaries of top matching articles.
+  - wikipedia_page: return the full text of a Wikipedia article given its exact title.
+
+_python_exec: &python_exec |
+  - python_exec: execute a Python code snippet in a sandboxed subprocess and return stdout, stderr, and exit code.
+
+_swe_tools: &swe_tools |
+  - file_read: read a file from the repository working directory.
+  - file_write: overwrite or create a file in the repository working directory.
+  - list_dir: list entries in a directory under the repository workdir.
+  - search_repo: grep-style regex search under the repository workdir.
+  - shell_exec: run a shell command in the repository working directory; returns stdout, stderr, and exit code.
+
+_swe_tools_strreplace: &swe_tools_strreplace |
+  - file_read: read a file from the repository working directory.
+  - str_replace: replace a unique anchor string inside a file (no full-file overwrite; rejects ambiguous matches).
+  - list_dir: list entries in a directory under the repository workdir.
+  - search_repo: grep-style regex search under the repository workdir.
+  - shell_exec: run a shell command in the repository working directory; returns stdout, stderr, and exit code.
+
+_bfcl_function_calling: &bfcl_function_calling |
+  - tool schemas are supplied dynamically per task; the agent must emit exactly one function call whose name and arguments match one of the provided schemas. No static tool catalog.
+
+_toolhop_dynamic_tools: &toolhop_dynamic_tools |
+  - tool schemas are supplied dynamically per sample as OpenAI-compatible function tools.
+  - call the available tools in the order needed to answer the multi-hop question.
+  - use returned tool values as inputs to later calls; do not invent unavailable facts.
+
+_apibank_dynamic_apis: &apibank_dynamic_apis |
+  - API descriptions are supplied dynamically per dialogue; Level 2/3 rows may first expose only ToolSearcher.
+  - choose the correct next API and emit one bracketed API call with keyword arguments.
+  - use prior dialogue, ToolSearcher results, and API results as evidence; do not invent unavailable arguments.
+
+
+single:
+  gpqa:     *calculator
+  math:     *calculator
+  hotpotqa: *single_hotpotqa_wikipedia
+  bfcl:     *bfcl_function_calling
+  lcb:      *python_exec
+  apps:     *python_exec
+  swe:      *swe_tools
+  toolhop:  *toolhop_dynamic_tools
+  apibank:  *apibank_dynamic_apis
+
+independent:
+  gpqa:     *calculator
+  math:     *calculator
+  hotpotqa: *single_hotpotqa_wikipedia
+  bfcl:     *bfcl_function_calling
+  lcb:      *python_exec
+  apps:     *python_exec
+  swe:      *swe_tools
+  toolhop:  *toolhop_dynamic_tools
+  apibank:  *apibank_dynamic_apis
+
+sequential:
+  gpqa:     *calculator
+  math:     *calculator
+  hotpotqa: *single_hotpotqa_wikipedia
+  bfcl:     *bfcl_function_calling
+  lcb:      *python_exec
+  apps:     *python_exec
+  swe:      *swe_tools_strreplace
+  toolhop:  *toolhop_dynamic_tools
+  apibank:  *apibank_dynamic_apis
+
+centralized:
+  gpqa:     *calculator
+  math:     *calculator
+  hotpotqa: *single_hotpotqa_wikipedia
+  bfcl:     *bfcl_function_calling
+  lcb:      *python_exec
+  apps:     *python_exec
+  swe:      *swe_tools_strreplace
+  toolhop:  *toolhop_dynamic_tools
+  apibank:  *apibank_dynamic_apis
+
+decentralized:
+  gpqa:     *calculator
+  math:     *calculator
+  hotpotqa: *single_hotpotqa_wikipedia
+  bfcl:     *bfcl_function_calling
+  lcb:      *python_exec
+  apps:     *python_exec
+  swe:      *swe_tools_strreplace
+  toolhop:  *toolhop_dynamic_tools
+  apibank:  *apibank_dynamic_apis
+
+decentralized_openai:
+  math:     *calculator_equation
