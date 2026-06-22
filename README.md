@@ -55,15 +55,15 @@ A reproducible benchmark for studying when prompt optimization improves multi-ag
 
 | Path                                 | Contents                                                                  |
 | ------------------------------------ | ------------------------------------------------------------------------- |
-| [`topologies/`](topologies/)         | the core benchmark — 5 topologies × 9 datasets, one runnable pair each    |
-| [`teamsizes/`](teamsizes/)           | team-size sweeps (number of agents per team)                              |
-| [`communications/`](communications/) | inter-agent message-format studies                                        |
-| [`optimizers/`](optimizers/)         | GEPA and MIPRO prompt optimizers over the real runners                    |
 | [`benchmarks/`](benchmarks/)         | per-dataset evaluation-ID manifests + the API-Bank source                 |
+| [`communications/`](communications/) | inter-agent message-format studies                                        |
 | [`configs/`](configs/)               | seed per-role prompts (`configs/prompts/<topology>/<dataset>/<role>.txt`) |
-| [`models/`](models/)                 | node-agnostic vLLM serve scripts (Qwen3.5-9B / 122B)                      |
 | [`frameworks/`](frameworks/)         | LangGraph, CrewAI, AutoGen, and debate submodules (editable installs)     |
+| [`models/`](models/)                 | node-agnostic vLLM serve scripts (Qwen3.5-9B / 122B)                      |
+| [`optimizers/`](optimizers/)         | GEPA and MIPRO prompt optimizers over the real runners                    |
 | [`scripts/`](scripts/)               | helper and launcher scripts                                               |
+| [`teamsizes/`](teamsizes/)           | team-size sweeps (number of agents per team)                              |
+| [`topologies/`](topologies/)         | the core benchmark — 5 topologies × 9 datasets, one runnable pair each    |
 
 
 ---
