@@ -42,11 +42,11 @@
 
 A reproducible benchmark for studying when prompt optimization improves multi-agent LLM systems across optimizers, tasks, topologies, communication formats, and team sizes.
 
+- **Optimizer** — GEPA and MIPRO prompt optimizers, run on the real multi-agent runners.
 - **Task dataset** — 9 reasoning, coding, and tool-use benchmarks, each scored with its official / community-standard scorer.
 - **Workflow Topology** — `single`, `independent`, `sequential`, `centralized`, and `decentralized`, implemented across LangGraph, CrewAI, AutoGen, and the OpenAI SDK.
 - **Communication format** — three inter-agent message formats (`freeform`, `semi_structured`, `structured_soft`).
 - **Team size** — the number of agents per team, `r ∈ {2, 4, 8, 10}`.
-- **Optimizer** — GEPA and MIPRO prompt optimizers, run on the real multi-agent runners.
 
 ---
 
