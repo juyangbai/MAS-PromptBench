@@ -30,7 +30,7 @@
 
 ## 🔔 News and Updates
 
-- **[2026-06-22]** — Initial code public release!
+- **[2026-06-22]** — Initial public release of the code!
 
 ---
 
@@ -40,12 +40,13 @@
   <img src="assets/MAS-PromptBench_overview.png" alt="MAS-PromptBench overview" width="820">
 </div>
 
-A reproducible benchmark for studying when prompt optimization improves multi-agent LLM systems across tasks, topologies, communication formats, and team sizes.
+A reproducible benchmark for studying when prompt optimization improves multi-agent LLM systems across optimizers, tasks, topologies, communication formats, and team sizes.
 
-- **Tasks** — 9 reasoning, coding, and tool-use benchmarks, each scored with its official / community-standard scorer.
-- **Topologies** — `single`, `independent`, `sequential`, `centralized`, and `decentralized`, implemented across LangGraph, CrewAI, AutoGen, and the OpenAI SDK.
-- **Communication formats** — three inter-agent message formats (`freeform`, `semi_structured`, `structured_soft`).
-- **Team sizes** — the number of agents per team, `r ∈ {2, 4, 8, 10}`.
+- **Task dataset** — 9 reasoning, coding, and tool-use benchmarks, each scored with its official / community-standard scorer.
+- **Workflow Topology** — `single`, `independent`, `sequential`, `centralized`, and `decentralized`, implemented across LangGraph, CrewAI, AutoGen, and the OpenAI SDK.
+- **Communication format** — three inter-agent message formats (`freeform`, `semi_structured`, `structured_soft`).
+- **Team size** — the number of agents per team, `r ∈ {2, 4, 8, 10}`.
+- **Optimizer** — GEPA and MIPRO prompt optimizers, run on the real multi-agent runners.
 
 ---
 
