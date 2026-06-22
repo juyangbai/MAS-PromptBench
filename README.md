@@ -28,9 +28,9 @@
 
 ---
 
-## 📰 News and Updates
+## 🔔 News and Updates
 
-- **June 22, 2026** `[New]` — Initial public release: 5 topologies × 9 datasets, team-size and message-format studies, and the GEPA / MIPRO prompt optimizers.
+- **[2026-06-22]** — Initial code public release!
 
 ---
 
