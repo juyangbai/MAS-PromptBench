@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://juyangbai.github.io/MAS-PromptBench/" style="margin: 0 10px;">🌐 Website</a> |
-  <a href="#" style="margin: 0 10px;">📖 Paper</a> |
+  <a href="https://arxiv.org/abs/2606.23664" style="margin: 0 10px;">📖 Paper</a> |
   <a href="https://github.com/juyangbai/MAS-PromptBench" style="margin: 0 10px;">💻 GitHub</a>
 </p>
 
