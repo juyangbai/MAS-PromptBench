@@ -188,11 +188,11 @@ Then send over a pull request — and thank you for helping make MAS-PromptBench
 If you use MAS-PromptBench in your research, please cite it:
 
 ```bibtex
-@misc{mas-promptbench,
-  title  = {MAS-PromptBench: A Multi-Agent Topology Benchmark and Prompt-Optimization Testbed},
-  author = {MAS-PromptBench contributors},
-  year   = {2026},
-  url    = {<repo-url>}
+@article{bai2026mas,
+  title={MAS-PromptBench: When Does Prompt Optimization Improve Multi-Agent LLM Systems?},
+  author={Bai, Juyang and Shi, Laixi},
+  journal={arXiv preprint arXiv:2606.23664},
+  year={2026}
 }
 ```
 
