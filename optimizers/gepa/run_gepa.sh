@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # GEPA prompt-optimization sweep.
 #
-# Runs GEPA on each (dataset, topology) cell via the generic pilot
-# `real_runner_gepa.pilots.run_gepa_dataset` — one process per cell. The optimized
-# (compiled) prompts + scores are written under results/gepa/<topology>_<dataset>/.
-# Seed prompts in configs/prompts/ are read-only and never modified.
+# Runs real_runner_gepa.pilots.run_gepa_dataset once per (dataset, topology)
+# cell, one process each. Compiled prompts and scores go to
+# results/gepa/<topology>_<dataset>/. Seed prompts in configs/prompts/ are
+# only read, never modified.
 #
-# Override via env: GEPA_REFL_ENDPOINT DATASETS TOPOLOGIES TRAIN_SIZE VAL_SIZE
+# Env overrides: GEPA_REFL_ENDPOINT DATASETS TOPOLOGIES TRAIN_SIZE VAL_SIZE
 #   MAX_FULL_EVALS REFLECTION_MINIBATCH_SIZE NUM_THREADS N_AGENTS N_ROUNDS
 #   COMPONENT_SELECTOR EARLY_STOP_PATIENCE OUT_ROOT
 set -uo pipefail

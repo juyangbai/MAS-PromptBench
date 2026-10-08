@@ -1,6 +1,5 @@
-"""Decentralized debate topology specialized for LiveCodeBench, LangGraph."""
+"""Decentralized debate topology for LiveCodeBench (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -50,9 +49,9 @@ N_ROUNDS = int(os.environ.get("DECENTRALIZED_N_ROUNDS", "2"))
 
 _EXEC_TIMEOUT_S = 10
 
-# Match openai sibling's max_tool_loops=6. create_react_agent uses its own
-# recursion_limit; give it enough headroom to cover the same tool-loop budget
-# (roughly 3x max_tool_loops to account for alternating AI/Tool messages).
+# max_tool_loops=6, as in the openai sibling. create_react_agent has its own
+# recursion_limit; roughly 3x the loop budget covers the alternating AI/Tool
+# messages.
 _MAX_TOOL_LOOPS = 6
 _RECURSION_LIMIT = _MAX_TOOL_LOOPS * 3
 
@@ -115,8 +114,9 @@ def _build_llm() -> ChatOpenAI:
 
 
 def _build_agent():
-    """One react agent, reused across all peers + rounds. Each peer keeps
-    its own message history; the agent is stateless."""
+    """One stateless react agent shared by all peers and rounds; each peer
+    keeps its own message history.
+    """
     return create_react_agent(model=_build_llm(), tools=TOOLS, prompt=SYSTEM_PROMPT)
 
 
@@ -498,8 +498,8 @@ def best_of_n(
 
 # Orchestration
 def _init_contexts(n: int, user_prompt: str) -> list[list[BaseMessage]]:
-    """Each peer's initial history = [HumanMessage(user_prompt)]. System prompt
-    is injected by create_react_agent via its `prompt=` arg, not embedded here.
+    """Start each peer with [HumanMessage(user_prompt)]. create_react_agent
+    adds the system prompt via `prompt=`.
     """
     return [[HumanMessage(content=user_prompt)] for _ in range(n)]
 
@@ -509,9 +509,9 @@ def solve(
     starter_code: str | None = None,
     tests: list[dict] | None = None,
 ) -> dict:
-    """Run N-peer x R-round debate. If `tests` is provided, run best-of-N
-    selection across round-R codes; otherwise return peer-0's code as
-    the submission."""
+    """Run the N-peer x R-round debate. With `tests`, pick best-of-N over the
+    round-R codes; otherwise submit peer 0's code.
+    """
     compiled = _build_graph()
     user_prompt = format_prompt(problem, starter_code)
     init_state: DebateState = {
@@ -596,7 +596,7 @@ def load_instances(
     difficulty: str | None = None,
     platform: str | None = None,
 ) -> list[dict]:
-    """Load LCB rows — same schema/IDs as single/lcb for parity."""
+    """Load LCB rows with the same schema and IDs as single/lcb."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)

@@ -1,6 +1,5 @@
 """Decentralized debate topology specialized for LiveCodeBench, OpenAI SDK."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -434,9 +433,9 @@ def solve(
     starter_code: str | None = None,
     tests: list[dict] | None = None,
 ) -> dict:
-    """Run N-peer × R-round debate. If `tests` is provided, run best-of-N
-    selection across round-R codes; otherwise return peer-0's code as
-    the submission."""
+    """Run the N-peer x R-round debate. With `tests`, pick best-of-N over the
+    round-R codes; otherwise submit peer 0's code.
+    """
     _reset_telem_acc()
     contexts = run_debate(problem, starter_code=starter_code)
     per_peer = []
@@ -501,7 +500,7 @@ def load_instances(
     only: list[str] | None = None,
     difficulty: str | None = None,
 ) -> list[dict]:
-    """Load LCB rows — same schema/IDs as single/lcb for parity."""
+    """Load LCB rows with the same schema and IDs as single/lcb."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)
@@ -575,7 +574,7 @@ def run_batch(
             pass_rate = 0.0
             if code:
                 n_extracted += 1
-                # best_of_n already scored; look up from per_peer if possible
+                # best_of_n already scored this; reuse the winner's pass_rate
                 pp = out.get("per_peer") or []
                 winner = out.get("winner")
                 if winner is not None and 0 <= winner < len(pp):

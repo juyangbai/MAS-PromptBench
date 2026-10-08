@@ -1,6 +1,5 @@
 """Sequential topology specialized for SWE-bench Verified, in CrewAI."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -275,9 +274,11 @@ def format_task_brief(
     instance_id: str | None = None,
     hints_text: str | None = None,
 ) -> str:
-    """Build a task brief with issue + optional hints. Used as the static
-    portion of every Task.description (CrewAI's context= chain carries
-    stage-to-stage hand-offs; this is the per-instance variable input)."""
+    """Build the per-instance task brief: the issue plus optional hints.
+
+    This is the static part of every Task.description; CrewAI's context=
+    chain carries the stage-to-stage hand-offs.
+    """
     parts = []
     if instance_id:
         parts.append(f"INSTANCE: {instance_id}")
@@ -301,7 +302,7 @@ def format_task_brief(
 
 # Crew
 def build_crew(llm: LLM | None = None) -> Crew:
-    """Build the 4-stage investigator -> planner -> patcher -> tester pipeline."""
+    """4-stage pipeline: investigator -> planner -> patcher -> tester."""
     if llm is None:
         llm = _build_llm()
 
@@ -341,11 +342,10 @@ def build_crew(llm: LLM | None = None) -> Crew:
             "str_replace(path, old, new) to make TARGETED edits. Keep "
             "the change minimal."
         ),
-        # Narrow tool surface: only str_replace for edits (NOT file_write).
-        # file_write overwrites the entire file — a single bad call can
-        # clobber 300+ lines if the model emits a fragment. str_replace
-        # only rewrites the exact `old` region, making that failure mode
-        # structurally impossible.
+        # Narrow tool surface: edits go through str_replace, not file_write.
+        # file_write replaces the whole file, so one bad call with a
+        # fragment can wipe 300+ lines; str_replace only rewrites the exact
+        # `old` region.
         backstory=_load_prompt("patcher"),
         tools=[file_read, str_replace],
         llm=llm,
@@ -707,15 +707,10 @@ def is_resolved(report: dict) -> bool:
 def solve(instance: dict, eval_mode: str = "singularity") -> dict:
     """Run the 4-stage sequential crew on one SWE-bench instance.
 
-    The caller sets the repo dir before calling (via _set_repo_dir, typically
-    in the demo flow below). Returns:
-
-        {
-            "patch":     the unified-diff produced (str),
-            "resolved":  bool (or None if eval_mode='none'),
-            "report":    scorer output dict,
-            "by_stage":  {investigator, planner, patcher, tester} stage outputs,
-        }
+    The caller must set the repo dir first (_set_repo_dir, as in the demo
+    flow below). Returns a dict with "patch" (unified diff), "resolved"
+    (bool, None if eval_mode='none'), "report" (scorer output) and
+    "by_stage" (investigator, planner, patcher and tester outputs).
     """
     brief = format_task_brief(
         instance["problem_statement"],
@@ -768,7 +763,7 @@ def predictions_entry(
     instance_id: str, patch: str,
     model_name: str = "mas-promptbench-sequential",
 ) -> dict:
-    """Build one line of the predictions JSONL consumed by the official harness.
+    """Build one predictions-JSONL line for the official harness.
 
     Schema: {"instance_id": str, "model_patch": str, "model_name_or_path": str}
     """
@@ -785,10 +780,10 @@ def run_one(
     out_dir: Path,
     eval_mode: str = "singularity",
 ) -> dict:
-    """Clone + solve + score one SWE-bench Verified instance end-to-end.
+    """Clone, solve and score one SWE-bench Verified instance end to end.
 
     Side effects:
-        - creates workdir_root / instance_id  (fresh repo checkout)
+        - creates workdir_root / instance_id (fresh repo checkout)
         - writes out_dir / patches / <iid>.diff
         - appends to out_dir / predictions.jsonl
         - writes out_dir / traces / <iid>.txt (4-stage crew output)
@@ -827,7 +822,7 @@ def run_one(
     with (out_dir / "predictions.jsonl").open("a") as f:
         f.write(json.dumps(predictions_entry(iid, patch)) + "\n")
 
-    # Dump the 4-stage crew output so we can inspect what happened.
+    # Dump each crew stage's output for later inspection.
     (out_dir / "traces").mkdir(parents=True, exist_ok=True)
     with (out_dir / "traces" / f"{iid}.txt").open("w") as f:
         for stage, content in (out.get("by_stage") or {}).items():
@@ -867,9 +862,9 @@ def run_batch(
     eval_mode: str = "singularity",
     keep_workdirs: bool = False,
 ) -> None:
-    """Iterate Verified instances, run_one() each, write predictions.jsonl +
-    results.jsonl. Matches single/swe's batch flow so Docker-harness post-
-    processing works identically across topologies.
+    """Run run_one() on each Verified instance and write predictions.jsonl and
+    results.jsonl. Same batch flow as single/swe, so Docker-harness
+    post-processing works the same across topologies.
     """
     import shutil as _sh
 

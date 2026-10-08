@@ -1,6 +1,5 @@
-"""Centralized topology specialized for GPQA-Diamond, LangGraph."""
+"""Centralized topology for GPQA-Diamond (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -46,9 +45,8 @@ _PROMPTS_DIR = _REPO_ROOT / "configs" / "prompts" / "centralized" / "gpqa"
 # Same cap as AutoGen sibling's MaxMessageTermination(16).
 MAX_TURNS = 8
 
-# Per-row wall-clock cap (kept for parity with AutoGen sibling; not
-# currently enforced as a hard deadline in LangGraph — MAX_TURNS bounds
-# the loop).
+# Per-row wall-clock cap, kept for parity with the AutoGen sibling. Not
+# currently enforced as a hard deadline here; MAX_TURNS bounds the loop.
 PER_ROW_TIMEOUT_S = 120
 
 
@@ -82,11 +80,9 @@ def calculator(expression: str) -> str:
         return f"ERROR: {e}"
 
 
-# Delegation tools (routing markers)
-# The manager "calls" these to hand the floor to a specific worker. The
-# body echoes the instructions, producing a ToolMessage the worker can
-# read as context. The router after `manager_tools` inspects the name
-# to route to the right worker node.
+# Delegation tools (routing markers). The manager calls one to hand off to
+# a worker; the echoed instructions become a ToolMessage the worker reads,
+# and the router after `manager_tools` picks the worker by tool name.
 
 @tool("delegate_to_solver_worker")
 def delegate_to_solver_worker(instructions: str) -> str:
@@ -182,13 +178,12 @@ def _route_from_manager(state: CentralizedState) -> str:
             return END
         if getattr(last, "tool_calls", None):
             return "manager_tools"
-    # No tool call, no TERMINATE — loop back and let the manager try again.
+    # No tool call and no TERMINATE: loop back so the manager tries again.
     return "manager"
 
 
 def _route_from_manager_tools(state: CentralizedState) -> str:
-    # Find the most recent AIMessage with tool_calls; its tool_calls tell
-    # us whether any delegation was requested.
+    # Check the latest AIMessage with tool_calls for a delegation request.
     for m in reversed(state["messages"]):
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
@@ -205,8 +200,8 @@ def _make_worker_node(name: str, tools: list, llm: ChatOpenAI):
     agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
 
     def node(state: CentralizedState) -> dict:
-        # create_react_agent returns {"messages": [full history incl. input]},
-        # so we splice out only the new messages it appended.
+        # create_react_agent returns the full history, input included, so keep
+        # only the messages it appended.
         prior = list(state["messages"])
         result = agent.invoke(
             {"messages": prior},
@@ -264,9 +259,9 @@ def _build_graph(llm: Optional[ChatOpenAI] = None):
 # Output parsing
 _LETTERS = ["A", "B", "C", "D"]
 
-# Strip markdown `**bold**` / backticks before regex matching — the 9B
-# frequently emits `"**Answer:** B"` and the bare regexes miss the
-# match without this. Same fix as single/sequential/independent gpqa.
+# Strip markdown (`**bold**`, backticks) before matching: the 9B often
+# emits "**Answer:** B", which the bare regexes miss. Same fix as
+# single/sequential/independent gpqa.
 _MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
 # Primary: "Answer: X" / "Final answer: X"
 _ANSWER_RE = re.compile(
@@ -288,8 +283,9 @@ _BARE_LETTER_RE = re.compile(
 def extract_answer(text: str) -> str | None:
     """Return the MCQ letter from the manager's final output.
 
-    Matches the cascade + markdown stripping used by single/sequential/
-    independent/decentralized gpqa so resolve rates are byte-comparable.
+    Same regex cascade and markdown stripping as the single, sequential,
+    independent and decentralized gpqa runners, so resolve rates are
+    directly comparable.
     """
     cleaned = _MARKDOWN_STRIP_RE.sub("", text)
     for pattern in (_ANSWER_RE, _OPTION_RE, _BARE_LETTER_RE):
@@ -327,13 +323,11 @@ def _communications_to_record(m: BaseMessage) -> dict:
 def solve(question: str, choices: list[str]) -> dict:
     """Run the centralized team on one GPQA-style MCQ.
 
-    Returns:
-        {
-            "answer":    final letter A/B/C/D or None,
-            "raw":       manager's last message content,
-            "messages":  list of {source, content} from every turn,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        answer     final letter A/B/C/D, or None
+        raw        manager's last message
+        messages   {source, content} for every turn
+        telemetry  normalized 5-key token/call counts
     """
     compiled, _ = _build_graph()
     mcq = format_mcq(question, choices)
@@ -368,9 +362,11 @@ _HF_SPLIT = "train"
 
 
 def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Stable id for a GPQA row — md5 hash of question text. Matches
-    single/independent/sequential gpqa so per-row comparisons line up
-    on the same id across topologies."""
+    """Stable row id: md5 of the question text.
+
+    Same as single/independent/sequential gpqa, so per-row results line up
+    by id across topologies.
+    """
     q = (row.get("Question") or "").strip()
     if q:
         return "gpqa_" + hashlib.md5(q.encode("utf-8")).hexdigest()[:10]
@@ -383,10 +379,11 @@ def load_instances(
     only: list[str] | None = None,
     shuffle_seed: int = 0,
 ) -> list[dict]:
-    """Load GPQA-Diamond rows with 4 choices shuffled DETERMINISTICALLY
-    per row (`Random(f"{shuffle_seed}|{row_id}")`). Aligned to
-    the other gpqa topologies so `correct_letter` matches for each row
-    id across topologies at the same `shuffle_seed`.
+    """Load GPQA-Diamond rows with the 4 choices shuffled deterministically.
+
+    Each row uses `Random(f"{shuffle_seed}|{row_id}")`, as in the other
+    gpqa topologies, so a row id gets the same `correct_letter` everywhere
+    for a given `shuffle_seed`.
     """
     from datasets import load_dataset
 
@@ -425,13 +422,11 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the 4-agent centralized team on every instance, compare
-    manager-emitted letter vs gold, return aggregate summary +
-    optionally write per-instance predictions to JSONL.
+    """Run the centralized team on every instance and score its letter.
 
-    Per-instance record shape:
-        {id, question, choices, correct_letter,
-         predicted_letter, correct,
+    Returns an aggregate summary. If `out_path` is set, also writes one
+    JSONL record per instance:
+        {id, question, choices, correct_letter, predicted_letter, correct,
          raw, n_messages, latency_s, error}
     """
     per_instance: list[dict] = []

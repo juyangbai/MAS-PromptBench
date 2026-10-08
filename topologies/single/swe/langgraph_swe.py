@@ -1,6 +1,5 @@
 """Single-agent ReAct topology specialized for SWE-bench (Verified)."""
 
-# Config
 import json
 import os
 import re
@@ -26,8 +25,8 @@ from topologies.telemetry import langchain_telemetry, normalize  # noqa: E402
 VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://lai:8001/v1")
 MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 
-# Per-instance repo workdir. Store it in a ContextVar so concurrent_runner.py
-# can safely evaluate multiple SWE instances in parallel within one process.
+# Per-instance repo workdir, kept in a ContextVar so concurrent_runner.py
+# can evaluate several SWE instances in parallel in one process.
 _REPO_DIR_VAR: ContextVar[Path] = ContextVar(
     "_REPO_DIR_VAR",
     default=Path(os.environ.get("SWE_REPO_DIR", ".")).resolve(),
@@ -188,10 +187,10 @@ TOOLS = [file_read, file_write, list_dir, search_repo, shell_exec]
 
 
 # Agent
-# Cap prompt-side text so the initial message fits the model context even
-# with pathological issue bodies or hints. Tool calls still add tokens on
-# top; the vLLM max_model_len must be large enough for at least a few
-# rounds of file_read output (recommend >=32k).
+# Cap prompt-side text so the first message fits the model context even
+# with huge issue bodies or hints. Tool calls add tokens on top, so vLLM's
+# max_model_len must fit at least a few rounds of file_read output
+# (>=32k recommended).
 _PROBLEM_CHAR_BUDGET = int(os.environ.get("SWE_PROBLEM_CHAR_BUDGET", "16000"))
 _HINTS_CHAR_BUDGET = int(os.environ.get("SWE_HINTS_CHAR_BUDGET", "4000"))
 
@@ -208,11 +207,11 @@ def format_prompt(
     instance_id: str | None = None,
     hints_text: str | None = None,
 ) -> str:
-    """Build the user-facing prompt for one SWE-bench instance.
+    """Build the user prompt for one SWE-bench instance.
 
-    Includes the issue body, optional hints (from the `hints_text` field of
-    the dataset), and instructions on the tool workflow. Long issue bodies
-    and hints are truncated via SWE_PROBLEM_CHAR_BUDGET / SWE_HINTS_CHAR_BUDGET.
+    Includes the issue body, optional hints (the dataset's `hints_text`
+    field) and tool-workflow instructions. Long issue bodies and hints are
+    truncated per SWE_PROBLEM_CHAR_BUDGET / SWE_HINTS_CHAR_BUDGET.
     """
     parts = []
     if instance_id:
@@ -242,9 +241,9 @@ def build_agent():
         model=MODEL_ID,
         base_url=VLLM_BASE_URL,
         api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
-        # Greedy (temp=0) traps Qwen3.5-9B in read-more-code loops on SWE-bench
-        # without ever committing to a patch. Light stochastic sampling with a
-        # fixed seed keeps runs reproducible per seed while breaking those loops.
+        # Greedy (temp=0) traps Qwen3.5-9B in read-more-code loops on
+        # SWE-bench, never committing to a patch. Light sampling with a fixed
+        # seed breaks those loops and stays reproducible per seed.
         temperature=0.2,
         top_p=0.9,
         seed=0,
@@ -266,10 +265,9 @@ def strip_thinking(text: str) -> str:
 
 
 def compute_patch() -> str:
-    """Return the unified-diff patch for the current workdir state.
+    """Return `git diff HEAD` for the repo workdir.
 
-    Runs `git diff HEAD` inside REPO_DIR. An empty string means the agent
-    made no changes to tracked files.
+    An empty string means the agent changed no tracked files.
     """
     try:
         result = subprocess.run(
@@ -286,29 +284,30 @@ def compute_patch() -> str:
 
 
 def extract_answer(text: str) -> str | None:
-    """For symmetry with other topologies — but the real 'answer' for SWE
-    is the patch, computed separately via compute_patch()."""
+    """Kept for symmetry with other topologies; the real answer for SWE is the
+    patch from compute_patch().
+    """
     return None
 
 
 # Scoring
 # SWE-bench grading follows swebench.harness.grading:
-#   - an instance is RESOLVED iff every FAIL_TO_PASS test passes AND every
+#   - an instance is RESOLVED iff every FAIL_TO_PASS test passes and every
 #     PASS_TO_PASS test still passes after the patch is applied
-#   - XFAIL counts as passing; tests not present in the run are silently
-#     skipped by the official parser
-# The official harness evaluates in a per-repo Docker image. What this file
-# provides is a best-effort LOCAL runner via pytest against the current
-# workdir; useful for development, not numerically equivalent to the
+#   - XFAIL counts as passing; tests missing from the run are skipped by
+#     the official parser
+# The official harness runs in a per-repo Docker image. This file only
+# provides a best-effort local pytest runner against the current workdir,
+# useful for development but not numerically equivalent to the
 # leaderboard. For official scoring use:
 #   from swebench.harness.run_evaluation import main
 # (requires Docker, per-instance images, and the swebench pip package).
 
 
 def _run_pytest(test_ids: list[str], timeout_s: int = 300) -> dict:
-    """Run a list of pytest node ids inside REPO_DIR. Returns per-id status.
+    """Run pytest node ids inside REPO_DIR and return a status per id.
 
-    test_ids are pytest-style node identifiers (path/to/test_file.py::TestClass::test_name).
+    Node ids look like path/to/test_file.py::TestClass::test_name.
     """
     if not test_ids:
         return {}
@@ -330,7 +329,7 @@ def _run_pytest(test_ids: list[str], timeout_s: int = 300) -> dict:
     except subprocess.TimeoutExpired:
         return {tid: "timeout" for tid in test_ids}
 
-    # Parse classic console output: each line "path::name PASSED|FAILED|ERROR|XFAIL|SKIPPED"
+    # Parse classic pytest output: "path::name VERDICT" per line.
     status: dict[str, str] = {}
     line_re = re.compile(r"^(?P<nodeid>\S+?)\s+(?P<verdict>PASSED|FAILED|ERROR|XFAIL|XPASS|SKIPPED)\b")
     for line in (result.stdout + "\n" + result.stderr).splitlines():
@@ -354,7 +353,7 @@ def run_tests_local(
 ) -> dict:
     """Run both test groups with pytest against the current REPO_DIR state.
 
-    Returns:
+    Returns a dict shaped like:
         {
             "fail_to_pass": {"success": [...], "failure": [...]},
             "pass_to_pass": {"success": [...], "failure": [...]},
@@ -382,7 +381,7 @@ def run_tests_local(
 
 
 def is_resolved(report: dict) -> bool:
-    """SWE-bench RESOLVED verdict: both rates must equal 1.0 (strict).
+    """SWE-bench RESOLVED verdict: f2p_rate and p2p_rate must both be 1.0.
 
     Matches swebench.harness.grading.ResolvedStatus.FULL.
     """
@@ -394,21 +393,21 @@ def exact_match_score(report: dict) -> float:
     return 1.0 if is_resolved(report) else 0.0
 
 
-# ---- Singularity eval path --------------------------------------------------
-# Runs the model patch + pytest inside the per-instance SIF image pulled from
-# docker://swebench/sweb.eval.x86_64.<tag>. This matches the official Docker
-# harness's environment (same image contents, same Python, same pinned deps)
-# and sidesteps the "repo deps don't match my env" problem that plagues local
-# pytest runs.
+# Singularity eval path
+# Applies the model patch and runs pytest inside the per-instance SIF image
+# pulled from docker://swebench/sweb.eval.x86_64.<tag>. That matches the
+# official Docker harness (same image contents, Python and pinned deps)
+# and avoids the dependency mismatches of local pytest runs.
 #
-# The inline script carries:
-#   1. a safe.directory workaround via GIT_CONFIG_GLOBAL (git 2.34.1 in these
-#      images + host UID != 0 triggers git's dubious-ownership check)
-#   2. conda activate testbed (the repo's installed env lives there, not base)
-#   3. git apply test_patch  (SWE-bench stores test modifications separately;
-#      these introduce the parametrize ids named in FAIL_TO_PASS)
-#   4. git apply model patch
-#   5. pytest with classic output so the verdict regex in run_tests_local parses
+# The inline script:
+#   1. sets safe.directory via GIT_CONFIG_GLOBAL (these images ship git
+#      2.34.1, and a host UID != 0 trips git's dubious-ownership check)
+#   2. runs conda activate testbed (the repo's env lives there, not base)
+#   3. git applies test_patch (SWE-bench stores test changes separately;
+#      they add the parametrize ids named in FAIL_TO_PASS)
+#   4. git applies the model patch
+#   5. runs pytest with classic output so the verdict regex from
+#      run_tests_local can parse it
 
 _SIF_EVAL_SCRIPT = r"""
 set -eo pipefail
@@ -476,10 +475,9 @@ def run_tests_singularity(
 ) -> dict:
     """Evaluate a model patch inside the instance's per-repo SIF image.
 
-    Returns the same shape as `run_tests_local` so `is_resolved()` works
-    unchanged. An empty `patch` runs the baseline tests (no changes applied).
-    A `patch` that fails to apply yields f2p_rate=p2p_rate=0 with an
-    "error: patch apply failed" field.
+    Returns the same shape as `run_tests_local`, so `is_resolved()` works
+    unchanged. An empty `patch` runs the baseline tests. A patch that fails
+    to apply gives f2p_rate=p2p_rate=0 and "error": "patch apply failed".
     """
     import tempfile
 
@@ -588,12 +586,12 @@ def run_tests_singularity(
 def apply_test_patch(test_patch: str) -> str:
     """Apply the dataset's `test_patch` to the workdir.
 
-    Each SWE-bench instance ships a `test_patch` that installs the evaluation
-    tests (often NEW test files that didn't exist at base_commit). It must be
-    applied AFTER the agent finishes and BEFORE running tests so (a) the agent
-    is judged on hidden tests and (b) pytest can discover them.
+    The test_patch installs the evaluation tests (often new files that don't
+    exist at base_commit). Apply it after the agent finishes and before
+    running tests, so the agent is judged on hidden tests and pytest can
+    discover them.
 
-    Returns an empty string on success, or a non-empty error message.
+    Returns "" on success, otherwise an error message.
     """
     if not test_patch.strip():
         return ""
@@ -613,9 +611,9 @@ def apply_test_patch(test_patch: str) -> str:
 
 
 def predictions_entry(instance_id: str, patch: str, model_name: str = "mas-promptbench-single") -> dict:
-    """Build one line of the predictions JSONL consumed by the official harness.
+    """Build one line of the predictions JSONL for the official harness.
 
-    Schema expected by swebench.harness.run_evaluation:
+    swebench.harness.run_evaluation expects:
         {"instance_id": str, "model_patch": str, "model_name_or_path": str}
     """
     return {
@@ -633,9 +631,9 @@ def solve(
 ) -> dict:
     """Run the agent on one SWE-bench instance.
 
-    Assumes REPO_DIR already points at a checkout of the target repo at
-    `base_commit`. The caller is responsible for: clone, checkout, pip
-    install, and resetting any prior state.
+    Assumes REPO_DIR is already a checkout of the target repo at
+    `base_commit`; cloning, checkout, pip install and resetting prior state
+    are up to the caller.
 
     Returns {'patch': str, 'raw': str, 'messages': list}.
     """
@@ -717,14 +715,15 @@ def run_one(
     out_dir: Path,
     eval_mode: str = "local",
 ) -> dict:
-    """Solve one Verified instance end-to-end and write its artifacts.
+    """Solve one Verified instance end to end and write its artifacts.
 
     Side effects:
-        - creates workdir_root / instance_id  (clone of repo at base_commit)
+        - creates workdir_root / instance_id (clone of repo at base_commit)
         - writes out_dir / patches / <iid>.diff
         - appends to out_dir / predictions.jsonl
 
-    Returns a summary dict (timings, tool_calls, f2p/p2p rates if local_eval).
+    Returns a summary dict (timings, tool_calls, and f2p/p2p rates unless
+    eval_mode is "none").
     """
     iid = instance["instance_id"]
     repo = instance["repo"]
@@ -775,7 +774,7 @@ def run_one(
     with (out_dir / "predictions.jsonl").open("a") as f:
         f.write(json.dumps(predictions_entry(iid, patch)) + "\n")
 
-    # Dump the full message trace so we can inspect what the agent did.
+    # Save the full message trace for inspecting what the agent did.
     (out_dir / "traces").mkdir(parents=True, exist_ok=True)
     with (out_dir / "traces" / f"{iid}.txt").open("w") as f:
         for msg in out["messages"]:
@@ -835,12 +834,13 @@ def run_batch(
     eval_mode: str = "local",
     keep_workdirs: bool = False,
 ) -> None:
-    """Iterate over a Verified slice, solve each instance, write predictions.
+    """Solve each instance in a Verified slice and write predictions.
 
     eval_mode:
-        "local"       pytest in the host env (fast, env-fragile)
-        "singularity" pytest inside the per-instance SIF (authoritative, matches Docker harness)
-        "none"        skip eval, just collect patches
+        "local"        pytest in the host env (fast, env-fragile)
+        "singularity"  pytest inside the per-instance SIF (authoritative,
+                       matches the Docker harness)
+        "none"         skip eval, only collect patches
     """
     import shutil as _sh
 

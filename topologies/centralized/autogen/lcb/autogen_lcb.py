@@ -1,6 +1,5 @@
 """Centralized topology specialized for LiveCodeBench, AutoGen."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -147,8 +146,8 @@ def build_team() -> SelectorGroupChat:
         tools=[python_exec],
     )
 
-    # Force manager-routing: after any worker speaks, the manager MUST be
-    # the next speaker (so workers never chain turns with each other).
+    # Force manager routing: after any worker speaks, the manager goes next,
+    # so workers never chain turns with each other.
     def _selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
         if not messages:
             return manager.name
@@ -210,22 +209,22 @@ _CODE_BLOCK_RE = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.DOTALL | re.IG
 
 
 def extract_code(text: str) -> str | None:
-    """Return the LAST fenced code block in `text`, or None.
+    """Return the last fenced code block in `text`, or None.
 
-    Takes the last block because models often revise code in earlier
-    turns before settling on the final version.
+    Models often revise code across turns, so the last block is the final
+    version.
     """
     text = re.sub(r"\bTERMINATE\b", "", text)
     return extract_python_code(text)
 
 
 # Scoring (aligned to single/lcb testing_util.py)
-# Source: LiveCodeBench lcb_runner/evaluation/testing_util.py. Do NOT
-# modify — this is the official scorer. Two paths: stdin tests run a
-# subprocess and compare stdout line-by-line with decimal tolerance;
-# functional tests run in a fresh subprocess with LCB's reliability_guard
-# + setrlimit applied, then exec + call the named function on class
-# Solution (LeetCode style) or in module scope.
+# Source: LiveCodeBench lcb_runner/evaluation/testing_util.py. This is the
+# official scorer; do not modify. Stdin tests run in a subprocess and
+# compare stdout line by line with decimal tolerance. Functional tests run
+# in a fresh subprocess under LCB's reliability_guard and setrlimit, then
+# exec the code and call the named function on class Solution (LeetCode
+# style) or at module scope.
 
 
 def _compare_stdout(actual: str, expected: str) -> bool:
@@ -283,9 +282,10 @@ def _parse_maybe_json(value):
     return value
 
 
-# Worker script run inside each functional test's subprocess.
-# argv: [1]=max_memory_bytes (0 => unlimited), [2]=fn_name, [3]=args_json, [4]=outfile
-# stdin: user's submission source
+# Worker script run in each functional test's subprocess.
+# argv: [1]=max_memory_bytes (0 => unlimited), [2]=fn_name, [3]=args_json,
+#       [4]=outfile
+# stdin: the submission's source
 _FUNCTIONAL_WORKER = """
 import os, sys, json, platform, resource, shutil, subprocess, builtins, faulthandler
 
@@ -407,10 +407,10 @@ def _run_functional_test(code: str, tc: dict, timeout_s: int) -> dict:
 
 
 def run_tests(code: str, tests: list[dict], timeout_s: int = 5) -> dict:
-    """Run `code` against a list of LCB-style tests (stdin or functional).
+    """Run `code` against LCB tests (stdin or functional).
 
-    Dispatches per-test based on 'testtype' (or 'fn_name' presence as
-    fallback). Returns {'pass', 'total', 'pass_rate', 'details'}.
+    Each test's mode comes from 'testtype', falling back to whether
+    'fn_name' is set. Returns {'pass', 'total', 'pass_rate', 'details'}.
     """
     if not tests:
         return {"pass": 0, "total": 0, "pass_rate": 0.0, "details": []}
@@ -449,15 +449,10 @@ def exact_match_score(pass_rate: float) -> float:
 async def solve_async(problem: str, starter_code: str | None = None) -> dict:
     """Run the centralized team on one LCB problem.
 
-    Pass `starter_code` to run in functional (LeetCode) mode; omit for
-    stdin mode.
-
-    Returns:
-        {
-            "code":     inner content of the last fenced ```python``` block (or None),
-            "raw":      manager's last message content,
-            "messages": list of {source, content} from every turn,
-        }
+    Pass `starter_code` for functional (LeetCode) mode; omit it for stdin
+    mode. Returns a dict with "code" (body of the last ```python``` block,
+    or None), "raw" (the manager's last message) and "messages"
+    ({source, content} per turn).
     """
     team = build_team()
     task = format_prompt(problem, starter_code)
@@ -525,7 +520,7 @@ def load_instances(
     only: list[str] | None = None,
     difficulty: str | None = None,
 ) -> list[dict]:
-    """Load LCB rows — same schema/IDs as single/lcb for parity."""
+    """Load LCB rows with the same schema and IDs as single/lcb."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)
@@ -680,7 +675,7 @@ def _print_scoring(scored: dict) -> None:
 
 
 def _canned_demo() -> None:
-    # --- Stdin-mode problem (AtCoder/Codeforces style) ---
+    # Stdin-mode problem (AtCoder/Codeforces style)
     stdin_problem = (
         "Read a single integer n from standard input (1 <= n <= 1000) and "
         "print the sum 1 + 2 + ... + n on one line."
@@ -699,7 +694,7 @@ def _canned_demo() -> None:
         _print_scoring(run_tests(out["code"], stdin_tests))
     print(f"=== {len(out['messages'])} messages across the group chat ===")
 
-    # --- Functional-mode problem (LeetCode style) ---
+    # Functional-mode problem (LeetCode style)
     functional_problem = (
         "Given an array of integers `nums` and an integer `target`, return "
         "the indices of the two numbers such that they add up to `target`. "

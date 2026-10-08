@@ -1,6 +1,5 @@
 """Independent topology specialized for LiveCodeBench."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -96,9 +95,9 @@ def python_exec(code: str, stdin: str = "", timeout_s: int = _EXEC_TIMEOUT_S) ->
 
 
 # Agent
-# User-message format templates — verbatim from LiveCodeBench's official
-# lcb_runner/prompts/code_generation.py. Public test cases are intentionally
-# NOT included in the prompt (matching LCB behavior).
+# User-message format templates, verbatim from LiveCodeBench's
+# lcb_runner/prompts/code_generation.py. Public test cases are left out
+# of the prompt, as in LCB.
 _FORMAT_STDIN = (
     "### Format: Read the inputs from stdin solve the problem and write "
     "the answer to stdout (do not directly test on the sample inputs). "
@@ -161,18 +160,18 @@ def strip_thinking(text: str) -> str:
 
 
 def extract_code(text: str) -> str | None:
-    """Return the LAST fenced code block in `text`, or None."""
+    """Return the last fenced code block in `text`, or None."""
     return extract_python_code(text)
 
 
 # Scoring
-# Aligned to topologies/single/lcb/langgraph_lcb.py so ensemble
-# pass@1 numbers remain directly comparable with single-topology numbers.
-# Two evaluation paths mirror LCB's official testing_util.py:
-#   - stdin tests: child process, feed stdin, compare stdout (line-by-line
-#     with decimal tolerance).
+# Aligned to topologies/single/lcb/langgraph_lcb.py so ensemble pass@1
+# is directly comparable with single-topology numbers. Two paths, as in
+# LCB's testing_util.py:
+#   - stdin tests: child process, feed stdin, compare stdout line by line
+#     with decimal tolerance.
 #   - functional tests: fresh subprocess with LCB's reliability_guard and
-#     resource limits applied, then exec + call fn, compare return value.
+#     resource limits, exec the code, call fn, compare the return value.
 
 
 def _compare_stdout(actual: str, expected: str) -> bool:
@@ -393,12 +392,9 @@ def best_of_n(
     tests: list[dict],
     timeout_s: int = 5,
 ) -> dict | None:
-    """Score each candidate and return the best one.
-
-    Selection order:
-      1. First candidate (lowest agent_id) with pass_rate == 1.0.
-      2. Else candidate with highest pass_rate (first on tie).
-      3. None iff no candidate has extractable code.
+    """Score each candidate and return the best: the first (lowest agent_id)
+    with pass_rate 1.0, else the highest pass_rate (first on ties). None if
+    no candidate has extractable code.
     """
     valid = [a for a in answers if a.get("code")]
     if not valid:
@@ -483,18 +479,16 @@ def solve(
 ) -> dict:
     """Run the ensemble on one coding problem.
 
-    If `tests` is provided, the N candidates are scored and best-of-N is
-    applied. If omitted, the raw per-agent candidates are returned without
-    aggregation (useful for collecting predictions + scoring later).
+    With `tests`, the N candidates are scored and best-of-N picks the
+    winner. Without, the raw per-agent candidates come back unscored (for
+    collecting predictions and scoring later).
 
-    Returns:
-        {
-            "code":      best-of-N code (str) or None,
-            "pass_rate": float in [0, 1] (if scored), else None,
-            "winner":    agent_id of the selected candidate (if scored),
-            "per_agent": list of {agent_id, seed, code, raw, messages,
-                                  pass_rate?, test_detail?},
-        }
+    Returns a dict with:
+        code       best-of-N code, or None
+        pass_rate  float in [0, 1] if scored, else None
+        winner     agent_id of the selected candidate (if scored)
+        per_agent  [{agent_id, seed, code, raw, messages,
+                     pass_rate?, test_detail?}]
     """
     compiled = build_graph().compile()
     prompt = format_prompt(problem, starter_code)
@@ -521,14 +515,12 @@ def solve(
         }
 
     winner = best_of_n(per_agent, tests, timeout_s=timeout_s)
-    # Annotate per_agent with pass_rate for reporting symmetry with the
-    # winner (each row then carries its own test_detail).
+    # Give every per_agent row its own pass_rate and test_detail, not just
+    # the winner.
     ids_scored = {}
     if winner is not None:
-        # Re-run tests on every replica (cheap) so per_agent can show
-        # pass_rate for all of them, not just the winner. We already ran
-        # the scorer inside best_of_n; duplicating here is intentional to
-        # keep that function's signature simple.
+        # Re-running tests here (cheap) repeats work done in best_of_n,
+        # but keeps that function's signature simple.
         for a in per_agent:
             if a.get("code") is None:
                 a["pass_rate"] = 0.0
@@ -581,7 +573,9 @@ def load_instances(
     only: list[str] | None = None,
     difficulty: str | None = None,
 ) -> list[dict]:
-    """Load LCB rows — same schema/IDs as single/lcb for cross-topology parity."""
+    """Load LCB rows; same schema and IDs as single/lcb for cross-topology
+    parity.
+    """
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)
@@ -624,8 +618,9 @@ def run_batch(
     per_test_timeout_s: int = 6,
     _propagate_errors: bool = False,
 ) -> dict:
-    """Run `solve()` on every problem with best-of-N scoring, write
-    per-instance predictions to JSONL."""
+    """Run `solve()` with best-of-N scoring on every problem and write
+    per-instance predictions to JSONL.
+    """
     per_instance: list[dict] = []
     n = len(instances)
     em_sum = 0.0
@@ -770,12 +765,12 @@ def _canned_demo() -> None:
         print(f"\n=== Winner's code ===\n{out['code']}\n")
 
 def run_one(instance: dict, out_dir: Path | None = None) -> dict:
-    """Single-instance entrypoint for `concurrent_runner.py`.
+    """Single-instance entry point for `concurrent_runner.py`.
 
-    Calls `run_batch([instance], _propagate_errors=True)` so any transient
-    exception (APIConnectionError, TimeoutError, BadRequestError "Unterminated
-    string", etc.) bubbles up to the runner's retry-with-backoff wrapper
-    instead of being swallowed into an `error` field on a "successful" row.
+    Uses `_propagate_errors=True` so transient errors (APIConnectionError,
+    TimeoutError, BadRequestError "Unterminated string", etc.) reach the
+    runner's retry-with-backoff instead of being stored in an `error` field
+    on a row that looks successful.
     """
     summary = run_batch([instance], out_path=None, verbose=False, _propagate_errors=True)
     return summary["per_instance"][0]

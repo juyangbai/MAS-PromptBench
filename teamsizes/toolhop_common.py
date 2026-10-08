@@ -1,10 +1,10 @@
 """Shared ToolHop helpers for team-size variants.
 
-The dataset/tool execution path is owned by the canonical self-contained runner
-``topologies.single.toolhop.langgraph_toolhop``.
-This module adds the team-size sweep layer used by ``teamsizes/<topo>/toolhop``:
-run N seeded replicas, majority-vote the extracted final answers, and write the
-same predictions/results/traces artifacts as the other team-size datasets.
+Dataset loading and tool execution come from the self-contained runner
+``topologies.single.toolhop.langgraph_toolhop``. This module adds the
+team-size layer used by ``teamsizes/<topo>/toolhop``: run N seeded
+replicas, majority-vote the extracted final answers, and write the same
+predictions/results/traces artifacts as the other team-size datasets.
 """
 
 from __future__ import annotations

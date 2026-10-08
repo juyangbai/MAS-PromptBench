@@ -36,7 +36,9 @@ def swe_protected_sample_name() -> str:
 
 @lru_cache(maxsize=None)
 def real_eval_id_list(dataset: str) -> tuple[str, ...]:
-    """Return protected/report eval IDs from benchmarks/<dataset>/<dataset>_eval_ids.json."""
+    """Return protected/report eval IDs listed in
+    benchmarks/<dataset>/<dataset>_eval_ids.json.
+    """
     path = REPO_ROOT / "benchmarks" / dataset / f"{dataset}_eval_ids.json"
     if not path.is_file():
         return ()
@@ -61,7 +63,7 @@ def train_val_split_excluding_real_eval(
     seed: int = 0,
     offset: int = 0,
 ) -> tuple[list[dspy.Example], list[dspy.Example]]:
-    """Shuffle/split while keeping optimization rows outside known real eval IDs."""
+    """Seeded train/val split, dropping known real eval IDs when enabled."""
     excluded = real_eval_ids(dataset) if exclude_real_eval_ids_enabled() else frozenset()
     pool = [example for example in examples if str(example.id) not in excluded]
     pool = pool[offset:]

@@ -1,11 +1,11 @@
 """Decentralized debate topology (Du et al. 2023, arXiv:2305.14325).
 
 N agents answer the same prompt over R rounds. Round 0 is independent;
-in every later round each agent sees the previous round's answers from
-all other agents (complete-graph peer-to-peer, no central coordinator).
+in each later round every agent sees all other agents' answers from the
+previous round (complete graph, no central coordinator).
 
 Adapted from frameworks/llm_multiagent_debate/gsm/gen_gsm.py and
-modernized for openai>=2.
+updated for openai>=2.
 """
 
 import os
@@ -45,8 +45,8 @@ def run_debate(
         for i, ctx in enumerate(contexts):
             if r != 0:
                 others = contexts[:i] + contexts[i + 1 :]
-                # 2*r - 1 indexes the assistant reply from round r-1, avoiding
-                # leakage of in-progress round-r replies from earlier agents.
+                # 2*r - 1 is the assistant reply from round r-1; avoids
+                # leaking round-r replies from agents that already ran.
                 ctx.append(construct_peer_message(others, prompt, 2 * r - 1))
 
             resp = client.chat.completions.create(model=model, messages=ctx, n=1)

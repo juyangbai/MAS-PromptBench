@@ -1,6 +1,5 @@
 """Decentralized debate topology specialized for SWE-bench Verified, OpenAI SDK."""
 
-# Config
 from __future__ import annotations
 
 import json
@@ -70,9 +69,9 @@ SYSTEM_PROMPT = _load_prompt("debater")
 
 
 # Per-peer workdir tracking
-# Each peer has its OWN clone of the repo — tools need to resolve paths
-# against that peer's workdir, not a global one. ContextVar + per-turn
-# bind keeps it simple.
+# Each peer has its own clone of the repo, so tools must resolve paths
+# against that peer's workdir, not a global one. A ContextVar bound per
+# turn handles this.
 _REPO_DIR_VAR: ContextVar[Path] = ContextVar("_REPO_DIR_VAR", default=Path("."))
 
 
@@ -83,7 +82,7 @@ def _get_repo_dir() -> Path:
 def _repo_path(path: str) -> Path:
     repo = _get_repo_dir()
     candidate = (repo / path).resolve() if not Path(path).is_absolute() else Path(path).resolve()
-    candidate.relative_to(repo)  # raises if escapes
+    candidate.relative_to(repo)  # raises if path escapes the repo
     return candidate
 
 
@@ -312,11 +311,11 @@ def _chat_with_tools(client: OpenAI, messages: list[dict], max_tool_loops: int =
         try:
             resp = client.chat.completions.create(messages=messages, **kwargs)
         except BadRequestError as e:
-            # vLLM sometimes rejects a follow-up request when the prior
-            # assistant turn's tool_call arguments contain an unterminated
-            # JSON string (truncated at max_tokens, unescaped quotes, etc).
-            # Strip the last assistant turn + its tool-result messages and
-            # try once more so the peer can keep working.
+            # vLLM sometimes rejects the follow-up request when the last
+            # assistant turn's tool_call arguments hold an unterminated JSON
+            # string (truncated at max_tokens, unescaped quotes, etc). Drop
+            # that assistant turn and its tool results and retry once so the
+            # peer can keep going.
             if dump and messages and messages[-1].get("role") == "tool":
                 while messages and messages[-1].get("role") == "tool":
                     messages.pop()
@@ -411,20 +410,21 @@ def _run_peer_all_rounds(
     workdir: Path,
     brief: str,
     peer_round_finals_ref: dict,  # {round_idx: list[dict]} shared via threading.Lock
-    sync_events: list,  # [threading.Event for each round]; each peer sets its own pos + waits for all
+    sync_events: list,  # [round][peer] Events; each peer sets its own slot
     all_set_events: list,  # barrier per round
     client: OpenAI,
 ) -> list[dict]:
-    """Run all R rounds for ONE peer, synchronized with other peers at
-    round boundaries."""
+    """Run all R rounds for one peer, syncing with the other peers at round
+    boundaries.
+    """
     ctx = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": brief},
     ]
     token = _REPO_DIR_VAR.set(workdir)
-    # Barrier failsafe: whatever happens (crash, early return), every round's
-    # sync event for this peer MUST be set before we exit — otherwise siblings
-    # hang forever in all_set_events[r].wait().
+    # Barrier failsafe: on any exit (crash, early return) this peer must set
+    # its sync event for every round, or siblings hang forever in
+    # all_set_events[r].wait().
     completed_rounds: list[int] = []
     try:
         for r in range(N_ROUNDS):
@@ -447,8 +447,8 @@ def _run_peer_all_rounds(
             all_set_events[r].wait()
         return ctx
     finally:
-        # Ensure any rounds we never entered still publish a placeholder +
-        # signal their event, so sibling peers can make progress.
+        # Rounds this peer never reached still get a placeholder and a set
+        # event, so sibling peers can proceed.
         for r in range(N_ROUNDS):
             if r in completed_rounds:
                 continue
@@ -468,16 +468,16 @@ def _barrier_watcher(events: list, all_set: "threading.Event") -> None:
 
 
 def run_debate(brief: str, peer_workdirs: list[Path]) -> list[list[dict]]:
-    """Run N peers × R rounds concurrently.
+    """Run N peers x R rounds concurrently.
 
-    Each peer edits its OWN workdir; rounds are synchronized at peer
-    boundaries so round r+1 injection sees all N peers' round-r finals.
+    Each peer edits its own workdir. Rounds are synchronized so the round
+    r+1 injection sees all N peers' round-r finals.
     """
     assert len(peer_workdirs) == N_AGENTS, f"expected {N_AGENTS} workdirs, got {len(peer_workdirs)}"
     client = _build_client()
 
-    # Per-round barriers: every peer signals its round-r done, every peer
-    # waits for all-set before starting round r+1.
+    # Per-round barriers: each peer signals when its round r is done, and
+    # all peers wait for all-set before starting round r+1.
     sync_events = [
         [threading.Event() for _ in range(N_AGENTS)] for _ in range(N_ROUNDS)
     ]
@@ -513,8 +513,9 @@ def best_of_n(
     instance: dict,
     eval_mode: str = "singularity",
 ) -> tuple[int | None, list[dict]]:
-    """Run compute_patch() + SIF eval on each peer's workdir; pick the
-    first resolved peer (lowest index), else max f2p × p2p."""
+    """Run compute_patch() and the SIF eval on each peer's workdir. Pick the
+    first resolved peer (lowest index), else the max f2p * p2p.
+    """
     f2p = instance["FAIL_TO_PASS"]
     p2p = instance["PASS_TO_PASS"]
     if isinstance(f2p, str):
@@ -522,9 +523,9 @@ def best_of_n(
     if isinstance(p2p, str):
         p2p = json.loads(p2p)
 
-    # Phase 1: compute patches SEQUENTIALLY. Patch extraction is fast (`git
-    # diff HEAD`), and keeping it serial avoids relying on helper-module repo
-    # context propagation across extra worker threads.
+    # Phase 1: compute patches serially. `git diff HEAD` is fast, and staying
+    # serial avoids relying on the helper module's repo context propagating
+    # to extra worker threads.
     scored: list[dict] = []
     for i, workdir in enumerate(peer_workdirs):
         _crewai_swe._set_repo_dir(workdir)
@@ -533,10 +534,10 @@ def best_of_n(
             "report": None, "resolved": False, "score": 0.0,
         })
 
-    # Phase 2: run Singularity evals IN PARALLEL. Each eval spawns its own
-    # child process against a per-instance SIF, so N=4 can run
-    # simultaneously without sharing any Python state. Wall time per
-    # instance drops from 4× SIF eval to max(4 parallel SIF evals).
+    # Phase 2: run the Singularity evals in parallel. Each eval is its own
+    # child process against a per-instance SIF, so all N=4 can run at once
+    # with no shared Python state. Wall time per instance drops from 4 SIF
+    # evals back to back to the slowest of the 4.
     def _score_one(rec: dict) -> None:
         if not rec["patch"] or eval_mode == "none":
             return
@@ -574,8 +575,9 @@ def solve(
     peer_workdirs: list[Path],
     eval_mode: str = "singularity",
 ) -> dict:
-    """Run N peers × R rounds. Each peer edits ITS OWN workdir — caller is
-    responsible for cloning N separate copies before calling solve()."""
+    """Run N peers x R rounds. Each peer edits its own workdir, so the caller
+    must clone N separate copies before calling solve().
+    """
     _reset_telem_acc()
     brief = format_task_brief(
         instance["problem_statement"],
@@ -617,9 +619,10 @@ def run_one(
     out_dir: Path,
     eval_mode: str = "singularity",
 ) -> dict:
-    """Clone N peer workdirs, run the debate, score via best-of-N, write
-    artifacts. Matches single/swe's run_one pattern but with N per-peer
-    checkouts under `workdir_root / <iid> / peer_<k>`."""
+    """Clone N peer workdirs, run the debate, score with best-of-N and write
+    artifacts. Same pattern as single/swe's run_one, but with one checkout
+    per peer under `workdir_root / <iid> / peer_<k>`.
+    """
     iid = instance["instance_id"]
     summary: dict = {
         "instance_id": iid,
@@ -630,10 +633,9 @@ def run_one(
     }
     root = workdir_root / iid
 
-    # Clone N fresh copies — one per peer. Parallelized via threads since
-    # `git clone` is I/O-bound (network + disk), so GIL-free concurrency
-    # gives near-linear speedup up to network bandwidth. Each clone writes
-    # to its own workdir, no shared Python state.
+    # Clone one fresh copy per peer, in threads: `git clone` is I/O-bound
+    # (network + disk), so this scales close to linearly up to network
+    # bandwidth. Each clone writes to its own workdir; no shared Python state.
     peer_workdirs: list[Path] = [root / f"peer_{i}" for i in range(N_AGENTS)]
     clone_errors: list[str | None] = [None] * N_AGENTS
     t0 = time.time()
@@ -730,9 +732,10 @@ def run_batch(
     eval_mode: str = "singularity",
     keep_workdirs: bool = False,
 ) -> None:
-    """Iterate Verified instances and run_one() each. N peer clones per
-    instance → disk footprint ≈ N × single. Default keep_workdirs=False
-    removes each instance's peer clones after it's scored."""
+    """Run run_one() on each Verified instance. Each instance needs N peer
+    clones (about N x the single-agent disk use); with the default
+    keep_workdirs=False they are deleted once the instance is scored.
+    """
     import shutil as _sh
 
     workdir_root = workdir_root or Path(

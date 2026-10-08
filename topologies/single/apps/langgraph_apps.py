@@ -1,6 +1,5 @@
 """Single-agent ReAct topology specialized for APPS."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -78,21 +77,21 @@ def python_exec(code: str, stdin: str = "", timeout_s: int = _EXEC_TIMEOUT_S) ->
 
 
 # Agent
-# Prompt follows the convention in the APPS paper and widely-used runners
-# (OpenAI, lm-evaluation-harness): "QUESTION: ... ANSWER:" scaffold with an
-# explicit "Use Standard Input / Call-Based format" directive. Starter code,
-# when present, is inlined before the directive.
+# Prompt follows the APPS paper and common runners (OpenAI,
+# lm-evaluation-harness): a "QUESTION: ... ANSWER:" scaffold with an
+# explicit "Use Standard Input / Call-Based format" directive. Starter
+# code, if any, goes before the directive.
 
 _FORMAT_STDIN_DIRECTIVE = "Use Standard Input format."
 _FORMAT_CALL_BASED_DIRECTIVE = "Use Call-Based format."
 
 
 def format_prompt(problem: str, starter_code: str | None = None) -> str:
-    """Build the user-facing prompt for one APPS problem.
+    """Build the user prompt for one APPS problem.
 
-    Presence of `starter_code` selects call-based mode; absence selects
-    standard-input mode. The fenced-block directive is added so our
-    `extract_code` regex can reliably recover the submission.
+    `starter_code` selects call-based mode; without it, standard-input
+    mode. The fenced-block directive lets `extract_code` recover the
+    submission reliably.
     """
     parts = [f"QUESTION:\n{problem}"]
     if starter_code:
@@ -138,7 +137,7 @@ def extract_code(text: str) -> str | None:
     """Return the last fenced block that parses as Python, or None."""
     return extract_python_code(text)
 def extract_answer(text: str) -> str | None:
-    """Alias for extract_code — matches the other scorers' interface."""
+    """Alias for extract_code, matching the other scorers' interface."""
     return extract_code(text)
 
 
@@ -152,10 +151,9 @@ def extract_answer(text: str) -> str | None:
 #   5. rounded-float set (3 decimals)
 #
 # Call-based tests run in a fresh subprocess with APPS' `reliability_guard`
-# applied (disables destructive os/shutil/subprocess calls) plus
-# resource.setrlimit memory caps. The guard contents are ported verbatim
-# from APPS testing_util.py so the subprocess runs with aligned
-# safeguards to the official harness.
+# (disables destructive os/shutil/subprocess calls) plus
+# resource.setrlimit memory caps. The guard is copied verbatim from APPS
+# testing_util.py so the subprocess matches the official harness.
 
 
 def _stripped_string_compare(a: str, b: str) -> bool:
@@ -226,10 +224,10 @@ def _stdout_compare(actual_str: str, expected_str: str) -> bool:
 
 
 def _parse_maybe_literal(value):
-    """Accept raw Python objects, JSON strings, or Python-literal strings.
+    """Accept Python objects, JSON strings or Python-literal strings.
 
-    APPS call-based test inputs are sometimes stringified Python literals
-    (e.g., '[1, 2, 3]'); JSON first, then ast.literal_eval as a fallback.
+    APPS call-based inputs are sometimes stringified literals such as
+    '[1, 2, 3]'; try JSON first, then ast.literal_eval.
     """
     if not isinstance(value, str):
         return value
@@ -244,7 +242,7 @@ def _parse_maybe_literal(value):
 
 
 def _run_stdin_test(code: str, stdin: str, expected: str, timeout_s: int) -> dict:
-    """Run `code` as a subprocess with stdin piped in; compare stdout via cascade."""
+    """Run `code` in a subprocess on `stdin`; compare stdout via the cascade."""
     try:
         result = subprocess.run(
             ["python", "-c", code],
@@ -270,12 +268,12 @@ def _run_stdin_test(code: str, stdin: str, expected: str, timeout_s: int) -> dic
     }
 
 
-# Worker script for call-based tests. Runs in a fresh subprocess with APPS'
-# reliability_guard (disables os.kill/system/fork/..., shutil.rmtree, etc.)
-# and optional resource.setrlimit caps. Guard ported verbatim from APPS'
-# testing_util.py. Communicates result back via a temp JSON file.
-# argv: [1]=max_memory_bytes (0=>unlimited), [2]=fn_name, [3]=args_json,
-#       [4]=outfile; stdin: user's submission source.
+# Worker script for call-based tests. Runs in a fresh subprocess under
+# APPS' reliability_guard (ported verbatim from testing_util.py; disables
+# os.kill/system/fork/..., shutil.rmtree, etc.) plus optional
+# resource.setrlimit caps, and passes its result back via a temp JSON file.
+# argv: [1]=max_memory_bytes (0 = unlimited), [2]=fn_name, [3]=args_json,
+#       [4]=outfile; stdin: the submission source.
 _CALL_BASED_WORKER = """
 import os, sys, json, platform, resource, shutil, subprocess, builtins, faulthandler
 
@@ -346,11 +344,10 @@ _CALL_BASED_MEMORY_BYTES = int(os.environ.get("APPS_CALL_BASED_MEMORY_BYTES", st
 def _run_call_based_test(
     code: str, fn_name: str, raw_args, raw_expected, timeout_s: int
 ) -> dict:
-    """Run `code` in a fresh subprocess with APPS' reliability_guard + setrlimit.
+    """Run one call-based test in a fresh subprocess, like official APPS.
 
-    Matches APPS' official behavior (reliability_guard + resource limits +
-    call the target function) while keeping the guards isolated inside the
-    child process so they do not leak into the harness.
+    The child applies APPS' reliability_guard and setrlimit limits before
+    calling the target function, so the guards don't leak into the harness.
     """
     args = _parse_maybe_literal(raw_args)
     if not isinstance(args, (list, tuple)):
@@ -415,18 +412,15 @@ def run_tests(
 ) -> dict:
     """Run `code` against an APPS-style input_output dict.
 
-    Expected shape (matches the raw dataset field):
+    Expected shape (same as the raw dataset field):
         {
             "inputs":  [<stdin_str> or <arg_list>, ...],
             "outputs": [<expected_stdout> or <expected_return>, ...],
             "fn_name": <str>          # optional; presence -> call-based mode
         }
 
-    Returns:
-        {
-            "pass": int, "total": int, "pass_rate": float,
-            "details": [per-test dicts with ok / expected / actual / mode / error]
-        }
+    Returns {"pass", "total", "pass_rate", "details"}, where details is a
+    list of per-test dicts with ok / expected / actual / mode / error.
     """
     inputs = input_output.get("inputs", []) or []
     outputs = input_output.get("outputs", []) or []
@@ -472,9 +466,9 @@ def exact_match_score(pass_rate: float) -> float:
 def solve(problem: str, starter_code: str | None = None, agent=None) -> dict:
     """Run the agent on one APPS problem.
 
-    Pass `starter_code` to run in call-based mode; omit (or pass empty) for
-    standard-input mode. Strips Qwen3's <think>...</think> reasoning from
-    every AI message. Optional `agent` lets callers reuse one across a batch.
+    Pass `starter_code` for call-based mode; omit it (or pass "") for stdin
+    mode. Strips Qwen3 <think>...</think> reasoning from every AI message.
+    Pass `agent` to reuse one agent across a batch.
 
     Returns {'code': str | None, 'raw': str, 'messages': list}.
     """
@@ -524,13 +518,12 @@ def load_instances(
 ) -> list[dict]:
     """Load APPS test rows from `codeparrot/apps`.
 
-    APPS rows can have 100s-1000s of tests; default cap `max_tests_per_row=20`
-    keeps eval wall time reasonable while still yielding a meaningful
-    strict-acc (all-pass) signal. Pass `None` to use every test.
+    Rows can have hundreds to thousands of tests. The default
+    `max_tests_per_row=20` keeps eval time reasonable while still giving a
+    meaningful strict-acc (all-pass) signal; pass None to use every test.
 
-    Row shape returned:
-        {id, problem, starter_code, input_output, difficulty, raw}
-    where input_output is trimmed to the first `max_tests_per_row` tests.
+    Each row is {id, problem, starter_code, input_output, difficulty, raw},
+    with input_output trimmed to the first `max_tests_per_row` tests.
     """
     from datasets import load_dataset
 
@@ -577,8 +570,10 @@ def run_batch(
     verbose: bool = True,
     per_test_timeout_s: int = _APPS_TEST_TIMEOUT_S,
 ) -> dict:
-    """Run `solve()` on every problem, score with `run_tests()`.
-    strict_acc == 1.0 iff all tests pass (APPS standard metric)."""
+    """Run `solve()` on every problem and score it with `run_tests()`.
+
+    strict_acc is 1.0 only if all tests pass (the standard APPS metric).
+    """
     agent = build_agent()
     per_instance: list[dict] = []
     n = len(instances)
@@ -715,7 +710,7 @@ def _canned_demo() -> None:
     if out["code"]:
         _print_scoring(run_tests(out["code"], stdin_io))
 
-    # --- Call-based-mode problem ---
+    # Call-based mode problem
     functional_problem = (
         "Given a list of integers `nums` and an integer `target`, return the "
         "indices of the two numbers in `nums` that add up to `target`. Assume "
@@ -729,7 +724,7 @@ def _canned_demo() -> None:
         "    def twoSum(self, nums: List[int], target: int) -> List[int]:\n"
         "        "
     )
-    # APPS-native parallel-list form; inputs are arg-lists, outputs are return values.
+    # APPS format: parallel lists of arg lists and expected return values.
     functional_io = {
         "fn_name": "twoSum",
         "inputs":  [[[2, 7, 11, 15], 9], [[3, 2, 4], 6], [[3, 3], 6]],

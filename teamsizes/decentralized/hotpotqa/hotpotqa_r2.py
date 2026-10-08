@@ -1,6 +1,5 @@
-"""Decentralized debate topology specialized for HotpotQA, LangGraph."""
+"""Decentralized debate topology for HotpotQA (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -43,9 +42,9 @@ MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 N_AGENTS = int(os.environ.get("DECENTRALIZED_N_AGENTS", "2"))
 N_ROUNDS = int(os.environ.get("DECENTRALIZED_N_ROUNDS", "2"))
 
-# Match openai sibling's max_tool_loops=4. create_react_agent uses its own
-# recursion_limit; give it enough headroom to cover the same tool-loop budget
-# (roughly 3x max_tool_loops to account for alternating AI/Tool messages).
+# max_tool_loops=4, as in the openai sibling. create_react_agent has its own
+# recursion_limit; roughly 3x the loop budget covers the alternating AI/Tool
+# messages.
 _MAX_TOOL_LOOPS = 4
 _RECURSION_LIMIT = _MAX_TOOL_LOOPS * 3
 
@@ -58,9 +57,9 @@ def _load_prompt(role: str) -> str:
     return append_output_contract_from_path((_PROMPTS_DIR / f"{role}.txt").read_text().strip(), __file__, role)
 
 
-# Same short-form format nudge used in single/independent/centralized
-# hotpotqa. Without it Qwen3.5-9B peers emit verbose prose ("Yes, both
-# were American") that scores EM=0 on yes/no questions.
+# Same short-form nudge as single/independent/centralized hotpotqa. Without
+# it Qwen3.5-9B peers answer in prose ("Yes, both were American"), which
+# scores EM=0 on yes/no questions.
 _OUTPUT_FORMAT_NUDGE = (
     "\n\nFINAL OUTPUT FORMAT:\n"
     "After your reasoning, end with a single line exactly of the form:\n"
@@ -138,8 +137,9 @@ def _build_llm() -> ChatOpenAI:
 
 
 def _build_agent():
-    """One react agent, reused across all peers + rounds. Each peer keeps
-    its own message history; the agent is stateless."""
+    """One stateless react agent shared by all peers and rounds; each peer
+    keeps its own message history.
+    """
     return create_react_agent(model=_build_llm(), tools=TOOLS, prompt=SYSTEM_PROMPT)
 
 
@@ -274,10 +274,12 @@ def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
 
 # Aggregation (aligned to openai sibling)
 def best_of_n(answers: list[str]) -> str | None:
-    """Majority over normalized buckets; return the RAW form of the first
-    peer in the winning bucket (preserves capitalization for EM/F1).
-    Tie-break: `max()` returns the first bucket of max length, so the
-    earliest-inserted (lowest peer index) bucket wins on ties."""
+    """Majority vote over normalized answer buckets.
+
+    Returns the raw answer of the first peer in the winning bucket (keeps
+    capitalization for EM/F1). `max()` returns the first largest bucket, so
+    ties go to the lowest peer index.
+    """
     valid = [a for a in answers if a]
     if not valid:
         return None
@@ -296,22 +298,20 @@ def best_of_n(answers: list[str]) -> str | None:
 
 # Orchestration
 def _init_contexts(n: int, question: str) -> list[list[BaseMessage]]:
-    """Each peer's initial history = [HumanMessage(question)]. System prompt
-    is injected by create_react_agent via its `prompt=` arg, not embedded
-    here."""
+    """Start each peer with [HumanMessage(question)]. create_react_agent adds
+    the system prompt via `prompt=`.
+    """
     return [[HumanMessage(content=question)] for _ in range(n)]
 
 
 def solve(question: str) -> dict:
-    """Run N-peer x R-round debate on one HotpotQA question.
+    """Run the N-peer x R-round debate on one HotpotQA question.
 
-    Returns:
-        {
-            "answer":       round-R bucket-majority answer (str) or None,
-            "per_peer":     [{peer, answer, raw}],
-            "all_contexts": per-peer LangChain message histories,
-            "telemetry":    normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        answer:       round-R bucket-majority answer (str) or None
+        per_peer:     [{peer, answer, raw}]
+        all_contexts: per-peer LangChain message histories
+        telemetry:    normalized 5-key token/call counts
     """
     compiled = _build_graph()
     init_state: DebateState = {
@@ -364,9 +364,11 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load HotpotQA dev rows. HotpotQA has stable string ids per row;
-    the first 100 rows at offset=0 are the same questions used by the
-    other hotpotqa topologies for cross-topology parity."""
+    """Load HotpotQA dev rows.
+
+    Rows keep HotpotQA's stable string ids, and the first 100 at offset=0
+    are the same questions the other hotpotqa topologies use.
+    """
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, _HF_CONFIG, trust_remote_code=True)[_HF_SPLIT]
@@ -399,9 +401,9 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the N-peer x R-round debate on every instance, bucket-majority
-    -> short-form answer, compute EM + F1 vs gold, return aggregate
-    summary + optionally write per-instance predictions to JSONL.
+    """Run the debate on every instance and score the bucket-majority answer
+    (EM and F1 vs gold). Returns an aggregate summary and, if `out_path` is
+    set, writes per-instance predictions to JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

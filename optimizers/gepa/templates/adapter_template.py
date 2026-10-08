@@ -1,8 +1,8 @@
 """Template for a new real-runner GEPA adapter.
 
-Copy this file into `real_runner_gepa/adapters/<topology>_<dataset>.py` and
-replace TODO sections. Keep adapter state instance-owned; do not monkey-patch
-global prompts in real runner modules unless there is no safer option.
+Copy to `real_runner_gepa/adapters/<topology>_<dataset>.py` and fill in the
+TODO sections. Keep adapter state on the instance; avoid monkey-patching
+global prompts in real runner modules unless there's no safer option.
 """
 from __future__ import annotations
 

@@ -1,6 +1,5 @@
-"""Centralized topology specialized for LiveCodeBench, LangGraph."""
+"""Centralized topology for LiveCodeBench (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -90,11 +89,9 @@ def python_exec(code: str, stdin: str = "", timeout_s: int = _EXEC_TIMEOUT_S) ->
         return f"ERROR: {e}"
 
 
-# Delegation tools (routing markers)
-# The manager "calls" these to hand the floor to a specific worker. The
-# body echoes the instructions, producing a ToolMessage the worker can
-# read as context. The router after `manager_tools` inspects the name
-# to route to the right worker node.
+# Delegation tools (routing markers). The manager calls one to hand off to
+# a worker; the echoed instructions become a ToolMessage the worker reads,
+# and the router after `manager_tools` picks the worker by tool name.
 @tool("delegate_to_analyzer_worker")
 def delegate_to_analyzer_worker(instructions: str) -> str:
     """Hand the next turn to the analyzer_worker. Use this when you need
@@ -289,8 +286,7 @@ def _manager_node(state: CentralizedState) -> dict:
     llm = _build_llm().bind_tools(MANAGER_TOOLS)
     sys_msg = SystemMessage(content=_manager_system())
     ai = llm.invoke([sys_msg] + state["messages"])
-    # AutoGen messages carry a `.source` name; we mimic that on the
-    # AIMessage via additional_kwargs for trace rendering parity.
+    # Mimic AutoGen's `.source` field so traces render the same way.
     _tag_source(ai, "manager")
     return {"messages": [ai], "turn_count": int(state.get("turn_count", 0)) + 1}
 
@@ -311,13 +307,12 @@ def _route_from_manager(state: CentralizedState) -> str:
             return END
         if getattr(last, "tool_calls", None):
             return "manager_tools"
-    # No tool call, no TERMINATE — loop back and let the manager try again.
+    # No tool call and no TERMINATE: loop back so the manager tries again.
     return "manager"
 
 
 def _route_from_manager_tools(state: CentralizedState) -> str:
-    # Find the most recent AIMessage with tool_calls; its tool_calls tell
-    # us whether any delegation was requested.
+    # Check the latest AIMessage with tool_calls for a delegation request.
     for m in reversed(state["messages"]):
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
@@ -334,8 +329,8 @@ def _make_worker_node(name: str, tools: list, llm: ChatOpenAI):
     agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
 
     def node(state: CentralizedState) -> dict:
-        # create_react_agent returns {"messages": [full history incl. input]},
-        # so we splice out only the new messages it appended.
+        # create_react_agent returns the full history, input included, so keep
+        # only the messages it appended.
         prior = list(state["messages"])
         result = agent.invoke(
             {"messages": prior},
@@ -413,22 +408,22 @@ _CODE_BLOCK_RE = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.DOTALL | re.IG
 
 
 def extract_code(text: str) -> str | None:
-    """Return the LAST fenced code block in `text`, or None.
+    """Return the last fenced code block in `text`, or None.
 
-    Takes the last block because models often revise code in earlier
-    turns before settling on the final version.
+    Models often revise code across turns, so the last block is the final
+    version.
     """
     text = re.sub(r"\bTERMINATE\b", "", text)
     return extract_python_code(text)
 
 
 # Scoring (aligned to single/lcb testing_util.py)
-# Source: LiveCodeBench lcb_runner/evaluation/testing_util.py. Do NOT
-# modify — this is the official scorer. Two paths: stdin tests run a
-# subprocess and compare stdout line-by-line with decimal tolerance;
-# functional tests run in a fresh subprocess with LCB's reliability_guard
-# + setrlimit applied, then exec + call the named function on class
-# Solution (LeetCode style) or in module scope.
+# Source: LiveCodeBench lcb_runner/evaluation/testing_util.py. This is the
+# official scorer; do not modify. Stdin tests run in a subprocess and
+# compare stdout line by line with decimal tolerance. Functional tests run
+# in a fresh subprocess under LCB's reliability_guard and setrlimit, then
+# exec the code and call the named function on class Solution (LeetCode
+# style) or at module scope.
 
 
 def _compare_stdout(actual: str, expected: str) -> bool:
@@ -486,9 +481,10 @@ def _parse_maybe_json(value):
     return value
 
 
-# Worker script run inside each functional test's subprocess.
-# argv: [1]=max_memory_bytes (0 => unlimited), [2]=fn_name, [3]=args_json, [4]=outfile
-# stdin: user's submission source
+# Worker script run in each functional test's subprocess.
+# argv: [1]=max_memory_bytes (0 => unlimited), [2]=fn_name, [3]=args_json,
+#       [4]=outfile
+# stdin: the submission's source
 _FUNCTIONAL_WORKER = """
 import os, sys, json, platform, resource, shutil, subprocess, builtins, faulthandler
 
@@ -610,10 +606,10 @@ def _run_functional_test(code: str, tc: dict, timeout_s: int) -> dict:
 
 
 def run_tests(code: str, tests: list[dict], timeout_s: int = 5) -> dict:
-    """Run `code` against a list of LCB-style tests (stdin or functional).
+    """Run `code` against LCB tests (stdin or functional).
 
-    Dispatches per-test based on 'testtype' (or 'fn_name' presence as
-    fallback). Returns {'pass', 'total', 'pass_rate', 'details'}.
+    Each test's mode comes from 'testtype', falling back to whether
+    'fn_name' is set. Returns {'pass', 'total', 'pass_rate', 'details'}.
     """
     if not tests:
         return {"pass": 0, "total": 0, "pass_rate": 0.0, "details": []}
@@ -668,16 +664,12 @@ def _communications_to_record(m: BaseMessage) -> dict:
 def solve(problem: str, starter_code: str | None = None) -> dict:
     """Run the centralized team on one LCB problem.
 
-    Pass `starter_code` to run in functional (LeetCode) mode; omit for
-    stdin mode.
-
-    Returns:
-        {
-            "code":      inner content of the last fenced ```python``` block (or None),
-            "raw":       manager's last message content,
-            "messages":  list of {source, content} from every turn,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Pass `starter_code` for functional (LeetCode) mode; omit it for stdin
+    mode. Returns a dict with:
+        code       last fenced ```python``` block, or None
+        raw        manager's last message
+        messages   {source, content} for every turn
+        telemetry  normalized 5-key token/call counts
     """
     compiled, _ = _build_graph()
     task = format_prompt(problem, starter_code)
@@ -742,7 +734,7 @@ def load_instances(
     difficulty: str | None = None,
     platform: str | None = None,
 ) -> list[dict]:
-    """Load LCB rows — same schema/IDs as single/lcb for parity."""
+    """Load LCB rows with the same schema and IDs as single/lcb."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)
@@ -899,7 +891,7 @@ def _print_scoring(scored: dict) -> None:
 
 
 def _canned_demo() -> None:
-    # --- Stdin-mode problem (AtCoder/Codeforces style) ---
+    # Stdin-mode problem (AtCoder/Codeforces style)
     stdin_problem = (
         "Read a single integer n from standard input (1 <= n <= 1000) and "
         "print the sum 1 + 2 + ... + n on one line."
@@ -918,7 +910,7 @@ def _canned_demo() -> None:
         _print_scoring(run_tests(out["code"], stdin_tests))
     print(f"=== {len(out['messages'])} messages across the group chat ===")
 
-    # --- Functional-mode problem (LeetCode style) ---
+    # Functional-mode problem (LeetCode style)
     functional_problem = (
         "Given an array of integers `nums` and an integer `target`, return "
         "the indices of the two numbers such that they add up to `target`. "

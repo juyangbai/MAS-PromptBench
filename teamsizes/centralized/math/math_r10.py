@@ -1,6 +1,5 @@
-"""Centralized topology specialized for competition MATH, LangGraph."""
+"""Centralized topology for competition MATH (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -77,11 +76,9 @@ def calculator(expression: str) -> str:
 WORKER_TOOLS = [calculator]
 
 
-# Delegation tools (routing markers)
-# The manager "calls" these to hand the floor to a specific worker. The
-# body echoes the instructions, producing a ToolMessage the worker can
-# read as context. The router after `manager_tools` inspects the name
-# to route to the right worker node.
+# Delegation tools (routing markers). The manager calls one to hand off to
+# a worker; the echoed instructions become a ToolMessage the worker reads,
+# and the router after `manager_tools` picks the worker by tool name.
 @tool("delegate_to_decomposer_worker")
 def delegate_to_decomposer_worker(instructions: str) -> str:
     """Hand the next turn to the decomposer_worker. Use this when you need
@@ -245,8 +242,7 @@ def _manager_node(state: CentralizedState) -> dict:
     llm = _build_llm().bind_tools(MANAGER_TOOLS)
     sys_msg = SystemMessage(content=_manager_system())
     ai = llm.invoke([sys_msg] + state["messages"])
-    # AutoGen messages carry a `.source` name; we mimic that on the
-    # AIMessage via additional_kwargs for trace rendering parity.
+    # Mimic AutoGen's `.source` field so traces render the same way.
     _tag_source(ai, "manager")
     return {"messages": [ai], "turn_count": int(state.get("turn_count", 0)) + 1}
 
@@ -267,13 +263,12 @@ def _route_from_manager(state: CentralizedState) -> str:
             return END
         if getattr(last, "tool_calls", None):
             return "manager_tools"
-    # No tool call, no TERMINATE — loop back and let the manager try again.
+    # No tool call and no TERMINATE: loop back so the manager tries again.
     return "manager"
 
 
 def _route_from_manager_tools(state: CentralizedState) -> str:
-    # Find the most recent AIMessage with tool_calls; its tool_calls tell
-    # us whether any delegation was requested.
+    # Check the latest AIMessage with tool_calls for a delegation request.
     for m in reversed(state["messages"]):
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
@@ -290,8 +285,8 @@ def _make_worker_node(name: str, tools: list, llm: ChatOpenAI):
     agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
 
     def node(state: CentralizedState) -> dict:
-        # create_react_agent returns {"messages": [full history incl. input]},
-        # so we splice out only the new messages it appended.
+        # create_react_agent returns the full history, input included, so keep
+        # only the messages it appended.
         prior = list(state["messages"])
         result = agent.invoke(
             {"messages": prior},
@@ -366,10 +361,10 @@ def _build_graph(llm: Optional[ChatOpenAI] = None):
 
 # Output parsing
 def extract_boxed(text: str) -> str | None:
-    """Return the inner content of the LAST \boxed{...} in the text.
+    """Return the inner content of the last \boxed{...} in `text`, or None.
 
-    Handles nested braces (e.g., \boxed{\frac{1}{2}}) via brace
-    counting. Aligned to single/math's extractor.
+    Counts braces so nesting like \boxed{\frac{1}{2}} works. Same as
+    single/math's extractor.
     """
     marker = r"\boxed{"
     idx = text.rfind(marker)
@@ -392,9 +387,9 @@ def extract_answer(text: str) -> str | None:
     return extract_boxed(text)
 
 
-# Scoring (aligned port of Hendrycks MATH is_equiv)
+# Scoring (port of Hendrycks MATH is_equiv)
 # Source: https://github.com/hendrycks/math/blob/main/modeling/math_equivalence.py
-# Do not modify — this is the community-standard MATH scorer used by
+# Do not modify. This is the standard MATH scorer used by
 # lm-evaluation-harness and published MATH results.
 
 
@@ -542,13 +537,11 @@ def _communications_to_record(m: BaseMessage) -> dict:
 def solve(problem: str) -> dict:
     """Run the centralized team on one MATH problem.
 
-    Returns:
-        {
-            "answer":    inner content of the LAST \\boxed{...} or None,
-            "raw":       manager's last message content,
-            "messages":  list of {source, content} from every turn,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        answer     content of the last \\boxed{...}, or None
+        raw        manager's last message
+        messages   {source, content} for every turn
+        telemetry  normalized 5-key token/call counts
     """
     compiled, _ = _build_graph()
     result = compiled.invoke(
@@ -576,10 +569,9 @@ def solve(problem: str) -> dict:
     }
 
 
-# Dataset loader
-# qwedsacf/competition_math filtered to Precalculus / Level 5 (312 rows).
-# Gold is extracted from the LAST \\boxed{...} in the `solution` column.
-# IDs are stable MD5 of problem text for cross-topology parity.
+# Dataset loader: qwedsacf/competition_math, Precalculus / Level 5 only
+# (312 rows). Gold is the last \boxed{...} in the `solution` column. IDs
+# are the MD5 of the problem text, stable across topologies.
 _HF_DATASET = "qwedsacf/competition_math"
 _HF_SPLIT = "train"
 _SUBJECT = "Precalculus"
@@ -638,9 +630,10 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every problem, compare boxed answer vs gold via
-    Hendrycks `is_equiv`, return aggregate summary + optionally write
-    per-instance predictions to JSONL.
+    """Run `solve()` on every problem and score with Hendrycks `is_equiv`.
+
+    Returns an aggregate summary; if `out_path` is set, per-instance
+    predictions are also written there as JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

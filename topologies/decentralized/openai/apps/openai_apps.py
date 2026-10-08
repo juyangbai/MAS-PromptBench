@@ -1,6 +1,5 @@
 """Decentralized debate topology specialized for APPS, OpenAI SDK."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -531,7 +530,7 @@ def load_instances(
     difficulty: str | None = None,
     max_tests_per_row: int | None = 20,
 ) -> list[dict]:
-    """Load APPS test rows — same IDs as single/apps for parity."""
+    """Load APPS test rows, with the same IDs as single/apps."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)

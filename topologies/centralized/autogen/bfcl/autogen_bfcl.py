@@ -1,6 +1,5 @@
 """Centralized topology specialized for BFCL, AutoGen."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -49,14 +48,13 @@ def _load_prompt(role: str) -> str:
 
 # Model registration in bfcl-eval
 def _register_model_with_bfcl(model_id: str) -> None:
-    """Tell bfcl-eval how to handle function names for `model_id`.
+    """Register `model_id` in bfcl-eval's MODEL_CONFIG_MAPPING.
 
-    `ast_checker` -> `convert_func_name` looks up the model in
-    MODEL_CONFIG_MAPPING to decide whether to rewrite '.' -> '_' in
-    function names. Qwen3.5-9B handles dots fine (same as the
-    registered qwen3-8b/-14b entries), but our model name isn't in
-    the registry, so without this we hit KeyError on any instance
-    with a dotted name (e.g. `math.factorial`).
+    `ast_checker` -> `convert_func_name` looks the model up there to decide
+    whether to rewrite '.' -> '_' in function names. Unregistered models
+    raise KeyError on any instance with a dotted name (e.g. `math.factorial`).
+    Qwen3.5-9B handles dots fine, same as the registered qwen3-8b/-14b
+    entries.
     """
     if model_id in MODEL_CONFIG_MAPPING:
         return
@@ -140,8 +138,8 @@ def build_team() -> SelectorGroupChat:
         system_message=_load_prompt("validator_worker"),
     )
 
-    # Force manager-routing: after any worker speaks, the manager MUST be
-    # the next speaker (so workers never chain turns with each other).
+    # Force manager routing: after any worker speaks, the manager goes next,
+    # so workers never chain turns with each other.
     def _selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
         if not messages:
             return manager.name
@@ -170,10 +168,10 @@ def build_team() -> SelectorGroupChat:
 
 # Prompt scaffolding
 def format_task(user_request: str, schemas_text: str) -> str:
-    """Build the single task string sent to the group chat.
+    """Build the task string for the group chat's first `user` message.
 
-    The user request + schemas both go into the initial `user` message
-    so every agent sees them from the start of the dialogue.
+    Both the request and the schemas go in it, so every agent sees them from
+    the start.
     """
     return (
         "USER REQUEST:\n"
@@ -208,9 +206,9 @@ _NAME_ARGS_PAIRS = (
 
 
 def _normalize_call(d: dict) -> dict:
-    """Normalize the common wrong shapes back to canonical {name: args}.
+    """Map the common wrong shapes to canonical {name: args}.
 
-    Leaves a dict alone if it's already canonical (single string-keyed arg dict).
+    Other dicts, including already-canonical ones, pass through unchanged.
     """
     for name_key, args_key in _NAME_ARGS_PAIRS:
         if (
@@ -224,11 +222,10 @@ def _normalize_call(d: dict) -> dict:
 
 
 def extract_canonical(text: str) -> list[dict] | None:
-    """Extract the last fenced JSON list-of-dicts from `text`, normalizing
-    common non-canonical shapes emitted by chat models.
+    """Return the last fenced JSON list of dicts in `text`, normalized.
 
-    Returns None if no fenced JSON parses to a non-empty list-of-dicts.
-    Strips trailing TERMINATE so the fence regex doesn't misalign.
+    None if no fenced block parses to a non-empty list of dicts. TERMINATE
+    is stripped first so the fence regex doesn't misalign.
     """
     text = re.sub(r"\bTERMINATE\b", "", text)
     candidates: list[str] = [m.group(1) for m in _FENCED_RE.finditer(text)]
@@ -249,7 +246,7 @@ def score_one(
     ground_truth: list[dict],
     category: str,
 ) -> dict:
-    """Delegate to bfcl-eval's AST checker (aligned to other topologies)."""
+    """Score with bfcl-eval's AST checker, same as the other topologies."""
     return ast_checker(
         function_schemas,
         model_output,
@@ -302,8 +299,9 @@ def load_instances(
 
 # Orchestration
 def _flatten_user_request(question: list) -> str:
-    """BFCL stores `question` as [[msgs...]]; for single-turn subsets we
-    take the concatenated user-turn contents."""
+    """BFCL stores `question` as [[msgs...]]; for single-turn subsets, join
+    the turns' contents into one string.
+    """
     if not question:
         return ""
     turns = question[0] if isinstance(question[0], list) else question
@@ -321,12 +319,10 @@ def _flatten_user_request(question: list) -> str:
 async def solve_async(instance: dict) -> dict:
     """Run the centralized team on one BFCL instance.
 
-    Returns:
-        {
-            "model_output": canonical call list [{fn: {arg: val}}] or [],
-            "raw":          manager's last message content,
-            "messages":     list of {source, content} from every turn,
-        }
+    Returns a dict with:
+        model_output  canonical call list [{fn: {arg: val}}], or []
+        raw           manager's last message content
+        messages      [{source, content}] for every turn
     """
     team = build_team()
     user_request = _flatten_user_request(instance["question"])
@@ -370,8 +366,10 @@ def run_one(
     category: str,
     out_dir: Path,
 ) -> dict:
-    """Solve one BFCL instance via the manager-worker team and score the
-    canonical output. Writes group-chat trace to out_dir/traces/<id>.txt."""
+    """Solve and score one BFCL instance with the manager-worker team.
+
+    Writes the group-chat trace to out_dir/traces/<id>.txt.
+    """
     iid = instance["id"]
     summary: dict = {"id": iid, "category": category}
 

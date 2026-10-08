@@ -1,13 +1,12 @@
-"""Single-agent ReAct topology specialized for MATH (competition math).
+"""Single-agent ReAct topology for MATH (competition math).
 
-Competition-style math problems. Models are expected to reason step by step
-and emit their final answer inside \\boxed{...}. The scorer extracts the
-last boxed answer and compares after light LaTeX normalization.
+The model reasons step by step and puts its final answer in \\boxed{...}.
+The scorer takes the last boxed answer and compares after light LaTeX
+normalization.
 
-The system prompt is loaded from configs/prompts/single/math/solver.txt.
+System prompt: configs/prompts/single/math/solver.txt.
 """
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -39,11 +38,10 @@ MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PROMPT_PATH = _REPO_ROOT / "configs" / "prompts" / "single" / "math" / "solver.txt"
 
-# The generated solver.txt encourages `\boxed{...}` but doesn't strictly
-# require it on the final line — append a tight format nudge so the
-# scorer's `extract_boxed` reliably finds the answer (Qwen3.5-9B
-# sometimes emits "the answer is 42" without the box). Same pattern as
-# single/hotpotqa's short-form nudge.
+# The generated solver.txt encourages `\boxed{...}` but doesn't require it
+# on the final line, and Qwen3.5-9B sometimes writes "the answer is 42"
+# with no box. Append a strict format nudge so `extract_boxed` finds the
+# answer. Same pattern as single/hotpotqa's short-form nudge.
 _OUTPUT_FORMAT_NUDGE = (
     "\n\nFINAL OUTPUT FORMAT:\n"
     "After all reasoning, end with a single line containing the final "
@@ -120,9 +118,9 @@ def strip_thinking(text: str) -> str:
 
 
 def extract_boxed(text: str) -> str | None:
-    """Return the inner content of the LAST \\boxed{...} in the text.
+    """Return the contents of the last \\boxed{...} in `text`.
 
-    Handles nested braces (e.g., \\boxed{\\frac{1}{2}}) via brace counting.
+    Nested braces (e.g. \\boxed{\\frac{1}{2}}) are handled by brace counting.
     """
     marker = r"\boxed{"
     idx = text.rfind(marker)
@@ -150,9 +148,9 @@ def extract_answer(text: str) -> str | None:
 # Scoring
 # Verbatim port of Hendrycks' math_equivalence.py (NeurIPS 2021).
 # Source:  https://github.com/hendrycks/math/blob/main/modeling/math_equivalence.py
-# This is the community-standard MATH scorer used by lm-evaluation-harness,
-# OpenAI PRM800K, and most published MATH results. Do not modify — keep
-# aligned so numbers are comparable to prior work.
+# This is the standard MATH scorer used by lm-evaluation-harness, OpenAI
+# PRM800K and most published MATH results. Don't modify it; it has to stay
+# identical for numbers to be comparable with prior work.
 
 
 def _fix_fracs(string):
@@ -319,8 +317,8 @@ def exact_match_score(pred: str, gold: str) -> float:
 def solve(problem: str, agent=None) -> dict:
     """Run the agent on one MATH problem.
 
-    Strips Qwen3's <think>...</think> reasoning from every AI message.
-    Optional `agent` param lets callers reuse one agent across a batch.
+    Strips Qwen3 <think>...</think> reasoning from every AI message. Pass
+    `agent` to reuse one agent across a batch.
 
     Returns {'answer': str | None, 'raw': str, 'messages': list}.
     """
@@ -342,10 +340,10 @@ def solve(problem: str, agent=None) -> dict:
 
 
 # Dataset loader
-# Switched from HuggingFaceH4/MATH-500 (500 rows, `answer` field provided)
-# to qwedsacf/competition_math (12500 rows, gold must be extracted from
-# `solution`'s last \boxed{...}). We filter to Precalculus / Level 5 —
-# 312 rows — so all topologies run on the same hard-math slice.
+# Uses qwedsacf/competition_math (12500 rows; gold is the last \boxed{...}
+# in `solution`) instead of HuggingFaceH4/MATH-500 (500 rows with an
+# `answer` field), filtered to Precalculus / Level 5 (312 rows) so every
+# topology runs on the same hard-math slice.
 _HF_DATASET = "qwedsacf/competition_math"
 _HF_SPLIT = "train"
 _SUBJECT = "Precalculus"
@@ -357,14 +355,13 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load the Precalculus / Level-5 subset of qwedsacf/competition_math.
+    """Load the Precalculus / Level 5 subset of qwedsacf/competition_math.
 
-    The dataset has no `answer` field — gold is extracted from the LAST
-    `\\boxed{...}` in the `solution` column. `id` is a stable MD5 of the
-    problem text, so IDs line up across topologies for per-row parity.
+    There is no `answer` field, so gold is the last `\\boxed{...}` in the
+    `solution` column. `id` is an MD5 of the problem text, so ids line up
+    across topologies for per-row comparison.
 
-    Returns list of dicts:
-        {id, problem, answer, subject, level, raw}
+    Returns dicts with {id, problem, answer, subject, level, raw}.
     """
     import hashlib
 
@@ -412,9 +409,10 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every problem, compare boxed answer vs gold via
-    Hendrycks `is_equiv`, return aggregate summary + optionally write
-    per-instance predictions to JSONL.
+    """Run `solve()` on every problem and score with Hendrycks `is_equiv`.
+
+    Returns an aggregate summary; if `out_path` is set, per-instance
+    predictions are also written there as JSONL.
     """
     agent = build_agent()  # build once; reuse across the batch
     per_instance: list[dict] = []

@@ -1,11 +1,9 @@
 """Independent/BFCL real-runner adapter pilot.
 
-This is a contained copy/adaptation of the real runner shape from:
-`topologies/independent/bfcl/langgraph_bfcl.py`.
-
-The important difference is that the role prompt is instance-owned and
-mutable through the adapter protocol, so an optimizer can replace it without
-editing files under `configs/` or `topologies/`.
+Adapted from `topologies/independent/bfcl/langgraph_bfcl.py`, except the
+role prompt is owned by the adapter instance and can be replaced through
+the adapter protocol. An optimizer can then change it without editing
+files under `configs/` or `topologies/`.
 """
 from __future__ import annotations
 

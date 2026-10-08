@@ -1,6 +1,5 @@
-"""Decentralized debate topology specialized for APPS, LangGraph."""
+"""Decentralized debate topology for APPS (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -45,10 +44,9 @@ MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 N_AGENTS = int(os.environ.get("DECENTRALIZED_N_AGENTS", "8"))
 N_ROUNDS = int(os.environ.get("DECENTRALIZED_N_ROUNDS", "2"))
 
-# Match openai sibling's max_tool_loops=6. create_react_agent uses its own
-# recursion_limit; give it enough headroom to cover the same tool-loop
-# budget (roughly 3x max_tool_loops to account for alternating AI/Tool
-# messages and the final AI turn).
+# Same max_tool_loops=6 as the openai sibling. create_react_agent has its
+# own recursion_limit; 3x the loop budget roughly covers the alternating
+# AI/Tool messages plus the final AI turn.
 _MAX_TOOL_LOOPS = 6
 _RECURSION_LIMIT = _MAX_TOOL_LOOPS * 3
 
@@ -112,8 +110,9 @@ def _build_llm() -> ChatOpenAI:
 
 
 def _build_agent():
-    """One react agent, reused across all peers + rounds. Each peer keeps
-    its own message history; the agent is stateless."""
+    """One stateless react agent shared by all peers and rounds; each peer
+    keeps its own message history.
+    """
     return create_react_agent(
         model=_build_llm(), tools=[python_exec], prompt=SYSTEM_PROMPT
     )
@@ -480,9 +479,9 @@ def best_of_n(
 
 # Orchestration
 def _init_contexts(n: int, user_prompt: str) -> list[list[BaseMessage]]:
-    """Each peer's initial history = [HumanMessage(user_prompt)]. System
-    prompt is injected by create_react_agent via its `prompt=` arg, not
-    embedded here.
+    """Start each peer's history with only the user prompt.
+
+    create_react_agent adds the system prompt through its `prompt=` arg.
     """
     return [[HumanMessage(content=user_prompt)] for _ in range(n)]
 
@@ -568,7 +567,7 @@ def load_instances(
     difficulty: str | None = None,
     max_tests_per_row: int | None = 20,
 ) -> list[dict]:
-    """Load APPS test rows — same IDs as single/apps for parity."""
+    """Load APPS test rows, with the same IDs as single/apps."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)

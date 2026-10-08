@@ -1,8 +1,8 @@
-"""Shared ToolHop loader, solver, scorer, and CLI helpers.
+"""Shared ToolHop loader, solver, scorer and CLI helpers.
 
-ToolHop rows include OpenAI-style tool schemas and Python source for local
-tools. Real ToolHop solving requires executing those dataset-provided
-functions, so execution is gated by `TOOLHOP_ALLOW_DATASET_EXEC=1`.
+ToolHop rows ship OpenAI-style tool schemas plus Python source for the
+tools. Solving means executing that dataset code, so it is gated behind
+`TOOLHOP_ALLOW_DATASET_EXEC=1`.
 """
 
 from __future__ import annotations
@@ -338,11 +338,10 @@ def _is_safe_exception_class(node: ast.ClassDef) -> bool:
 
 
 def _function_only_module(source: str, sid: Any, index: int) -> ast.Module:
-    """Return a module containing only docstrings and function definitions.
+    """Keep only the docstrings and function definitions from `source`.
 
-    Some ToolHop function snippets include top-level "example usage" calls
-    after the actual function. Those are not part of the tool surface and must
-    not run during loading.
+    Some ToolHop snippets end with top-level "example usage" calls that are
+    not part of the tool and must not run at load time.
     """
     tree = ast.parse(source)
     body: list[ast.stmt] = []
@@ -356,9 +355,9 @@ def _function_only_module(source: str, sid: Any, index: int) -> ast.Module:
         if _is_docstring(node):
             body.append(node)
             continue
-        # Drop imports, example calls, assignments, comments parsed as no-ops,
-        # etc. Imports used by ToolHop snippets are provided explicitly in the
-        # restricted namespace below.
+        # Drop imports, example calls, assignments, no-op expressions, etc. The
+        # imports these snippets need are provided in the restricted namespace
+        # below.
     if not any(isinstance(node, ast.FunctionDef) for node in body):
         raise RuntimeError(f"ToolHop function source {sid}/{index} defines no function")
     return ast.fix_missing_locations(ast.Module(body=body, type_ignores=[]))

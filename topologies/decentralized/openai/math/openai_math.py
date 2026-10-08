@@ -1,6 +1,5 @@
 """Decentralized debate topology specialized for competition MATH, OpenAI SDK."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -39,11 +38,11 @@ def _reset_telem_acc() -> None:
 
 
 # Stall safeguards
-# Per-row wall-clock cap using SIGALRM when running on the main thread. The
-# concurrent runner may execute run_batch([row]) inside a ThreadPool worker,
-# where Python disallows signal handlers, so the guard becomes a no-op there.
-# On symbolic MATH problems (matrices, trig) the calculator tool returns ERROR
-# for non-numeric expressions and peers loop retrying variants.
+# Per-row wall-clock cap via SIGALRM on the main thread. The concurrent
+# runner may call run_batch([row]) in a ThreadPool worker, where signal
+# handlers aren't allowed, so there the guard is a no-op. On symbolic
+# MATH problems (matrices, trig) the calculator returns ERROR for
+# non-numeric expressions and peers keep retrying variants.
 PER_ROW_TIMEOUT_S = 120
 _MAX_TOOL_LOOPS = 4  # was 6
 
@@ -58,8 +57,9 @@ def _row_timeout_handler(signum, frame):
 
 @contextlib.contextmanager
 def _row_timeout_guard(seconds: int):
-    """Install SIGALRM for `seconds`; uninstall on exit regardless of
-    outcome so timeouts in one row don't bleed into the next."""
+    """Arm SIGALRM for `seconds` and always disarm on exit, so one row's
+    timeout can't bleed into the next.
+    """
     import threading
     if threading.current_thread() is not threading.main_thread():
         yield
@@ -189,11 +189,11 @@ def solve_equation(
     variable: str = "x",
     domain: str = "real",
 ) -> str:
-    """Numerically solve one-variable equations and simplify candidates.
+    """Numerically solve a one-variable equation and simplify the roots.
 
-    This intentionally avoids heavyweight symbolic `solve()` because trig
-    equations can hang. We scan a bounded real domain, refine sign changes by
-    bisection, and return exact-looking candidates via `nsimplify`.
+    Avoids sympy's symbolic `solve()`, which can hang on trig equations.
+    Scans a bounded real domain, refines sign changes by bisection and
+    returns exact-looking candidates via `nsimplify`.
     """
     import sympy as sp
 
@@ -425,9 +425,9 @@ def run_debate(problem: str) -> list[list[dict]]:
 
 # Output parsing
 def extract_boxed(text: str) -> str | None:
-    """Return the inner content of the LAST \boxed{...} in the text.
-    Handles nested braces via brace counting. Aligned to
-    single/math's extractor."""
+    """Return the contents of the last \boxed{...}, handling nested braces.
+    Same extractor as single/math.
+    """
     marker = r"\boxed{"
     idx = text.rfind(marker)
     if idx < 0:
@@ -569,8 +569,7 @@ def exact_match_score(pred: str, gold: str) -> float:
 
 # Aggregation
 def equiv_majority(answers: list[str]) -> str | None:
-    """Majority over Hendrycks-equivalence buckets — aligned to
-    independent/math's aggregator."""
+    """Majority over Hendrycks-equivalence buckets, same as independent/math."""
     valid = [a for a in answers if a]
     if not valid:
         return None
@@ -610,10 +609,9 @@ def solve(problem: str) -> dict:
     }
 
 
-# Dataset loader
-# qwedsacf/competition_math filtered to Precalculus / Level 5 (312 rows).
-# Gold is extracted from the LAST \\boxed{...} in the `solution` column.
-# IDs are stable MD5 of problem text for cross-topology parity.
+# Dataset loader: qwedsacf/competition_math, Precalculus / Level 5 only
+# (312 rows). Gold is the last \boxed{...} in the `solution` column. IDs
+# are the MD5 of the problem text, stable across topologies.
 _HF_DATASET = "qwedsacf/competition_math"
 _HF_SPLIT = "train"
 _SUBJECT = "Precalculus"
@@ -672,9 +670,9 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every problem, compare debate boxed answer vs gold
-    via Hendrycks `is_equiv`, return aggregate summary + optionally write
-    per-instance predictions to JSONL.
+    """Run `solve()` on every problem and check the boxed answer against gold
+    with Hendrycks `is_equiv`. Returns an aggregate summary and, if
+    `out_path` is set, writes per-instance predictions to JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

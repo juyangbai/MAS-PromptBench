@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Team-size baseline sweep.
 #
-# Runs each teamsizes cell (team-size r ∈ {2,4,8,10} × topology × dataset) as a
-# standalone batch — one process per cell against a single endpoint. No sharding.
+# Runs each cell (team size r in {2,4,8,10} x topology x dataset) as its own
+# batch process against one endpoint. No sharding.
 #
-# Override via environment: VLLM_BASE_URL MODEL_ID RVALUES TOPOLOGIES DATASETS <DATASET>_LIMIT
+# Env overrides: VLLM_BASE_URL MODEL_ID RVALUES TOPOLOGIES DATASETS
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 

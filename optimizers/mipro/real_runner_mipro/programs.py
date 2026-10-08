@@ -147,9 +147,9 @@ def fail_on_adapter_error() -> bool:
 def scoreable_adapter_runtime_error(exc: BaseException) -> bool:
     """Errors that should fail one example, not the whole MIPRO pair."""
 
-    # Real-runner execution talks to local/remote OpenAI-compatible servers.
-    # A transient endpoint hiccup should make this one example score 0, not
-    # destroy an hours-long MIPRO pair and leave no meta.json artifact.
+    # Real runners call local/remote OpenAI-compatible servers. A transient
+    # endpoint error should score this one example 0, not kill an hours-long
+    # MIPRO pair before it writes meta.json.
     scoreable_names = {
         "APIConnectionError",
         "APIError",
@@ -188,9 +188,8 @@ def adapter_runtime_error_output(exc: BaseException) -> dict[str, Any]:
 class RealRunnerRolePredict(dspy.Predict):
     """MIPRO-mutable prompt holder for one real-runner role.
 
-    The owning AdapterBackedProgram normally runs the adapter once and emits
-    traces for all roles. Calling this predictor directly is supported for
-    single-role debugging.
+    AdapterBackedProgram normally runs the adapter once and emits traces for
+    all roles. Calling this predictor directly is for single-role debugging.
     """
 
     def __init__(self, adapter: RealRunnerAdapter, role: str):
@@ -291,7 +290,7 @@ def append_trace(module: dspy.Predict, inputs: dict[str, Any], outputs: dspy.Pre
 
 
 class AdapterBackedProgram(dspy.Module):
-    """optimizer-compatible DSPy program backed by one real-runner adapter."""
+    """Optimizer-compatible DSPy program backed by one real-runner adapter."""
 
     def __init__(self, adapter: RealRunnerAdapter):
         super().__init__()
@@ -334,7 +333,7 @@ class AdapterBackedProgram(dspy.Module):
 
 
 class IndependentBFCLRealRunnerProgram(AdapterBackedProgram):
-    """optimizer-compatible program that executes the real independent/BFCL runner."""
+    """Optimizer-compatible program for the real independent/BFCL runner."""
 
     def __init__(self, prompt: str | None = None, n_agents: int | None = None):
         adapter_cls = get_adapter_class("bfcl", "independent")
@@ -342,7 +341,7 @@ class IndependentBFCLRealRunnerProgram(AdapterBackedProgram):
 
 
 class RealRunnerProgram(AdapterBackedProgram):
-    """optimizer-compatible program for any registered real-runner pair."""
+    """Optimizer-compatible program for any registered real-runner pair."""
 
     def __init__(self, dataset: str, topology: str, **adapter_kwargs):
         adapter_cls = get_adapter_class(dataset, topology)
@@ -350,7 +349,7 @@ class RealRunnerProgram(AdapterBackedProgram):
 
 
 class BFCLRealRunnerProgram(AdapterBackedProgram):
-    """optimizer-compatible program for any implemented BFCL real-runner topology."""
+    """Optimizer-compatible program for any BFCL real-runner topology."""
 
     def __init__(self, topology: str, **adapter_kwargs):
         super().__init__(get_adapter_class("bfcl", topology)(**adapter_kwargs))

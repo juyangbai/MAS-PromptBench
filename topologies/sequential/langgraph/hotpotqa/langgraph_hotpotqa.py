@@ -1,6 +1,5 @@
 """Sequential topology specialized for HotpotQA, implemented in LangGraph."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -224,7 +223,7 @@ def _make_plain_node(role, sys_prompt, llm, template, prior_roles):
 
 
 def _build_graph(llm: ChatOpenAI):
-    """Build the 4-stage planner -> retriever -> reasoner -> writer pipeline."""
+    """4-stage pipeline: planner -> retriever -> reasoner -> writer."""
     stages = [
         (
             "planner",
@@ -281,10 +280,8 @@ _ANSWER_RE = re.compile(
 
 
 def extract_answer(text: str) -> str | None:
-    """Return the writer's short-form answer.
-
-    Prefers the last 'Answer: X' pattern. Falls back to the last non-empty
-    line of the cleaned text.
+    """Return the writer's short-form answer: the last 'Answer: X' match, else
+    the last non-empty line.
     """
     matches = _ANSWER_RE.findall(text)
     if matches:
@@ -336,13 +333,11 @@ def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
 def solve(question: str) -> dict:
     """Run the 4-stage sequential graph on one HotpotQA question.
 
-    Returns:
-        {
-            "answer":    final short-form answer string or None,
-            "raw":       writer's full output text,
-            "by_stage":  {planner, retriever, reasoner, writer} -> text,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        answer     final short-form answer, or None
+        raw        writer's full output text
+        by_stage   {planner, retriever, reasoner, writer} -> text
+        telemetry  normalized 5-key token/call counts
     """
     llm = _build_llm()
     compiled, roles = _build_graph(llm)
@@ -371,9 +366,9 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load HotpotQA dev rows. HotpotQA has stable string ids per row;
-    the first 100 rows at offset=0 are the same questions used by
-    single/hotpotqa and independent/hotpotqa for cross-topology parity.
+    """Load HotpotQA dev rows. Row ids are stable strings, and the first 100
+    rows at offset=0 are the questions used by single/hotpotqa and
+    independent/hotpotqa, for cross-topology parity.
     """
     from datasets import load_dataset
 
@@ -407,9 +402,9 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the 4-stage LangGraph pipeline on every instance, compute EM + F1
-    vs gold, return aggregate summary + optionally write per-instance
-    predictions to JSONL.
+    """Run the 4-stage pipeline on every instance and score EM/F1 against
+    gold. Returns a summary and optionally writes per-instance predictions
+    to JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

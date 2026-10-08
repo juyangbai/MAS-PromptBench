@@ -1,6 +1,5 @@
 """Single-agent ReAct topology specialized for LiveCodeBench."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -76,9 +75,9 @@ def python_exec(code: str, stdin: str = "", timeout_s: int = _EXEC_TIMEOUT_S) ->
 
 
 # Agent
-# User-message format templates — verbatim from LiveCodeBench's official
-# lcb_runner/prompts/code_generation.py. Public test cases are intentionally
-# NOT included in the prompt (matching LCB behavior).
+# User-message format templates, verbatim from LiveCodeBench's
+# lcb_runner/prompts/code_generation.py. Public test cases are left out
+# of the prompt, as in LCB.
 
 _FORMAT_STDIN = (
     "### Format: Read the inputs from stdin solve the problem and write "
@@ -101,10 +100,9 @@ _FORMAT_FUNCTIONAL = (
 
 
 def format_prompt(problem: str, starter_code: str | None = None) -> str:
-    """Build the user-facing prompt for one LCB problem.
+    """Build the user prompt for one LCB problem, in the official LCB format.
 
-    Follows the official LCB prompt format. Presence of `starter_code`
-    selects functional / LeetCode mode; absence selects stdin mode.
+    `starter_code` selects functional (LeetCode) mode; without it, stdin mode.
     """
     if starter_code:
         suffix = _FORMAT_FUNCTIONAL.format(starter_code=starter_code.rstrip())
@@ -131,7 +129,7 @@ def build_agent():
 
 
 # Output Parsing
-# Grabs fenced code blocks: ```python\n...\n``` (also accepts ```py or bare ```).
+# Fenced code blocks: ```python, ```py, or bare ```.
 _CODE_BLOCK_RE = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.DOTALL | re.IGNORECASE)
 
 
@@ -144,30 +142,31 @@ def strip_thinking(text: str) -> str:
 
 
 def extract_code(text: str) -> str | None:
-    """Return the LAST fenced code block in `text`, or None.
+    """Return the last fenced code block in `text`, or None.
 
-    Takes the last block because models often revise their code in earlier
-    turns before settling on the final version.
+    The last block wins because models often revise their code in earlier
+    turns before settling on a final version.
     """
     return extract_python_code(text)
 
 
 def extract_answer(text: str) -> str | None:
-    """Alias for extract_code — kept to match the other scorers' interface."""
+    """Alias for extract_code, matching the other scorers' interface."""
     return extract_code(text)
 
 
 # Scoring
-# Matches the two evaluation paths used by LiveCodeBench's official
+# Mirrors the two evaluation paths in LiveCodeBench's official
 # lcb_runner/evaluation/testing_util.py:
-#   - stdin tests: child process, feed stdin, compare stdout (line-by-line
-#     with decimal tolerance).
+#   - stdin tests: run in a child process, feed stdin, compare stdout
+#     line by line with decimal tolerance.
 #   - functional tests: fresh subprocess with LCB's reliability_guard and
-#     resource limits applied, then exec + call fn, compare return value.
+#     resource limits applied, then exec the code, call fn and compare the
+#     return value.
 #
-# The functional path runs in a subprocess (instead of in-process) so the
-# reliability_guard monkey-patches and setrlimit caps do not leak into the
-# harness. Guard contents are ported verbatim from LCB testing_util.py.
+# Functional tests run in a subprocess rather than in-process so the
+# reliability_guard monkey-patches and setrlimit caps don't leak into the
+# harness. The guard code is ported verbatim from LCB testing_util.py.
 
 
 def _compare_stdout(actual: str, expected: str) -> bool:
@@ -230,10 +229,11 @@ def _parse_maybe_json(value):
     return value
 
 
-# Worker script run inside each functional test's subprocess.
-# Ported from LCB's testing_util.py `reliability_guard` + `run_test` logic.
-# argv: [1]=max_memory_bytes (0 => unlimited), [2]=fn_name, [3]=args_json, [4]=outfile
-# stdin: user's submission source
+# Worker script run in each functional test's subprocess, ported from
+# LCB testing_util.py `reliability_guard` + `run_test`.
+# argv: [1]=max_memory_bytes (0 = unlimited), [2]=fn_name, [3]=args_json,
+#       [4]=outfile
+# stdin: the submitted source code
 _FUNCTIONAL_WORKER = """
 import os, sys, json, platform, resource, shutil, subprocess, builtins, faulthandler
 
@@ -302,11 +302,10 @@ _FUNCTIONAL_MEMORY_BYTES = int(os.environ.get("LCB_FUNCTIONAL_MEMORY_BYTES", str
 
 
 def _run_functional_test(code: str, tc: dict, timeout_s: int) -> dict:
-    """Run `code` in a fresh subprocess with LCB's reliability_guard + setrlimit.
+    """Run one functional test in a fresh subprocess, like official LCB.
 
-    Matches LCB's official behavior (reliability_guard + resource limits +
-    call the target function) while keeping the guards isolated inside the
-    child process so they do not leak into the harness.
+    The child applies LCB's reliability_guard and setrlimit limits before
+    calling the target function, so the guards don't leak into the harness.
     """
     fn_name = tc.get("fn_name") or tc.get("func_name")
     if not fn_name:
@@ -365,12 +364,13 @@ def _run_functional_test(code: str, tc: dict, timeout_s: int) -> dict:
 def run_tests(code: str, tests: list[dict], timeout_s: int = 5) -> dict:
     """Run `code` against a list of LCB-style tests (stdin or functional).
 
-    Each test dict should look like one of:
+    Each test dict looks like one of:
         {'input': '5\\n', 'output': '15', 'testtype': 'stdin'}
-        {'input': '[[2,7,11,15], 9]', 'output': '[0,1]', 'fn_name': 'twoSum', 'testtype': 'functional'}
+        {'input': '[[2,7,11,15], 9]', 'output': '[0,1]', 'fn_name': 'twoSum',
+         'testtype': 'functional'}
 
-    Dispatches per-test based on 'testtype' (or 'fn_name' presence as fallback).
-    Returns a summary dict with aggregate pass rate and per-test details.
+    Dispatches on 'testtype' (or on whether 'fn_name' is set) and returns
+    {"pass", "total", "pass_rate", "details"} with per-test details.
     """
     if not tests:
         return {"pass": 0, "total": 0, "pass_rate": 0.0, "details": []}
@@ -409,10 +409,9 @@ def exact_match_score(pass_rate: float) -> float:
 def solve(problem: str, starter_code: str | None = None, agent=None) -> dict:
     """Run the agent on one coding problem.
 
-    Pass `starter_code` (a LeetCode-style class/method stub) to run in
-    functional mode; omit it for stdin mode. Strips Qwen3's <think>...</think>
-    reasoning from every AI message. Optional `agent` kwarg lets callers
-    reuse one agent across a batch.
+    Pass `starter_code` (a LeetCode-style class/method stub) for functional
+    mode; omit it for stdin mode. Strips Qwen3 <think>...</think> reasoning
+    from every AI message. Pass `agent` to reuse one agent across a batch.
 
     Returns {'code': str | None, 'raw': str, 'messages': list}.
     """
@@ -439,10 +438,11 @@ _HF_SPLIT = "test"
 
 
 def _decode_private_tests(blob: str) -> list[dict]:
-    """LCB stores private test cases as base64(zlib(pickle(json_str))).
-    The pickled payload is a JSON string that deserializes to a list of
-    {input, output, testtype, fn_name?} test dicts. Decode through all
-    three layers, falling back to plainer encodings for robustness."""
+    """Decode LCB private tests, stored as base64(zlib(pickle(json_str))).
+
+    The JSON string holds a list of {input, output, testtype, fn_name?}
+    dicts. Falls back to plainer encodings if a layer doesn't match.
+    """
     if not blob:
         return []
     import pickle
@@ -472,12 +472,10 @@ def load_instances(
     only: list[str] | None = None,
     difficulty: str | None = None,
 ) -> list[dict]:
-    """Load LCB rows from HuggingFaceH4's `livecodebench/code_generation_lite`.
+    """Load LCB rows from `livecodebench/code_generation_lite`.
 
-    Row shape returned:
-        {id, problem, starter_code, tests, difficulty, platform, raw}
-
-    `difficulty` filter (easy/medium/hard) subsets the eval to one tier —
+    Each row is {id, problem, starter_code, tests, difficulty, platform, raw}.
+    `difficulty` (easy/medium/hard) restricts the eval to one tier, which is
     useful because LCB pass@1 varies by ~30pp across tiers.
     """
     from datasets import load_dataset
@@ -521,9 +519,9 @@ def run_batch(
     verbose: bool = True,
     per_test_timeout_s: int = 6,
 ) -> dict:
-    """Run `solve()` on every problem, score with `run_tests()`, write
-    per-instance predictions to JSONL. `em` is LCB pass@1 (1.0 iff all
-    tests pass, else 0.0) — standard LCB metric.
+    """Run `solve()` on every problem, score with `run_tests()` and write
+    per-instance predictions to JSONL. `em` is the standard LCB pass@1: 1.0
+    only if all tests pass, else 0.0.
     """
     agent = build_agent()  # build once; reuse across the batch
     per_instance: list[dict] = []
@@ -647,7 +645,7 @@ def _print_scoring(scored: dict) -> None:
 
 
 def _canned_demo() -> None:
-    # --- Stdin-mode problem (AtCoder/Codeforces style) ---
+    # Stdin-mode problem (AtCoder/Codeforces style)
     stdin_problem = (
         "Read a single integer n from standard input (1 <= n <= 1000) and "
         "print the sum 1 + 2 + ... + n on one line."
@@ -665,7 +663,7 @@ def _canned_demo() -> None:
     if out["code"]:
         _print_scoring(run_tests(out["code"], stdin_tests))
 
-    # --- Functional-mode problem (LeetCode style) ---
+    # Functional-mode problem (LeetCode style)
     functional_problem = (
         "Given an array of integers `nums` and an integer `target`, return "
         "the indices of the two numbers such that they add up to `target`. "
@@ -678,9 +676,8 @@ def _canned_demo() -> None:
         {"fn_name": "twoSum", "input": "[[3,3], 6]",       "output": "[0,1]", "testtype": "functional"},
     ]
 
-    # LCB provides the starter code for LeetCode problems; the model fills in
-    # the method body. The test dict carries `fn_name` so the scorer knows
-    # which method to call.
+    # LeetCode problems come with starter code and the model fills in the
+    # method body; `fn_name` in the test dict tells the scorer what to call.
     functional_starter = (
         "from typing import List\n"
         "\n"

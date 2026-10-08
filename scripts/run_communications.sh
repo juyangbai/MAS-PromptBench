@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # Message-format baseline sweep.
 #
-# Runs each msg cell as a standalone batch (one process per cell) against a
-# single OpenAI-compatible endpoint. No sharding, no merge step.
+# Runs each cell as its own batch process against one OpenAI-compatible
+# endpoint. No sharding or merge step.
 #
-# Override the sweep / endpoint via environment variables:
-#   VLLM_BASE_URL  MODEL_ID  TOPOLOGIES  DATASETS  FORMATS  <DATASET>_LIMIT
+# Env overrides: VLLM_BASE_URL MODEL_ID TOPOLOGIES DATASETS FORMATS
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 

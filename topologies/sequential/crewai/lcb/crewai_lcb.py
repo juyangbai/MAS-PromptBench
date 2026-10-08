@@ -1,6 +1,5 @@
 """Sequential topology specialized for LiveCodeBench, implemented in CrewAI."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -93,9 +92,9 @@ def _build_llm() -> LLM:
 
 
 # Agent / Task prompt scaffolding
-# User-message format templates — verbatim from LiveCodeBench's official
-# lcb_runner/prompts/code_generation.py. Public test cases are intentionally
-# NOT included (matching LCB behavior).
+# User-message format templates, verbatim from LiveCodeBench's
+# lcb_runner/prompts/code_generation.py. Public test cases are left out
+# on purpose, as in LCB.
 
 _FORMAT_STDIN = (
     "### Format: Read the inputs from stdin solve the problem and write "
@@ -130,7 +129,7 @@ def format_prompt(problem: str, starter_code: str | None = None) -> str:
 
 # Crew
 def build_crew(llm: LLM | None = None) -> Crew:
-    """Build the 3-stage analyzer -> coder -> debugger pipeline."""
+    """Build the 4-stage analyzer -> coder -> tester -> debugger pipeline."""
     if llm is None:
         llm = _build_llm()
 
@@ -154,7 +153,7 @@ def build_crew(llm: LLM | None = None) -> Crew:
             "required I/O format (stdin or starter_code call-based)."
         ),
         backstory=_load_prompt("coder"),
-        tools=[],  # no tools — commits to initial implementation
+        tools=[],  # no tools; commits to its first implementation
         llm=llm,
         verbose=False,
         allow_delegation=False,
@@ -269,10 +268,10 @@ _CODE_BLOCK_RE = re.compile(
 
 
 def extract_code(text: str) -> str | None:
-    """Return the LAST fenced code block in `text`, or None.
+    """Return the last fenced code block in `text`, or None.
 
-    Takes the last block so the debugger's final (fixed) program is
-    returned rather than an earlier draft.
+    Taking the last block returns the debugger's final (fixed) program
+    rather than an earlier draft.
     """
     return extract_python_code(text)
 
@@ -499,14 +498,11 @@ def exact_match_score(pass_rate: float) -> float:
 
 # Orchestration
 def solve(problem: str, starter_code: str | None = None) -> dict:
-    """Run the 3-stage sequential crew on one LCB problem.
+    """Run the 4-stage sequential crew on one LCB problem.
 
-    Returns:
-        {
-            "code":     final Python program (str) or None,
-            "raw":      debugger's full output text,
-            "by_stage": {analyzer, coder, debugger} -> each stage's output,
-        }
+    Returns a dict with "code" (final program or None), "raw" (the
+    debugger's full output) and "by_stage" (output of analyzer, coder,
+    tester and debugger).
     """
     crew = build_crew()
     problem_prompt = format_prompt(problem, starter_code)
@@ -570,7 +566,7 @@ def load_instances(
     only: list[str] | None = None,
     difficulty: str | None = None,
 ) -> list[dict]:
-    """Load LCB rows — same schema/IDs as single/lcb for parity."""
+    """Load LCB rows with the same schema and IDs as single/lcb."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)

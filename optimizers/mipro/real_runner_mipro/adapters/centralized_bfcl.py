@@ -171,10 +171,10 @@ class CentralizedBFCLAdapter:
                 if model_output is not None:
                     break
         if model_output is None:
-            # Qwen can occasionally try to call the BFCL schema function from
-            # the manager even though the centralized manager only exposes
-            # delegation tools. LangGraph records that as an invalid tool call;
-            # for BFCL scoring it is still a useful first commitment.
+            # Qwen sometimes calls the BFCL schema function from the manager, even
+            # though the centralized manager only exposes delegation tools.
+            # LangGraph records it as an invalid tool call, but for BFCL scoring
+            # it is still a useful first commitment.
             for msg in messages:
                 direct_calls = [
                     call

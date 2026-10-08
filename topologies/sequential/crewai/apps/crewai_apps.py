@@ -1,6 +1,5 @@
 """Sequential topology specialized for APPS, implemented in CrewAI."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -559,12 +558,9 @@ def exact_match_score(pass_rate: float) -> float:
 def solve(problem: str, starter_code: str | None = None) -> dict:
     """Run the 4-stage sequential crew on one APPS problem.
 
-    Returns:
-        {
-            "code":     final Python program (str) or None,
-            "raw":      debugger's full output text,
-            "by_stage": {analyzer, coder, tester, debugger} -> each stage's output,
-        }
+    Returns a dict with "code" (final program or None), "raw" (the
+    debugger's full output) and "by_stage" (output of analyzer, coder,
+    tester and debugger).
     """
     crew = build_crew()
     problem_prompt = format_prompt(problem, starter_code)
@@ -618,7 +614,7 @@ def load_instances(
     difficulty: str | None = None,
     max_tests_per_row: int | None = 20,
 ) -> list[dict]:
-    """Load APPS test rows — same IDs as single/apps for parity."""
+    """Load APPS test rows, with the same IDs as single/apps."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)

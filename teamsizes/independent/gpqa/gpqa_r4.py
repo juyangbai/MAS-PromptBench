@@ -1,6 +1,5 @@
-"""Independent topology specialized for GPQA-Diamond."""
+"""Independent topology for GPQA-Diamond."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -84,12 +83,11 @@ def format_prompt(question: str, choices: list[str]) -> str:
 
 
 def _build_one_agent(seed: int):
-    """Build one replica's react agent, seeded differently from its siblings.
+    """Build one replica's react agent.
 
-    The seed is the ONLY per-replica difference: same model, tools, prompt,
-    temperature, top_p, and repetition_penalty. This keeps the ensemble
-    reproducible (same seed -> same output) while giving each replica a
-    distinct sample from the posterior.
+    Only the seed differs between replicas (same model, tools, prompt,
+    temperature, top_p and repetition_penalty), so the ensemble is
+    reproducible while each replica draws a different sample.
     """
     llm = ChatOpenAI(
         model=MODEL_ID,
@@ -112,10 +110,9 @@ def _build_one_agent(seed: int):
 # Output Parsing
 import re  # noqa: E402  (kept near the parser, not the top, for readability)
 
-# `_MARKDOWN_STRIP_RE` pre-cleans `**bold**` / `*italic*` wrappers before
-# regex matching — Qwen3.5-9B frequently emits `**Answer:** B` or
-# `correct option is **A**`, and without stripping the `**` the letter
-# regexes miss the match.
+# Strip `**bold**` / `*italic*` before matching: Qwen3.5-9B often writes
+# `**Answer:** B` or `correct option is **A**`, which the letter regexes
+# would otherwise miss.
 _MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
 # Primary: "Answer: A", "Final answer: (B)", "**Answer: C**", etc.
 _ANSWER_RE = re.compile(
@@ -125,7 +122,7 @@ _ANSWER_RE = re.compile(
 _OPTION_RE = re.compile(
     r"\b(?:option|choice)\b\s*(?:is)?\s*[:\s]*\(?([A-D])\)?", re.IGNORECASE
 )
-# Fallback 2: a bare "A" / "A)" / "(A)" sitting on its own at end-of-line
+# Fallback 2: a bare "A", "A)" or "(A)" on its own line
 _BARE_LETTER_RE = re.compile(
     r"(?:^|\n)\s*\(?([A-D])\)?\s*(?:[.\n]|$)", re.MULTILINE
 )
@@ -142,11 +139,10 @@ def strip_thinking(text: str) -> str:
 def extract_answer(text: str) -> str | None:
     """Return the MCQ letter from the model's final response.
 
-    Matches the 3-pattern cascade used by single/sequential/centralized/
-    decentralized gpqa so extracted letters are comparable. Strips
-    markdown emphasis first so `**Answer:** B` works the same as
-    `Answer: B`. The LAST match per pattern wins (models revise earlier
-    letter mentions during chain-of-thought).
+    Same 3-pattern cascade as single/sequential/centralized/decentralized
+    gpqa, so letters are comparable. Markdown emphasis is stripped first, so
+    `**Answer:** B` works like `Answer: B`. The last match per pattern wins,
+    since models revise earlier letters while reasoning.
     """
     cleaned = _MARKDOWN_STRIP_RE.sub("", text)
     for pattern in (_ANSWER_RE, _OPTION_RE, _BARE_LETTER_RE):
@@ -157,11 +153,8 @@ def extract_answer(text: str) -> str | None:
 
 
 def majority_vote(answers: list[dict]) -> str | None:
-    """Majority vote over per-replica letter answers.
-
-    Ignores replicas whose letter is None (no answer extractable). Ties
-    broken by first occurrence in the `answers` list (i.e., lowest agent
-    index among tied letters).
+    """Majority vote over replica letters, ignoring None. Ties go to the
+    letter seen first in `answers` (lowest agent index).
     """
     letters = [a["answer"] for a in answers if a.get("answer") is not None]
     if not letters:
@@ -179,10 +172,8 @@ def majority_vote(answers: list[dict]) -> str | None:
 class State(TypedDict):
     """Graph state.
 
-    `answers` uses `operator.add` as its reducer so the N concurrent agent
-    nodes can each emit a single-element list that gets concatenated into
-    the final aggregate. `prompt` / `question` / `choices` are carried
-    through so each agent gets the full MCQ context.
+    `answers` uses the `operator.add` reducer so each of the N parallel
+    agent nodes can append a one-element list.
     """
 
     question: str
@@ -200,12 +191,11 @@ class AgentInput(TypedDict):
 
 
 # Stall safeguards
-# Per-row wall-clock cap: if the ensemble's whole fan-out/fan-in takes
-# longer than this, asyncio.wait_for raises TimeoutError, the batch
-# runner's except-clause logs it, and we move to the next row. Without
-# this, one pathological row can chew 15+ min of GPU time.
-# recursion_limit was 25 — too lenient for a 4-way parallel ensemble
-# where each replica's runaway compounds under vLLM continuous batching.
+# Per-row wall-clock cap: if the whole fan-out/fan-in runs longer,
+# asyncio.wait_for raises TimeoutError and the batch runner logs it and
+# moves on. Without it one bad row can take 15+ min of GPU time.
+# recursion_limit was 25, too lenient for a 4-way parallel ensemble where
+# each replica's runaway compounds under vLLM continuous batching.
 PER_ROW_TIMEOUT_S = 120
 _RECURSION_LIMIT = 15
 
@@ -263,12 +253,10 @@ def build_graph() -> StateGraph:
 def solve(question: str, choices: list[str]) -> dict:
     """Run the ensemble on one GPQA-style MCQ.
 
-    Returns:
-        {
-            "answer":   majority-vote letter (A/B/C/D) or None,
-            "per_agent": list of {agent_id, seed, answer, raw, messages},
-            "votes":    Counter of letter -> count across replicas,
-        }
+    Returns a dict with:
+        answer:    majority-vote letter (A/B/C/D) or None
+        per_agent: [{agent_id, seed, answer, raw, messages}]
+        votes:     Counter of letter -> count across replicas
     """
     compiled = build_graph().compile()
     prompt = format_prompt(question, choices)
@@ -294,7 +282,7 @@ def solve(question: str, choices: list[str]) -> dict:
     }
 
 
-# Dataset loader (aligned to single/gpqa for cross-topology parity)
+# Dataset loader (same as single/gpqa)
 _LETTERS = ["A", "B", "C", "D"]
 _HF_DATASET = "Idavidrein/gpqa"
 _HF_CONFIG = "gpqa_diamond"
@@ -302,9 +290,9 @@ _HF_SPLIT = "train"
 
 
 def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Stable id for a GPQA row — hash of question text (matches
-    single/gpqa's id scheme so per-row comparisons across topologies
-    line up on the same id)."""
+    """Stable row id from the md5 of the question text. Same scheme as
+    single/gpqa, so per-row comparisons line up across topologies.
+    """
     q = (row.get("Question") or "").strip()
     if q:
         return "gpqa_" + hashlib.md5(q.encode("utf-8")).hexdigest()[:10]
@@ -317,14 +305,12 @@ def load_instances(
     only: list[str] | None = None,
     shuffle_seed: int = 0,
 ) -> list[dict]:
-    """Load GPQA-Diamond rows and emit instances with 4 choices shuffled
-    DETERMINISTICALLY per row (`Random(f"{shuffle_seed}|{row_id}")`). Same
-    algorithm as single/gpqa — identical `shuffle_seed` produces identical
-    choice orderings, so `correct_letter` is identical across topologies
-    for each row id.
+    """Load GPQA-Diamond rows with the 4 choices shuffled per row by
+    `Random(f"{shuffle_seed}|{row_id}")`.
 
-    Returns list of dicts:
-        {id, question, choices, correct_letter, raw}
+    Same shuffle as single/gpqa, so a given `shuffle_seed` gives the same
+    `correct_letter` for each row id in every topology. Each instance is
+    {id, question, choices, correct_letter, raw}.
     """
     from datasets import load_dataset
 
@@ -364,18 +350,13 @@ def run_batch(
     verbose: bool = True,
     _propagate_errors: bool = False,
 ) -> dict:
-    """Run the N-replica ensemble on every instance, compare majority-vote
-    letter vs gold, return an aggregate summary + optionally write
-    predictions JSONL.
+    """Run the ensemble on every instance and score the majority-vote letter.
 
-    Per-instance JSONL record shape:
-        {
-            id, question, choices, correct_letter,
-            predicted_letter, correct, votes,
-            per_agent: [{agent_id, seed, answer, raw}],
-            latency_s, error
-        }
-    (Omit the full `messages` list per agent to keep the JSONL compact.)
+    Returns an aggregate summary. If `out_path` is set, also writes one JSONL
+    record per instance (per-agent `messages` left out to keep it small):
+        {id, question, choices, correct_letter, predicted_letter, correct,
+         votes, per_agent: [{agent_id, seed, answer, raw}], latency_s,
+         error}
     """
     per_instance: list[dict] = []
     n = len(instances)
@@ -491,12 +472,12 @@ def _canned_demo() -> None:
         print(f"--- agent_{a['agent_id']} (seed {a['seed']}) -> {a['answer']!r} ---")
 
 def run_one(instance: dict, out_dir: Path | None = None) -> dict:
-    """Single-instance entrypoint for `concurrent_runner.py`.
+    """Single-instance entry point for `concurrent_runner.py`.
 
-    Calls `run_batch([instance], _propagate_errors=True)` so any transient
-    exception (APIConnectionError, TimeoutError, BadRequestError "Unterminated
-    string", etc.) bubbles up to the runner's retry-with-backoff wrapper
-    instead of being swallowed into an `error` field on a "successful" row.
+    Uses `_propagate_errors=True` so transient errors (APIConnectionError,
+    TimeoutError, BadRequestError "Unterminated string", etc.) reach the
+    runner's retry-with-backoff instead of being stored in an `error` field
+    on a row that looks successful.
     """
     summary = run_batch([instance], out_path=None, verbose=False, _propagate_errors=True)
     return summary["per_instance"][0]

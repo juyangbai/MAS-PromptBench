@@ -1,6 +1,5 @@
-"""Decentralized debate topology specialized for BFCL, LangGraph."""
+"""Decentralized debate topology for BFCL (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -58,12 +57,12 @@ SYSTEM_PROMPT = _load_prompt("debater")
 
 # Model registration (same as other bfcl topologies)
 def _register_model_with_bfcl(model_id: str) -> None:
-    """Tell bfcl-eval how to handle function names for `model_id`.
+    """Register `model_id` in bfcl-eval's MODEL_CONFIG_MAPPING.
 
-    `ast_checker` -> `convert_func_name` looks up the model in
-    MODEL_CONFIG_MAPPING to decide whether to rewrite '.' -> '_' in
-    function names. Qwen3.5-9B handles dots fine; we clone the
-    `qwen3-8b` entry so scoring doesn't KeyError on dotted names.
+    `ast_checker` -> `convert_func_name` looks the model up there to decide
+    whether to rewrite '.' -> '_' in function names. Qwen3.5-9B handles dots
+    fine, so clone the `qwen3-8b` entry; otherwise scoring raises KeyError
+    on dotted names.
     """
     if model_id in MODEL_CONFIG_MAPPING:
         return
@@ -304,8 +303,8 @@ def _flatten_user_request(question: list) -> str:
 
 
 def _init_contexts(n: int, user_content: str) -> list[list[BaseMessage]]:
-    """Each peer's initial history = [HumanMessage(user_content)]. System
-    prompt is prepended per-invoke inside `_round_node`, not embedded here.
+    """Start each peer with [HumanMessage(user_content)]; `_round_node`
+    prepends the system prompt on every call.
     """
     return [[HumanMessage(content=user_content)] for _ in range(n)]
 

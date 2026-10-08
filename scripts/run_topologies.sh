@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Topology baseline sweep.
 #
-# Runs each topology × dataset cell as a standalone batch — one process per cell
-# against a single endpoint. No sharding, no merge step.
+# Runs each topology x dataset cell as its own batch process against one
+# endpoint. No sharding or merge step.
 #
-# Override via environment: VLLM_BASE_URL MODEL_ID DATASETS OUT_ROOT <DATASET>_LIMIT
+# Env overrides: VLLM_BASE_URL MODEL_ID DATASETS OUT_ROOT
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -16,7 +16,7 @@ DATASETS="${DATASETS:-gpqa hotpotqa math lcb apps bfcl swe apibank toolhop}"
 OUT_ROOT="${OUT_ROOT:-results/topologies_baseline}"
 declare -A LIMIT=([gpqa]=100 [hotpotqa]=100 [math]=100 [lcb]=50 [apps]=50 [bfcl]=100 [swe]=30 [apibank]=100 [toolhop]=100)
 
-# topology-path : runner-filename prefix  (single/independent are LangGraph-only)
+# <topology path>:<runner file prefix>. single and independent are LangGraph only.
 TOPOS="single:langgraph independent:langgraph \
 sequential/langgraph:langgraph sequential/crewai:crewai \
 centralized/langgraph:langgraph centralized/autogen:autogen \

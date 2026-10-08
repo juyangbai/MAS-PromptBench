@@ -1,8 +1,8 @@
 """Fast smoke test for newly registered real-runner adapters.
 
-This imports every real topology module, patches its `solve` function with a
-deterministic fake response, then verifies adapter execution, DSPy prediction
-conversion, output-contract injection, and dataset metric extraction.
+Imports every real topology module, patches its `solve` with a fixed fake
+response, then checks adapter execution, DSPy prediction conversion,
+output-contract injection, and dataset metric extraction.
 """
 from __future__ import annotations
 

@@ -1,6 +1,5 @@
 """Centralized topology specialized for APPS, AutoGen."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -147,8 +146,8 @@ def build_team() -> SelectorGroupChat:
         tools=[python_exec],
     )
 
-    # Force manager-routing: after any worker speaks, the manager MUST be
-    # the next speaker (so workers never chain turns with each other).
+    # Force manager routing: after any worker speaks, the manager goes next,
+    # so workers never chain turns with each other.
     def _selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
         if not messages:
             return manager.name
@@ -175,9 +174,8 @@ def build_team() -> SelectorGroupChat:
     )
 
 
-# Prompt scaffolding
-# APPS prompt convention from the APPS paper / lm-evaluation-harness:
-# "QUESTION: ... ANSWER:" scaffold with an explicit mode directive.
+# Prompt scaffolding: the "QUESTION: ... ANSWER:" format with an explicit
+# mode directive, following the APPS paper and lm-evaluation-harness.
 _FORMAT_STDIN_DIRECTIVE = "Use Standard Input format."
 _FORMAT_CALL_BASED_DIRECTIVE = "Use Call-Based format."
 
@@ -494,12 +492,10 @@ def exact_match_score(pass_rate: float) -> float:
 async def solve_async(problem: str, starter_code: str | None = None) -> dict:
     """Run the centralized team on one APPS problem.
 
-    Returns:
-        {
-            "code":     inner content of the last fenced ```python``` block or None,
-            "raw":      manager's last message content,
-            "messages": list of {source, content} from every turn,
-        }
+    Returns a dict with:
+        code      content of the last fenced ```python``` block, or None
+        raw       manager's last message content
+        messages  [{source, content}] for every turn
     """
     team = build_team()
     task = format_prompt(problem, starter_code)
@@ -559,7 +555,7 @@ def load_instances(
     difficulty: str | None = None,
     max_tests_per_row: int | None = 20,
 ) -> list[dict]:
-    """Load APPS test rows — same IDs as single/apps for parity."""
+    """Load APPS test rows, with the same IDs as single/apps."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)
@@ -734,7 +730,7 @@ def _canned_demo() -> None:
         _print_scoring(run_tests(out["code"], stdin_io))
     print(f"=== {len(out['messages'])} messages across the group chat ===")
 
-    # --- Call-based-mode problem ---
+    # Call-based mode problem
     functional_problem = (
         "Given a list of integers `nums` and an integer `target`, return the "
         "indices of the two numbers in `nums` that add up to `target`. Assume "
@@ -748,7 +744,7 @@ def _canned_demo() -> None:
         "    def twoSum(self, nums: List[int], target: int) -> List[int]:\n"
         "        "
     )
-    # APPS-native parallel-list form (inputs = arg-lists, outputs = return values).
+    # APPS form: inputs are arg lists, outputs are return values.
     functional_io = {
         "fn_name": "twoSum",
         "inputs":  [[[2, 7, 11, 15], 9], [[3, 2, 4], 6], [[3, 3], 6]],

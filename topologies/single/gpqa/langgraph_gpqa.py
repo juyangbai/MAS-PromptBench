@@ -1,6 +1,5 @@
 """Single-agent ReAct topology specialized for GPQA-Diamond."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -18,8 +17,8 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-# Shared telemetry helper (tokens + rounds). Relative import via the
-# top-level `topologies` package; `topologies/__init__.py` exists.
+# Shared telemetry helper (tokens + rounds), imported through the
+# top-level `topologies` package.
 _TOPO_ROOT = str(Path(__file__).resolve().parents[3])
 if _TOPO_ROOT not in sys.path:
     sys.path.insert(0, _TOPO_ROOT)
@@ -72,13 +71,12 @@ def format_prompt(question: str, choices: list[str]) -> str:
 
 
 def build_agent():
-    """Build a ReAct agent with house-default sampling.
+    """Build a ReAct agent with the house-default sampling.
 
-    Sampling matches the convention used by sequential/independent/
-    centralized/decentralized on Qwen3.5-9B (temp=0.2, top_p=0.9, seed=0,
-    repetition_penalty=1.05, enable_thinking=False). Greedy (temp=0) is
-    empirically broken on this model; house default is required for
-    comparability across topologies.
+    Same settings as sequential/independent/centralized/decentralized on
+    Qwen3.5-9B (temp=0.2, top_p=0.9, seed=0, repetition_penalty=1.05,
+    enable_thinking=False), so results are comparable across topologies.
+    Greedy decoding (temp=0) is empirically broken on this model.
     """
     llm = ChatOpenAI(
         model=MODEL_ID,
@@ -97,14 +95,14 @@ def build_agent():
 
 
 # Output Parsing
-# 3-pattern cascade aligned with sequential/crewai/gpqa, independent/gpqa,
-# centralized/autogen/gpqa, decentralized/openai/gpqa. Single was the
-# original outlier with only `_ANSWER_RE`; promoted here so real eval
-# numbers are comparable across topologies.
+# 3-pattern cascade, same as sequential/crewai/gpqa, independent/gpqa,
+# centralized/autogen/gpqa and decentralized/openai/gpqa. Single used to
+# have only `_ANSWER_RE`; it now matches the others so eval numbers are
+# comparable across topologies.
 #
-# `_MARKDOWN_STRIP_RE` pre-cleans `**bold**` and `*italic*` wrappers
-# before matching — Qwen3.5-9B frequently emits `"**Answer:** B"` or
-# `"correct option is **A**"`, which broke the original strict regex.
+# `_MARKDOWN_STRIP_RE` removes `**bold**` and `*italic*` wrappers first.
+# Qwen3.5-9B often writes `"**Answer:** B"` or `"correct option is **A**"`,
+# which the original strict regex missed.
 _MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
 _ANSWER_RE = re.compile(
     r"\b(?:final\s+)?answer\b\s*[:\s]*\(?([A-D])\)?",
@@ -129,15 +127,15 @@ def strip_thinking(text: str) -> str:
 
 
 def extract_answer(text: str) -> str | None:
-    """Return the MCQ letter from `text`, using a 3-pattern cascade.
+    """Return the MCQ letter from `text` using a 3-pattern cascade.
 
-    Strips markdown emphasis first so `"**Answer:** B"` matches the same
-    as `"Answer: B"`. Cascade order:
+    Markdown emphasis is stripped first so `"**Answer:** B"` matches like
+    `"Answer: B"`. Patterns, in order:
       1. strict `Answer: X` / `Final answer: X`
       2. `option X` / `choice X`
       3. bare A-D on its own line
-    The LAST match per pattern wins (models often revise earlier letters
-    during chain-of-thought).
+    The last match of a pattern wins, since models often revise earlier
+    letters during chain-of-thought.
     """
     cleaned = _MARKDOWN_STRIP_RE.sub("", text)
     for pattern in (_ANSWER_RE, _OPTION_RE, _BARE_LETTER_RE):
@@ -151,11 +149,9 @@ def extract_answer(text: str) -> str | None:
 def solve(question: str, choices: list[str], agent=None) -> dict:
     """Run the agent on one GPQA-style MCQ.
 
-    Strips Qwen3's <think>...</think> reasoning from every AI message so both
-    the returned `raw` string and the `messages` list are clean.
-
-    Optional `agent` param lets callers reuse a pre-built agent across a
-    batch to avoid rebuild-per-instance cost.
+    Strips Qwen3 <think>...</think> reasoning from every AI message, so both
+    `raw` and `messages` come back clean. Pass `agent` to reuse a pre-built
+    agent across a batch.
 
     Returns {'answer': 'A'|'B'|'C'|'D'|None, 'raw': str, 'messages': list}.
     """
@@ -185,8 +181,9 @@ _HF_SPLIT = "train"  # GPQA-Diamond is a single 198-row split
 
 
 def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Return a stable id for a GPQA row. The dataset has no canonical id
-    field, so we hash the question text. Fallback to the row index."""
+    """Stable id for a GPQA row: a hash of the question text (the dataset has
+    no id field), or the row index if the question is empty.
+    """
     q = (row.get("Question") or "").strip()
     if q:
         import hashlib
@@ -200,23 +197,19 @@ def load_instances(
     only: list[str] | None = None,
     shuffle_seed: int = 0,
 ) -> list[dict]:
-    """Load GPQA-Diamond rows from HuggingFace and emit topology-ready
-    instances with the 4 choices DETERMINISTICALLY shuffled per row.
+    """Load GPQA-Diamond rows with the 4 choices shuffled deterministically.
 
-    The raw HF row has ``"Correct Answer"`` + ``"Incorrect Answer 1..3"``
-    as separate fields — if we fed them in that order, the correct letter
-    would always be A. We shuffle with a per-row seed (derived from
-    `shuffle_seed` + the row's stable id) so runs are reproducible.
+    Raw HF rows keep "Correct Answer" and "Incorrect Answer 1..3" as
+    separate fields, so without shuffling the answer would always be A. Each
+    row is shuffled with a seed built from `shuffle_seed` and its stable id,
+    so runs are reproducible.
 
-    Returns list of dicts:
-        {
-            "id":             stable row id,
-            "question":       raw question text,
-            "choices":        shuffled list of 4 choice strings,
-            "correct_letter": "A"|"B"|"C"|"D" — which shuffled slot holds
-                              the correct answer,
-            "raw":            the raw HF row (for auditing),
-        }
+    Returns a list of dicts:
+        id              stable row id
+        question        raw question text
+        choices         shuffled list of 4 choice strings
+        correct_letter  "A"|"B"|"C"|"D", the slot holding the correct answer
+        raw             the raw HF row (for auditing)
     """
     from datasets import load_dataset
 
@@ -240,7 +233,7 @@ def load_instances(
         indices = list(range(4))
         rng.shuffle(indices)
         shuffled = [four[j] for j in indices]
-        correct_slot = indices.index(0)  # where did `four[0]` (correct) land
+        correct_slot = indices.index(0)  # slot of the correct answer, four[0]
         rows.append({
             "id": rid,
             "question": (row.get("Question") or "").strip(),
@@ -261,19 +254,16 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every instance, compare predicted letter vs gold,
-    and return an aggregate summary. Optionally writes per-instance
-    predictions to `out_path` (JSONL).
+    """Run `solve()` on every instance and compare the predicted letter to gold.
 
-    Returns:
-        {
-            "n":              total instances attempted,
-            "n_extracted":    instances where an A/B/C/D was extracted,
-            "n_correct":      predictions matching the gold letter,
-            "accuracy":       n_correct / n (strict),
-            "extracted_acc":  n_correct / n_extracted (excl. non-extractions),
-            "per_instance":   list of per-instance dicts,
-        }
+    Optionally writes per-instance predictions to `out_path` (JSONL).
+    Returns a summary dict:
+        n              instances attempted
+        n_extracted    instances where an A/B/C/D was extracted
+        n_correct      predictions matching the gold letter
+        accuracy       n_correct / n (strict)
+        extracted_acc  n_correct / n_extracted
+        per_instance   list of per-instance dicts
     """
     agent = build_agent()  # build once; reuse across the batch
     per_instance: list[dict] = []

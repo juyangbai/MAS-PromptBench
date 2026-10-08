@@ -1,6 +1,5 @@
-"""Centralized topology specialized for HotpotQA, LangGraph."""
+"""Centralized topology for HotpotQA (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -46,9 +45,8 @@ COMMUNICATION_FORMAT = "freeform"
 
 _PROMPTS_DIR = _REPO_ROOT / "configs" / "prompts" / "centralized" / "hotpotqa"
 
-# Same cap as AutoGen sibling's MaxMessageTermination(18). Centralized
-# HotpotQA needs room for manager planning + multi-hop retrieval +
-# reasoning + final answer.
+# Same cap as AutoGen sibling's MaxMessageTermination(18), leaving room
+# for manager planning, multi-hop retrieval, reasoning and the answer.
 MAX_TURNS = 18
 
 
@@ -57,7 +55,7 @@ def _load_prompt(role: str) -> str:
 
 
 # Tools
-_PAGE_CHAR_BUDGET = 4000  # cap per page so retrieval results stay context-cheap
+_PAGE_CHAR_BUDGET = 4000  # per-page cap to keep retrieval output small
 
 
 @tool
@@ -110,11 +108,9 @@ def wikipedia_page(title: str) -> str:
 WIKI_TOOLS = [wikipedia_search, wikipedia_page]
 
 
-# Delegation tools (routing markers)
-# The manager "calls" these to hand the floor to a specific worker. The
-# body echoes the instructions, producing a ToolMessage the worker can
-# read as context. The router after `manager_tools` inspects the name
-# to route to the right worker node.
+# Delegation tools (routing markers). The manager calls one to hand off to
+# a worker; the echoed instructions become a ToolMessage the worker reads,
+# and the router after `manager_tools` picks the worker by tool name.
 @tool("delegate_to_retriever_worker")
 def delegate_to_retriever_worker(instructions: str) -> str:
     """Hand the next turn to the retriever_worker. Use this when you need
@@ -250,8 +246,7 @@ def _manager_node(state: CentralizedState) -> dict:
     llm = _build_llm().bind_tools(MANAGER_TOOLS)
     sys_msg = SystemMessage(content=_manager_system())
     ai = llm.invoke([sys_msg] + state["messages"])
-    # AutoGen messages carry a `.source` name; we mimic that on the
-    # AIMessage via additional_kwargs for trace rendering parity.
+    # Mimic AutoGen's `.source` field so traces render the same way.
     _tag_source(ai, "manager")
     return {"messages": [ai], "turn_count": int(state.get("turn_count", 0)) + 1}
 
@@ -272,13 +267,12 @@ def _route_from_manager(state: CentralizedState) -> str:
             return END
         if getattr(last, "tool_calls", None):
             return "manager_tools"
-    # No tool call, no TERMINATE — loop back and let the manager try again.
+    # No tool call and no TERMINATE: loop back so the manager tries again.
     return "manager"
 
 
 def _route_from_manager_tools(state: CentralizedState) -> str:
-    # Find the most recent AIMessage with tool_calls; its tool_calls tell
-    # us whether any delegation was requested.
+    # Check the latest AIMessage with tool_calls for a delegation request.
     for m in reversed(state["messages"]):
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
@@ -295,8 +289,8 @@ def _make_worker_node(name: str, tools: list, llm: ChatOpenAI):
     agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
 
     def node(state: CentralizedState) -> dict:
-        # create_react_agent returns {"messages": [full history incl. input]},
-        # so we splice out only the new messages it appended.
+        # create_react_agent returns the full history, input included, so keep
+        # only the messages it appended.
         prior = list(state["messages"])
         result = agent.invoke(
             {"messages": prior},
@@ -379,10 +373,10 @@ _ANSWER_RE = re.compile(
 
 
 def extract_answer(text: str) -> str | None:
-    """Return the model's short-form answer from the manager's final message.
+    """Return the short-form answer from the manager's final message.
 
-    Prefers the last 'Answer: X' pattern. Falls back to the last non-empty
-    line of the cleaned text (matches single/hotpotqa's behavior).
+    Takes the last 'Answer: X' match, else the last non-empty line of the
+    cleaned text (same as single/hotpotqa).
     """
     # Drop any trailing TERMINATE so it doesn't pollute the fallback path.
     text = re.sub(r"\bTERMINATE\b", "", text).strip()
@@ -415,8 +409,8 @@ def exact_match_score(pred: str, gold: str) -> float:
 def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
     """HotpotQA token-level F1 (official): returns (f1, precision, recall).
 
-    For yes/no/noanswer questions, a non-matching prediction scores (0, 0, 0)
-    — no partial credit from token overlap.
+    On yes/no/noanswer questions a non-matching prediction scores
+    (0, 0, 0), with no partial credit for token overlap.
     """
     normalized_pred = normalize_answer(pred)
     normalized_gold = normalize_answer(gold)
@@ -459,13 +453,11 @@ def _communications_to_record(m: BaseMessage) -> dict:
 def solve(question: str) -> dict:
     """Run the centralized team on one HotpotQA question.
 
-    Returns:
-        {
-            "answer":   short-form answer (str) or None,
-            "raw":      manager's last message content,
-            "messages": list of {source, content} from every turn,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        answer     short-form answer (str), or None
+        raw        manager's last message
+        messages   {source, content} for every turn
+        telemetry  normalized 5-key token/call counts
     """
     compiled, _ = _build_graph()
     result = compiled.invoke(
@@ -503,9 +495,11 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load HotpotQA dev rows. HotpotQA has stable string ids per row;
-    the first 100 rows at offset=0 are the same questions used by the
-    other hotpotqa topologies for cross-topology parity."""
+    """Load HotpotQA dev rows.
+
+    Rows keep HotpotQA's stable string ids, and the first 100 at offset=0
+    are the same questions the other hotpotqa topologies use.
+    """
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, _HF_CONFIG, trust_remote_code=True)[_HF_SPLIT]
@@ -538,9 +532,10 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the centralized team on every instance, compute EM + F1 vs
-    gold, return aggregate summary + optionally write per-instance
-    predictions to JSONL.
+    """Run the centralized team on every instance and score EM/F1 vs gold.
+
+    Returns an aggregate summary; if `out_path` is set, per-instance
+    predictions are also written there as JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

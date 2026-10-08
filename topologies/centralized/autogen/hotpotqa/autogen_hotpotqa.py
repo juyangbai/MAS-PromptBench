@@ -1,6 +1,5 @@
 """Centralized topology specialized for HotpotQA, AutoGen."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -43,7 +42,7 @@ def _load_prompt(role: str) -> str:
 
 
 # Tools
-_PAGE_CHAR_BUDGET = 4000  # cap per page so retrieval results stay context-cheap
+_PAGE_CHAR_BUDGET = 4000  # per-page cap to keep retrieval output small
 
 
 def wikipedia_search(query: str, top_k: int = 3) -> str:
@@ -93,11 +92,11 @@ def wikipedia_page(title: str) -> str:
 
 # LLM
 def _build_client() -> OpenAIChatCompletionClient:
-    """Build an OpenAI-compatible client pointed at our local vLLM.
+    """OpenAI-compatible client for the local vLLM server.
 
-    Qwen3-specific sampling params (repetition_penalty + enable_thinking=
-    False) are threaded via `extra_body` — without enable_thinking=False
-    the 9B burns its token budget inside a <think> block.
+    Qwen3 sampling params (repetition_penalty, enable_thinking=False) go
+    through `extra_body`. Without enable_thinking=False the 9B burns its
+    token budget inside a <think> block.
     """
     return OpenAIChatCompletionClient(
         model=MODEL_ID,
@@ -122,9 +121,9 @@ def _build_client() -> OpenAIChatCompletionClient:
 
 
 # Team
-# Same short-form format guidance used in single/hotpotqa and
-# independent/hotpotqa. Without it the 9B manager emits verbose
-# confirmations like "Yes, both were American" which score EM=0.
+# Same short-form answer guidance as single/hotpotqa and
+# independent/hotpotqa. Without it the 9B manager gives verbose answers
+# like "Yes, both were American" that score EM=0.
 _MANAGER_TERMINATE_NUDGE = (
     "\n\nFINAL OUTPUT FORMAT:\n"
     "Synthesize the workers' findings and end YOUR final message with a "
@@ -178,11 +177,9 @@ def build_team() -> SelectorGroupChat:
         tools=[wikipedia_search, wikipedia_page],
     )
 
-    # Force manager-routing: after any worker speaks, the manager MUST be
-    # the next speaker (so workers never chain turns with each other).
-    # When the last message is already the manager's, let the
-    # SelectorGroupChat's default LLM-based selector pick the next worker
-    # (or return None to end the conversation).
+    # After any worker turn, route back to the manager so workers never chain
+    # turns with each other. After a manager turn, return None and let
+    # SelectorGroupChat's LLM-based selector pick the next worker.
     def _selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
         if not messages:
             return manager.name
@@ -210,10 +207,10 @@ def build_team() -> SelectorGroupChat:
 
 
 # Stall safeguards
-# Per-row wall-clock cap + tighter MaxMessageTermination. Without these
-# the manager/retriever/reasoner loop can spiral on hard bridge questions,
-# with the retriever re-fetching pages via Wikipedia tools across many
-# turns, burning >3 min per row.
+# Per-row wall-clock cap plus a tighter MaxMessageTermination. Without
+# them the manager/retriever/reasoner loop can spiral on hard bridge
+# questions, with the retriever re-fetching Wikipedia pages over many
+# turns and burning >3 min per row.
 PER_ROW_TIMEOUT_S = 120
 _MAX_MESSAGES = 18  # was 24
 
@@ -227,10 +224,10 @@ _ANSWER_RE = re.compile(
 
 
 def extract_answer(text: str) -> str | None:
-    """Return the model's short-form answer from the manager's final message.
+    """Return the short-form answer from the manager's final message.
 
-    Prefers the last 'Answer: X' pattern. Falls back to the last non-empty
-    line of the cleaned text (matches single/hotpotqa's behavior).
+    Takes the last 'Answer: X' match, else the last non-empty line of the
+    cleaned text (same as single/hotpotqa).
     """
     # Drop any trailing TERMINATE so it doesn't pollute the fallback path.
     text = re.sub(r"\bTERMINATE\b", "", text).strip()
@@ -263,8 +260,8 @@ def exact_match_score(pred: str, gold: str) -> float:
 def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
     """HotpotQA token-level F1 (official): returns (f1, precision, recall).
 
-    For yes/no/noanswer questions, a non-matching prediction scores (0, 0, 0)
-    — no partial credit from token overlap.
+    On yes/no/noanswer questions a non-matching prediction scores
+    (0, 0, 0), with no partial credit for token overlap.
     """
     normalized_pred = normalize_answer(pred)
     normalized_gold = normalize_answer(gold)
@@ -291,12 +288,8 @@ def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
 async def solve_async(question: str) -> dict:
     """Run the centralized team on one HotpotQA question.
 
-    Returns:
-        {
-            "answer":   short-form answer (str) or None,
-            "raw":      manager's last message content,
-            "messages": list of {source, content} from every turn,
-        }
+    Returns a dict with "answer" (short-form str or None), "raw" (the
+    manager's last message) and "messages" ({source, content} per turn).
     """
     team = build_team()
     result = await asyncio.wait_for(team.run(task=question), timeout=PER_ROW_TIMEOUT_S)
@@ -334,9 +327,11 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load HotpotQA dev rows. HotpotQA has stable string ids per row;
-    the first 100 rows at offset=0 are the same questions used by the
-    other hotpotqa topologies for cross-topology parity."""
+    """Load HotpotQA dev rows.
+
+    Rows keep HotpotQA's stable string ids, and the first 100 at offset=0
+    are the same questions the other hotpotqa topologies use.
+    """
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, _HF_CONFIG, trust_remote_code=True)[_HF_SPLIT]
@@ -369,9 +364,10 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the centralized team on every instance, compute EM + F1 vs
-    gold, return aggregate summary + optionally write per-instance
-    predictions to JSONL.
+    """Run the centralized team on every instance and score EM/F1 vs gold.
+
+    Returns an aggregate summary; if `out_path` is set, per-instance
+    predictions are also written there as JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

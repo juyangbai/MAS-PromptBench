@@ -68,13 +68,13 @@ def call_with_supported_kwargs(func, *args, **kwargs):
 
 @contextmanager
 def hide_broken_matplotlib_metadata():
-    """Treat the broken local matplotlib dist-info as an absent optional dep.
+    """Treat the broken local matplotlib dist-info as not installed.
 
     Some LangChain imports pull in transformers, which probes optional package
-    versions.  The current conda env has malformed matplotlib metadata, causing
-    ``importlib.metadata.version("matplotlib")`` to raise ``TypeError`` during
-    topology import.  We do not need matplotlib for these runners, so expose it
-    as "not installed" while importing real runner modules.
+    versions. The current conda env has malformed matplotlib metadata, so
+    ``importlib.metadata.version("matplotlib")`` raises ``TypeError`` during
+    topology import. These runners don't need matplotlib, so report it as
+    missing while the real runner modules are imported.
     """
 
     originals: list[tuple[Any, Any]] = []
@@ -110,7 +110,9 @@ def hide_broken_matplotlib_metadata():
 
 
 def import_real_module(module_name: str):
-    """Import a real runner module with codex-side environment guards."""
+    """Import a real runner module (repo root on sys.path, broken matplotlib
+    metadata hidden).
+    """
 
     import importlib
 
@@ -122,10 +124,10 @@ def import_real_module(module_name: str):
 def import_isolated_real_module(module_name: str):
     """Import a fresh copy of a real runner module for threaded execution.
 
-    Real topology modules keep prompts, model URLs, and team sizes in module
-    globals. GEPA patches those globals per program candidate. Loading a unique
-    module object per eval call lets threaded baseline/validation runs avoid
-    the module-level lock without cross-contaminating prompts.
+    Topology modules keep prompts, model URLs, and team sizes in module
+    globals, which GEPA patches per program candidate. A separate module
+    object per eval call lets threaded baseline/validation runs skip the
+    module-level lock without mixing prompts across candidates.
     """
 
     import importlib

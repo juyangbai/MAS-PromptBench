@@ -1,6 +1,5 @@
 """Sequential topology specialized for MATH (competition math), in CrewAI."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -79,7 +78,7 @@ def _build_llm() -> LLM:
 
 # Crew
 def build_crew(llm: LLM | None = None) -> Crew:
-    """Build the 3-stage decomposer -> computer -> verifier pipeline."""
+    """Build the 4-stage decomposer -> computer -> checker -> verifier pipeline."""
     if llm is None:
         llm = _build_llm()
 
@@ -90,7 +89,7 @@ def build_crew(llm: LLM | None = None) -> Crew:
             "computational sub-steps. Do NOT compute anything yet."
         ),
         backstory=_load_prompt("decomposer"),
-        tools=[],  # no tools — planning only
+        tools=[],  # no tools; planning only
         llm=llm,
         verbose=False,
         allow_delegation=False,
@@ -212,7 +211,7 @@ def build_crew(llm: LLM | None = None) -> Crew:
 
 # Output Parsing
 def extract_boxed(text: str) -> str | None:
-    """Return the inner content of the LAST \\boxed{...} (brace-counted)."""
+    """Return the inner content of the last \\boxed{...} (brace-counted)."""
     marker = r"\boxed{"
     idx = text.rfind(marker)
     if idx < 0:
@@ -236,8 +235,8 @@ def extract_answer(text: str) -> str | None:
 
 
 # Scoring
-# Verbatim Hendrycks MATH equivalence from math_equivalence.py, byte-
-# identical to topologies/single/math/langgraph_math.py so sequential
+# Verbatim Hendrycks MATH equivalence from math_equivalence.py,
+# byte-identical to topologies/single/math/langgraph_math.py so sequential
 # EM is directly comparable with single/independent numbers.
 def _fix_fracs(string):
     substrs = string.split("\\frac")
@@ -364,14 +363,11 @@ def exact_match_score(pred: str, gold: str) -> float:
 
 # Orchestration
 def solve(problem: str) -> dict:
-    """Run the 3-stage sequential crew on one MATH problem.
+    """Run the 4-stage sequential crew on one MATH problem.
 
-    Returns:
-        {
-            "answer":   boxed LaTeX (str) or None,
-            "raw":      verifier's full output text,
-            "by_stage": {decomposer, computer, verifier} -> each stage's output,
-        }
+    Returns a dict with "answer" (boxed LaTeX or None), "raw" (the
+    verifier's full output) and "by_stage" (output of decomposer, computer,
+    checker and verifier).
     """
     crew = build_crew()
     result = crew.kickoff(inputs={"problem": problem})
@@ -394,10 +390,9 @@ def solve(problem: str) -> dict:
     }
 
 
-# Dataset loader
-# qwedsacf/competition_math filtered to Precalculus / Level 5 (312 rows).
-# Gold is extracted from the LAST \\boxed{...} in the `solution` column.
-# IDs are stable MD5 of problem text for cross-topology parity.
+# Dataset loader: qwedsacf/competition_math, Precalculus / Level 5 only
+# (312 rows). Gold is the last \boxed{...} in the `solution` column. IDs
+# are the MD5 of the problem text, stable across topologies.
 _HF_DATASET = "qwedsacf/competition_math"
 _HF_SPLIT = "train"
 _SUBJECT = "Precalculus"
@@ -456,9 +451,10 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every problem, compare boxed answer vs gold via
-    Hendrycks `is_equiv`, return aggregate summary + optionally write
-    per-instance predictions to JSONL.
+    """Run `solve()` on every problem and score with Hendrycks `is_equiv`.
+
+    Returns an aggregate summary; if `out_path` is set, per-instance
+    predictions are also written there as JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

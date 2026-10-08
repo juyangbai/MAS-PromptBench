@@ -1,6 +1,5 @@
-"""Centralized topology specialized for BFCL, LangGraph."""
+"""Centralized topology for BFCL (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -61,14 +60,13 @@ def _load_prompt(role: str) -> str:
 
 # Model registration in bfcl-eval
 def _register_model_with_bfcl(model_id: str) -> None:
-    """Tell bfcl-eval how to handle function names for `model_id`.
+    """Register `model_id` in bfcl-eval's MODEL_CONFIG_MAPPING.
 
-    `ast_checker` -> `convert_func_name` looks up the model in
-    MODEL_CONFIG_MAPPING to decide whether to rewrite '.' -> '_' in
-    function names. Qwen3.5-9B handles dots fine (same as the
-    registered qwen3-8b/-14b entries), but our model name isn't in
-    the registry, so without this we hit KeyError on any instance
-    with a dotted name (e.g. `math.factorial`).
+    `ast_checker` -> `convert_func_name` looks the model up there to decide
+    whether to rewrite '.' -> '_' in function names. Unregistered models
+    raise KeyError on any instance with a dotted name (e.g. `math.factorial`).
+    Qwen3.5-9B handles dots fine, same as the registered qwen3-8b/-14b
+    entries.
     """
     if model_id in MODEL_CONFIG_MAPPING:
         return
@@ -106,12 +104,11 @@ def _build_llm() -> ChatOpenAI:
     )
 
 
-# Delegation tools (routing markers)
-# The manager "calls" these to hand the floor to a specific worker. The
-# body echoes the instructions, producing a ToolMessage the worker can
-# read as context. The router after `manager_tools` inspects the name
-# to route to the right worker node. BFCL has no real agent tools — the
-# manager's whole tool set is just these three markers.
+# Delegation tools (routing markers). The manager calls one to hand off to
+# a worker; the echoed instructions become a ToolMessage the worker reads,
+# and the router after `manager_tools` picks the worker by tool name. BFCL
+# has no real agent tools, so these markers are the manager's whole tool
+# set.
 @tool("delegate_to_inspector_worker")
 def delegate_to_inspector_worker(instructions: str) -> str:
     """Hand the next turn to the inspector_worker. Use this to have the
@@ -222,8 +219,7 @@ DELEGATION_TOOLS = [
 ]
 DELEGATION_NAMES = {t.name for t in DELEGATION_TOOLS}
 
-# BFCL's manager has no real tools; its whole tool surface is the three
-# delegation markers.
+# The manager has no real tools, only the delegation markers.
 MANAGER_TOOLS = DELEGATION_TOOLS
 
 
@@ -263,8 +259,7 @@ def _manager_node(state: CentralizedState) -> dict:
     llm = _build_llm().bind_tools(MANAGER_TOOLS)
     sys_msg = SystemMessage(content=_manager_system())
     ai = llm.invoke([sys_msg] + state["messages"])
-    # AutoGen messages carry a `.source` name; we mimic that on the
-    # AIMessage via additional_kwargs for trace rendering parity.
+    # Mimic AutoGen's `.source` field so traces render the same way.
     _tag_source(ai, "manager")
     return {"messages": [ai], "turn_count": int(state.get("turn_count", 0)) + 1}
 
@@ -285,14 +280,13 @@ def _route_from_manager(state: CentralizedState) -> str:
             return END
         if getattr(last, "tool_calls", None):
             return "manager_tools"
-    # No tool call, no TERMINATE — loop back and let the manager try again.
+    # No tool call and no TERMINATE: loop back so the manager tries again.
     return "manager"
 
 
 def _route_from_manager_tools(state: CentralizedState) -> str:
-    # Find the most recent AIMessage with tool_calls; its tool_calls tell
-    # us which delegation was requested. (BFCL has no non-delegation tools,
-    # so any tool_call here is necessarily a delegation.)
+    # The latest AIMessage with tool_calls names the delegate. BFCL has no
+    # other tools, so every tool call here is a delegation.
     for m in reversed(state["messages"]):
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
@@ -308,8 +302,8 @@ def _make_worker_node(name: str, tools: list, llm: ChatOpenAI):
     agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
 
     def node(state: CentralizedState) -> dict:
-        # create_react_agent returns {"messages": [full history incl. input]},
-        # so we splice out only the new messages it appended.
+        # create_react_agent returns the full history, input included, so keep
+        # only the messages it appended.
         prior = list(state["messages"])
         result = agent.invoke(
             {"messages": prior},
@@ -384,10 +378,10 @@ def _build_graph(llm: Optional[ChatOpenAI] = None):
 
 # Prompt scaffolding
 def format_task(user_request: str, schemas_text: str) -> str:
-    """Build the single task string sent to the group chat.
+    """Build the task string for the group chat's first `user` message.
 
-    The user request + schemas both go into the initial `user` message
-    so every agent sees them from the start of the dialogue.
+    Both the request and the schemas go in it, so every agent sees them from
+    the start.
     """
     return (
         "USER REQUEST:\n"
@@ -422,9 +416,9 @@ _NAME_ARGS_PAIRS = (
 
 
 def _normalize_call(d: dict) -> dict:
-    """Normalize the common wrong shapes back to canonical {name: args}.
+    """Map the common wrong shapes to canonical {name: args}.
 
-    Leaves a dict alone if it's already canonical (single string-keyed arg dict).
+    Other dicts, including already-canonical ones, pass through unchanged.
     """
     for name_key, args_key in _NAME_ARGS_PAIRS:
         if (
@@ -438,11 +432,10 @@ def _normalize_call(d: dict) -> dict:
 
 
 def extract_canonical(text: str) -> list[dict] | None:
-    """Extract the last fenced JSON list-of-dicts from `text`, normalizing
-    common non-canonical shapes emitted by chat models.
+    """Return the last fenced JSON list of dicts in `text`, normalized.
 
-    Returns None if no fenced JSON parses to a non-empty list-of-dicts.
-    Strips trailing TERMINATE so the fence regex doesn't misalign.
+    None if no fenced block parses to a non-empty list of dicts. TERMINATE
+    is stripped first so the fence regex doesn't misalign.
     """
     text = re.sub(r"\bTERMINATE\b", "", text)
     candidates: list[str] = [m.group(1) for m in _FENCED_RE.finditer(text)]
@@ -463,7 +456,7 @@ def score_one(
     ground_truth: list[dict],
     category: str,
 ) -> dict:
-    """Delegate to bfcl-eval's AST checker (aligned to other topologies)."""
+    """Score with bfcl-eval's AST checker, same as the other topologies."""
     return ast_checker(
         function_schemas,
         model_output,
@@ -516,8 +509,9 @@ def load_instances(
 
 # Orchestration
 def _flatten_user_request(question: list) -> str:
-    """BFCL stores `question` as [[msgs...]]; for single-turn subsets we
-    take the concatenated user-turn contents."""
+    """BFCL stores `question` as [[msgs...]]; for single-turn subsets, join
+    the turns' contents into one string.
+    """
     if not question:
         return ""
     turns = question[0] if isinstance(question[0], list) else question
@@ -551,13 +545,11 @@ def _communications_to_record(m: BaseMessage) -> dict:
 def solve(instance: dict) -> dict:
     """Run the centralized team on one BFCL instance.
 
-    Returns:
-        {
-            "model_output": canonical call list [{fn: {arg: val}}] or [],
-            "raw":          manager's last message content,
-            "messages":     list of {source, content} from every turn,
-            "telemetry":    normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        model_output  canonical call list [{fn: {arg: val}}], or []
+        raw           manager's last message
+        messages      {source, content} for every turn
+        telemetry     normalized 5-key token/call counts
     """
     compiled, _ = _build_graph()
     user_request = _flatten_user_request(instance["question"])
@@ -601,8 +593,10 @@ def run_one(
     category: str,
     out_dir: Path,
 ) -> dict:
-    """Solve one BFCL instance via the manager-worker team and score the
-    canonical output. Writes group-chat trace to out_dir/traces/<id>.txt."""
+    """Solve and score one BFCL instance with the manager-worker team.
+
+    Writes the group-chat trace to out_dir/traces/<id>.txt.
+    """
     iid = instance["id"]
     summary: dict = {"id": iid, "category": category}
 

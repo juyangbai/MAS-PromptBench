@@ -1,6 +1,5 @@
 """Sequential topology specialized for GPQA-Diamond, implemented in CrewAI."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -64,8 +63,9 @@ def calculator(expression: str) -> str:
 
 # LLM
 def _build_llm() -> LLM:
-    """CrewAI routes completions through litellm; `openai/<model>` + api_base
-    points it at our local vLLM OpenAI-compatible endpoint."""
+    """CrewAI goes through litellm; `openai/<model>` plus api_base points it at
+    the local vLLM OpenAI-compatible endpoint.
+    """
     return LLM(
         model=f"openai/{MODEL_ID}",
         base_url=VLLM_BASE_URL,
@@ -85,7 +85,7 @@ def _build_llm() -> LLM:
 
 # Crew
 def build_crew(llm: LLM | None = None) -> Crew:
-    """Build the 3-stage analyzer -> solver -> verifier pipeline."""
+    """Build the 4-stage analyzer -> solver -> critic -> verifier pipeline."""
     if llm is None:
         llm = _build_llm()
 
@@ -219,8 +219,8 @@ def build_crew(llm: LLM | None = None) -> Crew:
 # Output Parsing
 _LETTERS = ["A", "B", "C", "D"]
 
-# Strip markdown `**bold**` / `*italic*` / backticks before matching — the
-# 9B frequently emits "**Answer:** B" which broke the bare regexes.
+# Strip markdown (`**bold**`, `*italic*`, backticks) before matching; the
+# 9B often emits "**Answer:** B", which broke the bare regexes.
 _MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
 # Primary: "Final answer: X" / "Answer: X" (what the verifier is asked for).
 _ANSWER_RE = re.compile(
@@ -241,8 +241,8 @@ _BARE_LETTER_RE = re.compile(
 def extract_answer(text: str) -> str | None:
     """Return the MCQ letter from the verifier's final output.
 
-    Matches the 3-pattern cascade + markdown stripping used by
-    single/independent/centralized/decentralized gpqa so extracted
+    Uses the same 3-pattern cascade and markdown stripping as the
+    single/independent/centralized/decentralized gpqa runners, so extracted
     letters are comparable across topologies.
     """
     cleaned = _MARKDOWN_STRIP_RE.sub("", text)
@@ -263,21 +263,18 @@ def format_mcq(question: str, choices: list[str]) -> str:
 
 # Orchestration
 def solve(question: str, choices: list[str]) -> dict:
-    """Run the 3-stage sequential crew on one GPQA-style MCQ.
+    """Run the 4-stage sequential crew on one GPQA-style MCQ.
 
-    Returns:
-        {
-            "answer":  final letter A/B/C/D or None,
-            "raw":     verifier's final output text,
-            "by_stage": {analyzer, solver, verifier} -> each stage's output,
-        }
+    Returns a dict with "answer" (letter A-D or None), "raw" (the
+    verifier's final output) and "by_stage" (output of analyzer, solver,
+    critic and verifier).
     """
     crew = build_crew()
     mcq = format_mcq(question, choices)
     result = crew.kickoff(inputs={"question": mcq})
 
-    # CrewAI returns a CrewOutput whose `.raw` is the LAST task's output.
-    # Per-stage outputs are in `.tasks_output[].raw`.
+    # CrewOutput.raw is the last task's output; per-stage outputs are in
+    # `.tasks_output[].raw`.
     final = result.raw
     stages = {}
     try:
@@ -303,9 +300,9 @@ _HF_SPLIT = "train"
 
 
 def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Stable id for a GPQA row — hash of question text. Matches
-    single/gpqa + independent/gpqa so per-row comparisons line up
-    across topologies."""
+    """Stable row id from a hash of the question text. Matches single/gpqa and
+    independent/gpqa so per-row comparisons line up across topologies.
+    """
     q = (row.get("Question") or "").strip()
     if q:
         return "gpqa_" + hashlib.md5(q.encode("utf-8")).hexdigest()[:10]
@@ -318,11 +315,11 @@ def load_instances(
     only: list[str] | None = None,
     shuffle_seed: int = 0,
 ) -> list[dict]:
-    """Load GPQA-Diamond rows from HuggingFace with 4 choices shuffled
-    DETERMINISTICALLY per row (`Random(f"{shuffle_seed}|{row_id}")`).
-    Same algorithm + same default seed as single/gpqa + independent/gpqa
-    — identical `shuffle_seed` produces identical choice orderings, so
-    `correct_letter` matches for each row id across topologies.
+    """Load GPQA-Diamond rows from HuggingFace, shuffling the 4 choices
+    deterministically per row (`Random(f"{shuffle_seed}|{row_id}")`).
+    Same algorithm and default seed as single/gpqa and independent/gpqa, so
+    the same `shuffle_seed` gives the same choice order, and the same
+    `correct_letter`, for each row id across topologies.
     """
     from datasets import load_dataset
 
@@ -361,13 +358,10 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the 4-stage CrewAI sequential pipeline on every instance,
-    compare verifier-emitted letter vs gold, return aggregate summary +
-    optionally write per-instance predictions to JSONL.
+    """Run the 4-stage crew on every instance and score the verifier's letter.
 
-    Per-instance record shape:
-        {id, question, choices, correct_letter,
-         predicted_letter, correct,
+    Returns an aggregate summary and optionally writes per-instance JSONL:
+        {id, question, choices, correct_letter, predicted_letter, correct,
          by_stage: {analyzer, solver, critic, verifier} (string excerpts),
          latency_s, error}
     """
@@ -401,8 +395,7 @@ def run_batch(
             if is_correct:
                 n_correct += 1
 
-            # Keep only short excerpts of each stage in the predictions
-            # JSONL — full stage text is available via re-run if needed.
+            # Only short stage excerpts go in the JSONL; rerun for full text.
             by_stage = out.get("by_stage") or {}
             excerpts = {k: (v or "")[:800] for k, v in by_stage.items()}
             rec = {

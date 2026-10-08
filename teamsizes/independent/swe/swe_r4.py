@@ -1,6 +1,5 @@
 """Independent topology specialized for SWE-bench Verified."""
 
-# Config
 from __future__ import annotations
 
 import asyncio
@@ -35,9 +34,9 @@ from typing_extensions import TypedDict
 VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://lai:8001/v1")
 MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 
-# Number of parallel replicas. Seeds are 0 .. N_AGENTS-1. Defaults to 4 but
-# SWE-bench ensembles are expensive (clone + ~3 min solve + eval per replica);
-# consider 2 while iterating.
+# Number of parallel replicas (seeds 0..N_AGENTS-1). SWE-bench ensembles
+# are expensive (clone + ~3 min solve + eval per replica), so consider 2
+# while iterating.
 N_AGENTS = int(os.environ.get("INDEPENDENT_N_AGENTS", "4"))
 
 # Workdir root: each replica clones into WORKDIR_ROOT/<instance_id>_a<k>/.
@@ -45,7 +44,7 @@ WORKDIR_ROOT = Path(
     os.environ.get("SWE_WORKDIR_ROOT", f"{Path.home()}/swe_work_independent")
 ).resolve()
 
-# Singularity eval cache (shared across replicas; each instance_id has ONE SIF).
+# Singularity eval cache, shared across replicas (one SIF per instance_id).
 SWE_SIF_DIR = Path(
     os.environ.get("SWE_SIF_DIR", f"{Path.home()}/containers/swe")
 ).resolve()
@@ -67,7 +66,7 @@ SYSTEM_PROMPT = append_output_contract_from_path(_PROMPT_PATH.read_text().strip(
 
 # Per-replica REPO_DIR
 # Each replica's async task sets this to its own cloned workdir before
-# invoking the agent. The tools (below) read it on every call, so parallel
+# running the agent. The tools below read it on every call, so parallel
 # replicas don't clobber each other's file writes.
 _REPO_DIR: contextvars.ContextVar[Path] = contextvars.ContextVar("_REPO_DIR")
 
@@ -525,15 +524,14 @@ def best_of_n(
 ) -> tuple[dict | None, list[dict]]:
     """Score each candidate patch and return (winner, scored_list).
 
-    Selection order for winner:
-      1. First candidate (lowest agent_id) with `resolved==True`.
-      2. Else candidate with highest f2p_rate * p2p_rate (first on tie).
+    Winner selection:
+      1. First candidate (lowest agent_id) with resolved == True.
+      2. Else the highest f2p_rate * p2p_rate (first on ties).
       3. None iff no replica produced a non-empty patch.
 
-    The returned `scored_list` carries per-replica {report, resolved,
-    score} fields so callers can populate reporting structures without
-    re-running the (expensive) Singularity eval. When
-    eval_mode='none', scored_list is empty.
+    scored_list carries per-replica {report, resolved, score} so callers can
+    report results without re-running the expensive Singularity eval. It is
+    empty when eval_mode='none'.
     """
     valid = [a for a in answers if a.get("patch")]
     if not valid:
@@ -677,14 +675,12 @@ def build_graph() -> StateGraph:
 def solve(instance: dict, eval_mode: str = "singularity") -> dict:
     """Run the ensemble on one SWE-bench instance.
 
-    Returns:
-        {
-            "patch":     winning patch (str) or None,
-            "resolved":  bool (or None if eval_mode='none'),
-            "winner":    agent_id of the selected candidate,
-            "per_agent": list of {agent_id, seed, patch, clone_s, solve_s,
-                                  report?, resolved?, score?, error?},
-        }
+    Returns a dict with:
+        patch      winning patch, or None
+        resolved   bool (None if eval_mode='none')
+        winner     agent_id of the selected candidate
+        per_agent  [{agent_id, seed, patch, clone_s, solve_s,
+                     report?, resolved?, score?, error?}]
     """
     compiled = build_graph().compile()
     result = asyncio.run(
@@ -693,9 +689,8 @@ def solve(instance: dict, eval_mode: str = "singularity") -> dict:
     per_agent = sorted(result["answers"], key=lambda a: a["agent_id"])
     winner, scored = best_of_n(per_agent, instance, eval_mode=eval_mode)
 
-    # Merge best_of_n's per-replica scores back into per_agent (avoids
-    # re-running the expensive Singularity eval a second time — each
-    # replica is scored exactly ONCE, inside best_of_n).
+    # Merge best_of_n's per-replica scores back into per_agent, so each
+    # replica goes through the expensive Singularity eval only once.
     if eval_mode != "none":
         scored_by_id = {s["agent_id"]: s for s in scored}
         for a in per_agent:
@@ -756,14 +751,13 @@ def run_one(
 ) -> dict:
     """Run the N-agent ensemble on one instance and write artifacts.
 
-    Per-agent clones live under `workdir_root / <iid>_a<k>` (managed
-    inside `_run_replica`). We rebind the module's WORKDIR_ROOT so that
-    each replica sees the caller's chosen root.
+    Rebinds the module's WORKDIR_ROOT to `workdir_root`, so each replica
+    clones into `workdir_root / <iid>_a<k>` (see `_run_replica`).
 
     Writes:
-        - out_dir / patches / <iid>.diff     (winner's patch)
-        - out_dir / predictions.jsonl        (one line per instance)
-        - out_dir / traces / <iid>.txt       (per-agent summary + winner)
+        out_dir/patches/<iid>.diff   winner's patch
+        out_dir/predictions.jsonl    one line per instance
+        out_dir/traces/<iid>.txt     per-agent summary + winner
     """
     global WORKDIR_ROOT
     WORKDIR_ROOT = Path(workdir_root).resolve()
@@ -795,7 +789,7 @@ def run_one(
     with (out_dir / "predictions.jsonl").open("a") as f:
         f.write(json.dumps(predictions_entry(iid, patch)) + "\n")
 
-    # Per-agent trace: clone/solve timings + score + error, plus winner highlight.
+    # Per-agent trace (clone/solve timings, score, error), winner on top.
     (out_dir / "traces").mkdir(parents=True, exist_ok=True)
     with (out_dir / "traces" / f"{iid}.txt").open("w") as f:
         f.write(f"winner: agent_{out.get('winner')}  "
@@ -810,7 +804,7 @@ def run_one(
                 f"  resolved={a.get('resolved')}  error={a.get('error')!r}\n\n"
             )
 
-    # Aggregate per-agent pass rates from the winner selection step.
+    # Per-agent pass rates, from the reports computed during winner selection.
     per_agent_rates = []
     for a in out.get("per_agent") or []:
         r = a.get("report") or {}
@@ -829,7 +823,8 @@ def run_one(
         summary["eval"] = "skipped"
         return summary
 
-    # Winner-level resolved / rates go at the top level for easy aggregation.
+    # Put the winner's resolved flag and rates at the top level for easy
+    # aggregation.
     winner_id = out.get("winner")
     winner = next(
         (a for a in out.get("per_agent") or [] if a.get("agent_id") == winner_id),
@@ -853,8 +848,9 @@ def run_batch(
     eval_mode: str = "singularity",
     keep_workdirs: bool = False,
 ) -> None:
-    """Iterate Verified instances, run_one() each — matches single/swe's
-    batch flow. Multi-agent: per-instance disk footprint ≈ N × single."""
+    """Run run_one() on each Verified instance, same flow as single/swe.
+    Per-instance disk use is about N x the single topology's.
+    """
     import shutil as _sh
 
     workdir_root = workdir_root or Path(
@@ -880,7 +876,7 @@ def run_batch(
         summary = run_one(inst, workdir_root, out_dir, eval_mode=eval_mode)
         with results_path.open("a") as f:
             f.write(json.dumps(summary) + "\n")
-        # Cap the printed summary: per_agent list can balloon logs.
+        # Leave per_agent out of the printed summary; it bloats the logs.
         compact = {k: v for k, v in summary.items() if k != "per_agent"}
         print(f"  -> {json.dumps(compact)}", file=sys.stderr)
 

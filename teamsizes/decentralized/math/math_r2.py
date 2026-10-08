@@ -1,6 +1,5 @@
-"""Decentralized debate topology specialized for competition MATH, LangGraph."""
+"""Decentralized debate topology for competition MATH (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -38,15 +37,14 @@ from topologies.telemetry import langchain_telemetry, normalize  # noqa: E402
 
 
 # Stall safeguards
-# Per-row wall-clock cap using SIGALRM (main-thread only — batch runner
-# iterates rows on main thread, so this is safe). On symbolic MATH
-# problems (matrices, trig) the calculator tool returns ERROR for
-# non-numeric expressions and peers loop retrying variants.
+# Per-row wall-clock cap via SIGALRM (main thread only; the batch runner
+# iterates rows on the main thread). On symbolic MATH problems (matrices,
+# trig) the calculator returns ERROR for non-numeric expressions and peers
+# loop retrying variants.
 PER_ROW_TIMEOUT_S = 120
 _MAX_TOOL_LOOPS = 4  # was 6
-# create_react_agent uses its own recursion_limit; give it enough
-# headroom to cover the same tool-loop budget (roughly 3x max_tool_loops
-# to account for alternating AI/Tool messages).
+# create_react_agent has its own recursion_limit; roughly 3x the tool-loop
+# budget covers the alternating AI/Tool messages.
 _RECURSION_LIMIT = _MAX_TOOL_LOOPS * 3
 
 
@@ -60,14 +58,11 @@ def _row_timeout_handler(signum, frame):
 
 @contextlib.contextmanager
 def _row_timeout_guard(seconds: int):
-    """Install SIGALRM for `seconds`; uninstall on exit regardless of
-    outcome so timeouts in one row don't bleed into the next.
+    """Install a SIGALRM handler for `seconds` and always restore the old
+    one on exit, so one row's timeout can't leak into the next.
 
-    Python's `signal` module only works on the main thread — when the
-    batch runner executes us under a ThreadPoolExecutor worker, installing
-    SIGALRM raises `ValueError: signal only works in main thread`. Skip
-    the guard when not on the main thread; concurrency is the caller's
-    responsibility there.
+    `signal` only works on the main thread, so under a ThreadPoolExecutor
+    worker the guard is skipped and timeouts are left to the caller.
     """
     import threading
     if threading.current_thread() is not threading.main_thread():
@@ -143,8 +138,9 @@ def _build_llm() -> ChatOpenAI:
 
 
 def _build_agent():
-    """One react agent, reused across all peers + rounds. Each peer keeps
-    its own message history; the agent is stateless."""
+    """One stateless react agent shared by all peers and rounds; each peer
+    keeps its own message history.
+    """
     return create_react_agent(model=_build_llm(), tools=TOOLS, prompt=SYSTEM_PROMPT)
 
 
@@ -231,9 +227,9 @@ def _build_graph():
 
 # Output parsing
 def extract_boxed(text: str) -> str | None:
-    """Return the inner content of the LAST \boxed{...} in the text.
-    Handles nested braces via brace counting. Aligned to
-    single/math's extractor."""
+    """Return the contents of the last \boxed{...}, handling nested braces.
+    Same extractor as single/math.
+    """
     marker = r"\boxed{"
     idx = text.rfind(marker)
     if idx < 0:
@@ -375,10 +371,10 @@ def exact_match_score(pred: str, gold: str) -> float:
 
 # Aggregation (best-of-N via equivalence-bucketing majority)
 def best_of_n(answers: list[str | None]) -> str | None:
-    """Majority over Hendrycks-equivalence buckets — aligned to
-    independent/math's aggregator. Tie-break by lowest index (the first
-    bucket that reaches max length wins, which by construction contains
-    the lowest-index answer)."""
+    """Majority vote over Hendrycks-equivalence buckets (independent/math's
+    aggregator). Ties go to the lowest index, since the first max-size
+    bucket holds the lowest-index answer.
+    """
     valid = [a for a in answers if a]
     if not valid:
         return None
@@ -400,9 +396,9 @@ equiv_majority = best_of_n
 
 # Orchestration
 def _init_contexts(n: int, problem: str) -> list[list[BaseMessage]]:
-    """Each peer's initial history = [HumanMessage(problem)]. System prompt
-    is injected by create_react_agent via its `prompt=` arg, not embedded
-    here."""
+    """Start each peer with [HumanMessage(problem)]. create_react_agent adds
+    the system prompt via `prompt=`.
+    """
     return [[HumanMessage(content=problem)] for _ in range(n)]
 
 
@@ -443,10 +439,9 @@ def solve(problem: str) -> dict:
     }
 
 
-# Dataset loader
-# qwedsacf/competition_math filtered to Precalculus / Level 5 (312 rows).
-# Gold is extracted from the LAST \\boxed{...} in the `solution` column.
-# IDs are stable MD5 of problem text for cross-topology parity.
+# Dataset loader: qwedsacf/competition_math, Precalculus / Level 5 only
+# (312 rows). Gold is the last \boxed{...} in the `solution` column. IDs
+# are the MD5 of the problem text, stable across topologies.
 _HF_DATASET = "qwedsacf/competition_math"
 _HF_SPLIT = "train"
 _SUBJECT = "Precalculus"
@@ -505,9 +500,9 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every problem, compare debate boxed answer vs gold
-    via Hendrycks `is_equiv`, return aggregate summary + optionally write
-    per-instance predictions to JSONL.
+    """Run `solve()` on every problem and check the boxed answer against gold
+    with Hendrycks `is_equiv`. Returns an aggregate summary and, if
+    `out_path` is set, writes per-instance predictions to JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

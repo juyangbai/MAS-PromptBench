@@ -1,8 +1,8 @@
-"""Central registry for real-runner GEPA pairs.
+"""Registry of real-runner GEPA pairs.
 
-A pair is identified by `(dataset, topology)`, for example
-`("bfcl", "sequential_crewai")`. New datasets should add their adapter map
-here after implementing the dataset loader, metric, and adapters.
+A pair is keyed by `(dataset, topology)`, e.g.
+`("bfcl", "sequential_crewai")`. Register a new dataset's adapter map here
+once its loader, metric, and adapters exist.
 """
 from __future__ import annotations
 
@@ -109,7 +109,7 @@ DATASET_ADAPTERS: dict[str, dict[str, str]] = {
 
 _TEAMSIZES_DATASETS = ("hotpotqa", "lcb")
 _TEAMSIZES_BASE_TOPOLOGIES = ("independent", "decentralized", "sequential", "centralized")
-TEAM_SIZES = (2, 4, 8, 10)  # canonical team-size sweep — single source of truth
+TEAM_SIZES = (2, 4, 8, 10)  # single source of truth for the team-size sweep
 _COMMUNICATIONS_DATASETS = ("hotpotqa", "lcb")
 _COMMUNICATIONS_BASE_TOPOLOGIES = ("independent", "decentralized", "sequential", "centralized")
 _COMMUNICATIONS_FORMATS = ("freeform", "semi_structured", "structured_soft")
@@ -191,10 +191,9 @@ def topologies(dataset: str) -> list[str]:
 
 
 def adapter_choices(dataset: str | None = None) -> list[str]:
-    """Return CLI-friendly choices.
+    """Return CLI choices.
 
-    For a specific dataset this returns bare topology names. Without a
-    dataset, choices are returned as `dataset/topology`.
+    Bare topology names if ``dataset`` is given, else `dataset/topology`.
     """
     if dataset is not None:
         return topologies(dataset)

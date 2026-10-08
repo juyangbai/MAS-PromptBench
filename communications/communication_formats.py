@@ -392,12 +392,12 @@ def render_report(report: dict, fmt: str) -> str:
 
 
 def begin_handoff_recording():
-    """Start collecting deterministic in-flight handoff evidence."""
+    """Start recording in-flight handoffs for ``end_handoff_recording``."""
     return _INFLIGHT_HANDOFFS.set([])
 
 
 def end_handoff_recording(token) -> list[dict]:
-    """Stop collecting handoff evidence and return records captured so far."""
+    """Stop recording handoffs and return the records captured so far."""
     records = list(_INFLIGHT_HANDOFFS.get() or [])
     _INFLIGHT_HANDOFFS.reset(token)
     return records
@@ -415,12 +415,12 @@ def format_handoff(
     next_action: str | None = None,
     payload: dict | None = None,
 ) -> str:
-    """Convert one inter-agent handoff into the requested communications format.
+    """Render one inter-agent handoff in the requested communications format.
 
-    This is the in-flight counterpart to ``collect_reports()``. It is called
-    before another agent receives a prior agent's output, so semi-structured
-    and structured-soft experiments actually constrain the receiver context
-    instead of only normalizing artifacts after the run.
+    In-flight counterpart to ``collect_reports()``. It runs before the next
+    agent sees a prior agent's output, so semi-structured and structured-soft
+    runs constrain what the receiver actually reads, not just the artifacts
+    normalized after the run.
     """
     raw_text = "" if text is None else str(text)
     if not fmt or fmt == "freeform":
@@ -458,10 +458,10 @@ def format_handoff(
 
 
 def collect_reports(out: dict, *, topology: str, fmt: str, dataset: str = "") -> dict:
-    """Render raw runner reports through communications infra and compute strict metrics.
+    """Render raw runner reports in ``fmt`` and compute strict parse metrics.
 
-    ``communication_parse_ok`` intentionally remains the legacy loose boolean:
-    true if any rendered report parsed. New callers should use
+    ``communication_parse_ok`` stays the legacy loose flag (true if any
+    rendered report parsed). New callers should use
     ``communication_all_parse_ok`` or ``communication_parse_rate``.
     """
     if fmt not in FORMATS:
@@ -673,9 +673,9 @@ def install_proxy(module_globals: dict, *, topology: str, dataset: str, fmt: str
     original_solve = getattr(base, "solve", None)
 
     def _ensure_configured() -> None:
-        # The base topology module is shared in sys.modules. Re-assert this
-        # proxy's format before execution so importing another msg variant in
-        # the same process cannot silently leak its prompt contract here.
+        # The base topology module is shared via sys.modules. Re-apply this
+        # proxy's format before each run so another msg variant imported in the
+        # same process can't leak its prompt contract here.
         configure_base_module(base, fmt=fmt, dataset=dataset)
 
     def solve(*args, **kwargs):
@@ -753,10 +753,11 @@ def install_proxy(module_globals: dict, *, topology: str, dataset: str, fmt: str
 
 
 def cli_main(g: dict) -> int:
-    """Run one communications pair as a standalone batch eval (used by each pair's ``__main__``).
+    """Run one communications pair as a standalone batch eval.
 
-    The pair's namespace already holds ``load_instances`` and ``run_batch`` (wired
-    by :func:`install_proxy`), so a pair runs without any external launcher:
+    Called from each pair's ``__main__``. :func:`install_proxy` has already put
+    ``load_instances`` and ``run_batch`` in the pair's namespace, so no
+    external launcher is needed:
         python communications/<topology>/<dataset>/<dataset>_<format>.py --batch --limit 100
     """
     import argparse

@@ -78,10 +78,10 @@ def apply_signal_split_if_requested(
     seed: int,
     offset: int,
 ) -> tuple[list[dspy.Example], list[dspy.Example]] | None:
-    """Return the frozen 25/25 split when the request exactly matches it.
+    """Return the frozen 25/25 split if the request matches it exactly.
 
-    Falls back to the normal seeded split when no frozen manifest ships for the
-    dataset (e.g. benchmarks slimmed to eval-id manifests only).
+    Returns None (so the caller uses the normal seeded split) when the dataset
+    ships no frozen manifest, e.g. benchmarks slimmed to eval-id manifests.
     """
     if not is_signal_request(train_size, val_size, seed, offset):
         return None

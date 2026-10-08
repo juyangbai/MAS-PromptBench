@@ -1,6 +1,5 @@
 """Sequential topology specialized for SWE-bench Verified, in LangGraph."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -35,10 +34,10 @@ from topologies.telemetry import langchain_telemetry, normalize  # noqa: E402
 VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://n12:8000/v1")
 MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 
-# Per-instance repo workdir. Stored as a ContextVar so concurrent threads
-# (e.g. when concurrent_runner.py drives multiple instances per shard) each
-# see their own workdir. Module-globals would race: thread A would observe
-# thread B's last _set_repo_dir() and write patches to the wrong repo.
+# Per-instance repo workdir, kept in a ContextVar so concurrent threads
+# (e.g. concurrent_runner.py running several instances per shard) each see
+# their own. With a module global, thread A could pick up thread B's last
+# _set_repo_dir() and write patches to the wrong repo.
 from contextvars import ContextVar  # noqa: E402
 _REPO_DIR_VAR: ContextVar[Path] = ContextVar(
     "_REPO_DIR_VAR",
@@ -65,9 +64,9 @@ def _load_prompt(role: str) -> str:
 
 
 def _set_repo_dir(path: Path | str) -> None:
-    """Re-bind the per-thread repo workdir. Each ThreadPoolExecutor worker
-    gets its own copy via the ContextVar; threads running concurrent
-    instances do not race."""
+    """Set the repo workdir for the current thread. Each ThreadPoolExecutor
+    worker gets its own ContextVar copy, so concurrent instances don't race.
+    """
     _REPO_DIR_VAR.set(Path(path).resolve())
 
 
@@ -270,9 +269,10 @@ def format_task_brief(
     instance_id: str | None = None,
     hints_text: str | None = None,
 ) -> str:
-    """Build a task brief with issue + optional hints. Used as the static
-    per-instance variable input; prior stage outputs are appended to each
-    node's user message as `--- PRIOR STAGE: <role> ---` blocks."""
+    """Build the task brief: issue text plus optional hints. This is the static
+    per-instance input; prior stage outputs are appended to each node's user
+    message as `--- PRIOR STAGE: <role> ---` blocks.
+    """
     parts = []
     if instance_id:
         parts.append(f"INSTANCE: {instance_id}")
@@ -416,7 +416,7 @@ def _make_plain_node(role, sys_prompt, llm, template, prior_roles):
 
 
 def _build_graph(llm: ChatOpenAI):
-    """Build the 4-stage investigator -> planner -> patcher -> tester pipeline."""
+    """4-stage pipeline: investigator -> planner -> patcher -> tester."""
     stages = [
         (
             'issue_parser',
@@ -736,16 +736,15 @@ def is_resolved(report: dict) -> bool:
 def solve(instance: dict, eval_mode: str = "singularity") -> dict:
     """Run the 4-stage sequential graph on one SWE-bench instance.
 
-    The caller sets REPO_DIR before calling (via _set_repo_dir, typically
-    in the batch runner below). Returns:
+    The caller sets REPO_DIR first via _set_repo_dir (usually the batch
+    runner below).
 
-        {
-            "patch":     the unified-diff produced (str),
-            "resolved":  bool (or None if eval_mode='none'),
-            "report":    scorer output dict,
-            "by_stage":  {investigator, planner, patcher, tester} stage outputs,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        patch      the unified diff produced (str)
+        resolved   bool (None if eval_mode='none')
+        report     scorer output dict
+        by_stage   {investigator, planner, patcher, tester} -> stage output
+        telemetry  normalized 5-key token/call counts
     """
     task_brief = format_task_brief(
         instance["problem_statement"],
@@ -800,7 +799,7 @@ def predictions_entry(
     instance_id: str, patch: str,
     model_name: str = "mas-promptbench-sequential",
 ) -> dict:
-    """Build one line of the predictions JSONL consumed by the official harness.
+    """Build one predictions-JSONL line for the official harness.
 
     Schema: {"instance_id": str, "model_patch": str, "model_name_or_path": str}
     """
@@ -859,7 +858,7 @@ def run_one(
     with (out_dir / "predictions.jsonl").open("a") as f:
         f.write(json.dumps(predictions_entry(iid, patch)) + "\n")
 
-    # Dump the 4-stage output so we can inspect what happened.
+    # Dump each stage's output for inspection.
     (out_dir / "traces").mkdir(parents=True, exist_ok=True)
     with (out_dir / "traces" / f"{iid}.txt").open("w") as f:
         for stage, content in (out.get("by_stage") or {}).items():
@@ -899,9 +898,9 @@ def run_batch(
     eval_mode: str = "singularity",
     keep_workdirs: bool = False,
 ) -> None:
-    """Iterate Verified instances, run_one() each, write predictions.jsonl +
-    results.jsonl. Matches single/swe's batch flow so Docker-harness post-
-    processing works identically across topologies.
+    """Run run_one() on each Verified instance and write predictions.jsonl and
+    results.jsonl. Same batch flow as single/swe, so Docker-harness
+    post-processing works the same across topologies.
     """
     import shutil as _sh
 

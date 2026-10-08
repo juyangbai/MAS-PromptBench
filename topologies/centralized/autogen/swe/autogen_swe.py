@@ -1,6 +1,5 @@
 """Centralized topology specialized for SWE-bench Verified, AutoGen."""
 
-# Config
 from __future__ import annotations
 
 import asyncio
@@ -26,8 +25,8 @@ if _TOPO_ROOT not in sys.path:
     sys.path.insert(0, _TOPO_ROOT)
 from topologies.telemetry import autogen_telemetry, normalize  # noqa: E402
 
-# Infrastructure reuse from sequential/crewai/swe: clone + SIF eval + dataset
-# loader + patch extraction. All aligned to single/swe's scorer.
+# Reuse sequential/crewai/swe for cloning, SIF eval, dataset loading and
+# patch extraction, all aligned with single/swe's scorer.
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "sequential" / "crewai" / "swe"))
 import crewai_swe as _crewai_swe  # noqa: E402
 from crewai_swe import (  # noqa: E402
@@ -224,8 +223,8 @@ def build_team() -> SelectorGroupChat:
         description="Coordinator for the SWE pipeline; plans, dispatches, synthesizes.",
         model_client=client,
         system_message=_load_prompt("manager") + _MANAGER_TERMINATE_NUDGE,
-        # Manager has read-only inspection tools; it delegates edits to
-        # patcher_worker and tests to tester_worker.
+        # Manager gets read-only tools; edits go to patcher_worker and tests to
+        # tester_worker.
         tools=[file_read, list_dir, search_repo],
     )
 
@@ -263,8 +262,8 @@ def build_team() -> SelectorGroupChat:
         tools=[shell_exec, file_read],
     )
 
-    # Force manager-routing: after any worker speaks, the manager MUST be
-    # the next speaker (so workers never chain turns with each other).
+    # Force manager routing: after any worker speaks, the manager goes next,
+    # so workers never chain turns with each other.
     def _selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
         if not messages:
             return manager.name
@@ -279,9 +278,8 @@ def build_team() -> SelectorGroupChat:
         "Pick exactly one agent from {participants}."
     )
 
-    # SWE pipelines need more turns than the textual benchmarks (manager
-    # will typically do 2-5 navigator cycles + 1-2 patcher cycles + 1-2
-    # tester cycles).
+    # SWE needs more turns than the text benchmarks: the manager typically
+    # runs 2-5 navigator, 1-2 patcher and 1-2 tester cycles.
     termination = TextMentionTermination("TERMINATE") | MaxMessageTermination(30)
 
     return SelectorGroupChat(
@@ -331,16 +329,10 @@ def format_task_brief(
 async def solve_async(instance: dict, eval_mode: str = "singularity") -> dict:
     """Run the centralized team on one SWE-bench instance.
 
-    Assumes the workdir for this instance has already been cloned +
-    checked out and `_set_repo_dir(...)` has been called.
-
-    Returns:
-        {
-            "patch":    unified diff (git diff HEAD) or "",
-            "resolved": bool (None if eval_mode='none'),
-            "report":   scorer output dict (None if eval_mode='none'),
-            "messages": list of {source, content} from every turn,
-        }
+    Expects the instance repo to be cloned and checked out already, with
+    `_set_repo_dir(...)` called. Returns a dict with "patch" (git diff HEAD,
+    or ""), "resolved" and "report" (scorer result; both None when
+    eval_mode='none') and "messages" ({source, content} per turn).
     """
     team = build_team()
     brief = format_task_brief(
@@ -409,7 +401,7 @@ def run_one(
     out_dir: Path,
     eval_mode: str = "singularity",
 ) -> dict:
-    """Clone + solve + score one SWE-bench Verified instance end-to-end."""
+    """Clone, solve and score one SWE-bench Verified instance."""
     iid = instance["instance_id"]
     repo = instance["repo"]
     base_commit = instance["base_commit"]
@@ -486,8 +478,11 @@ def run_batch(
     eval_mode: str = "singularity",
     keep_workdirs: bool = False,
 ) -> None:
-    """Iterate Verified instances and run_one() each — matches single/swe's
-    batch flow so the official harness post-processing works identically."""
+    """Call run_one() on each Verified instance.
+
+    Same batch flow as single/swe, so the official harness post-processing
+    works unchanged.
+    """
     import shutil as _sh
 
     workdir_root = workdir_root or Path(

@@ -1,8 +1,9 @@
-"""communications communication-format adapters backed by real ``topologies`` modules.
+"""Communication-format adapters backed by the real ``topologies`` modules.
 
-The model solves with the normal task prompts.  communications syntax is rendered by
-infrastructure from raw runner reports before metadata is scored or recorded,
-so GEPA optimizes task behavior instead of JSON/tag formatting obedience.
+The model solves with the normal task prompts. The format syntax is
+rendered by infrastructure from raw runner reports before metadata is
+scored or recorded, so the optimizer tunes task behavior rather than
+JSON/tag formatting.
 """
 from __future__ import annotations
 
@@ -66,7 +67,7 @@ def communications_class_name(dataset: str, base_topology: str, fmt: str) -> str
 
 
 class CommunicationsAdapterMixin:
-    """Shared behavior for fixed-format communications GEPA pairs."""
+    """Shared behavior for fixed-format communications pairs."""
 
     communications_enabled = True
     communications_format: str

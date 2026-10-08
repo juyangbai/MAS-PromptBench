@@ -1,6 +1,5 @@
-"""Centralized topology specialized for SWE-bench Verified, LangGraph."""
+"""Centralized topology for SWE-bench Verified (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -43,11 +42,11 @@ MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 
 _PROMPTS_DIR = _REPO_ROOT / "configs" / "prompts" / "centralized" / "swe"
 
-# Per-instance repo workdir. Stored as a ContextVar so concurrent threads
-# (when concurrent_runner.py drives many instances per shard) each see their
-# own workdir. Module-globals would race: one thread would overwrite
-# another's _set_repo_dir() and patches would be written against the wrong
-# repo (yielding diffs that mention django files for an astropy issue).
+# Per-instance repo workdir, kept in a ContextVar so each thread gets its
+# own when concurrent_runner.py drives many instances per shard. A module
+# global would race: one thread's _set_repo_dir() would overwrite
+# another's, and patches would land in the wrong repo (e.g. django diffs
+# for an astropy issue).
 from contextvars import ContextVar  # noqa: E402
 _REPO_DIR_VAR: ContextVar[Path] = ContextVar(
     "_REPO_DIR_VAR",
@@ -75,8 +74,7 @@ def _load_prompt(role: str) -> str:
 
 
 def _set_repo_dir(path: Path | str) -> None:
-    """Re-bind the per-thread repo workdir via a ContextVar so concurrent
-    instances do not race on a shared global."""
+    """Set the repo workdir for the current thread (see _REPO_DIR_VAR)."""
     _REPO_DIR_VAR.set(Path(path).resolve())
 
 
@@ -211,11 +209,9 @@ def shell_exec(command: str, timeout_s: int = _SHELL_TIMEOUT_S) -> str:
         return f"ERROR: {e}"
 
 
-# Delegation tools (routing markers)
-# The manager "calls" these to hand the floor to a specific worker. The
-# body echoes the instructions, producing a ToolMessage the worker can
-# read as context. The router after `manager_tools` inspects the name
-# to route to the right worker node.
+# Delegation tools (routing markers). The manager calls one to hand off to
+# a worker; the echoed instructions become a ToolMessage the worker reads,
+# and the router after `manager_tools` picks the worker by tool name.
 
 @tool("delegate_to_patcher_worker")
 def delegate_to_patcher_worker(instructions: str) -> str:
@@ -235,12 +231,12 @@ DELEGATION_TOOLS = [
 ]
 DELEGATION_NAMES = {t.name for t in DELEGATION_TOOLS}
 
-# Per-worker tool subsets (match AutoGen sibling exactly).
+# Per-worker tool subsets, same as the AutoGen sibling.
 NAVIGATOR_TOOLS = [file_read, list_dir, search_repo]
 PATCHER_TOOLS = [file_read, str_replace]
 TESTER_TOOLS = [shell_exec, file_read]
 
-# Manager has read-only inspection tools + 3 delegation markers.
+# Manager gets the read-only inspection tools plus the delegation markers.
 MANAGER_TOOLS = [file_read, list_dir, search_repo] + DELEGATION_TOOLS
 
 
@@ -312,8 +308,7 @@ def _manager_node(state: CentralizedState) -> dict:
     llm = _build_llm().bind_tools(MANAGER_TOOLS)
     sys_msg = SystemMessage(content=_manager_system())
     ai = llm.invoke([sys_msg] + state["messages"])
-    # AutoGen messages carry a `.source` name; we mimic that on the
-    # AIMessage via additional_kwargs for trace rendering parity.
+    # Mimic AutoGen's `.source` field so traces render the same way.
     _tag_source(ai, "manager")
     return {"messages": [ai], "turn_count": int(state.get("turn_count", 0)) + 1}
 
@@ -334,13 +329,12 @@ def _route_from_manager(state: CentralizedState) -> str:
             return END
         if getattr(last, "tool_calls", None):
             return "manager_tools"
-    # No tool call, no TERMINATE — loop back and let the manager try again.
+    # No tool call and no TERMINATE: loop back so the manager tries again.
     return "manager"
 
 
 def _route_from_manager_tools(state: CentralizedState) -> str:
-    # Find the most recent AIMessage with tool_calls; its tool_calls tell
-    # us whether any delegation was requested.
+    # Check the latest AIMessage with tool_calls for a delegation request.
     for m in reversed(state["messages"]):
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
@@ -357,8 +351,8 @@ def _make_worker_node(name: str, tools: list, llm: ChatOpenAI, extra_prompt: str
     agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
 
     def node(state: CentralizedState) -> dict:
-        # create_react_agent returns {"messages": [full history incl. input]},
-        # so we splice out only the new messages it appended.
+        # create_react_agent returns the full history, input included, so keep
+        # only the messages it appended.
         prior = list(state["messages"])
         result = agent.invoke(
             {"messages": prior},
@@ -712,17 +706,13 @@ def _communications_to_record(m: BaseMessage) -> dict:
 def solve(instance: dict, eval_mode: str = "singularity") -> dict:
     """Run the centralized team on one SWE-bench instance.
 
-    Assumes the workdir for this instance has already been cloned +
-    checked out and `_set_repo_dir(...)` has been called.
-
-    Returns:
-        {
-            "patch":    unified diff (git diff HEAD) or "",
-            "resolved": bool (None if eval_mode='none'),
-            "report":   scorer output dict (None if eval_mode='none'),
-            "messages": list of {source, content} from every turn,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Expects the instance's workdir to be cloned and checked out already,
+    with `_set_repo_dir(...)` called. Returns a dict with:
+        patch      unified diff (git diff HEAD), or ""
+        resolved   bool, or None if eval_mode='none'
+        report     scorer output dict, or None if eval_mode='none'
+        messages   {source, content} for every turn
+        telemetry  normalized 5-key token/call counts
     """
     compiled, _ = _build_graph()
     brief = format_task_brief(
@@ -783,7 +773,7 @@ def run_one(
     out_dir: Path,
     eval_mode: str = "singularity",
 ) -> dict:
-    """Clone + solve + score one SWE-bench Verified instance end-to-end."""
+    """Clone, solve and score one SWE-bench Verified instance."""
     iid = instance["instance_id"]
     repo = instance["repo"]
     base_commit = instance["base_commit"]
@@ -860,8 +850,11 @@ def run_batch(
     eval_mode: str = "singularity",
     keep_workdirs: bool = False,
 ) -> None:
-    """Iterate Verified instances and run_one() each — matches single/swe's
-    batch flow so the official harness post-processing works identically."""
+    """Call run_one() on each Verified instance.
+
+    Same batch flow as single/swe, so the official harness post-processing
+    works unchanged.
+    """
     import shutil as _sh
 
     workdir_root = workdir_root or Path(

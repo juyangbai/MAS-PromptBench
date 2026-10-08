@@ -1,6 +1,5 @@
 """Single-agent ReAct topology specialized for BFCL (Berkeley Function Calling)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -36,18 +35,17 @@ MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 
 
 def _register_model_with_bfcl(model_id: str) -> None:
-    """Tell bfcl-eval how to handle function names for `model_id`.
+    """Register `model_id` in bfcl-eval's MODEL_CONFIG_MAPPING.
 
-    `ast_checker` → `convert_func_name` looks up the model in
-    MODEL_CONFIG_MAPPING to decide whether to rewrite '.' → '_' in function
-    names (a workaround for FC-tuned models that can't emit dots during
-    inference). Qwen3.5-9B handles dots fine — same as the registered
-    `qwen3-8b`/`qwen3-14b` entries — but our model name isn't in the
-    registry, so without this we hit KeyError on any instance with a dotted
-    function name (e.g. `math.factorial`).
+    `ast_checker` -> `convert_func_name` looks the model up there to decide
+    whether to rewrite '.' to '_' in function names (a workaround for
+    FC-tuned models that can't emit dots). Qwen3.5-9B handles dots fine, like
+    the registered `qwen3-8b`/`qwen3-14b` entries, but its name isn't in the
+    registry, so any instance with a dotted function name (e.g.
+    `math.factorial`) raises KeyError.
 
-    Only `underscore_to_dot` is consulted during scoring; the handler is
-    never instantiated, so we reuse a sibling Qwen3 entry's reference.
+    Scoring only reads `underscore_to_dot` and never instantiates the
+    handler, so borrowing the `qwen3-8b` entry's handler reference is safe.
     """
     if model_id in MODEL_CONFIG_MAPPING:
         return
@@ -101,9 +99,9 @@ def _load_system_prompt() -> str:
 SYSTEM_PROMPT = _load_system_prompt()
 
 
-# Schema → Tool Conversion
-# BFCL uses "dict" for the outer object type and a few aliases not in standard
-# JSON schema. Map them to Python types used by pydantic.create_model.
+# Schema -> Tool Conversion
+# BFCL uses "dict" for the outer object type, plus a few aliases that aren't
+# standard JSON schema. Map them to Python types for pydantic.create_model.
 _PRIMITIVE_TYPE_MAP = {
     "integer": int,
     "string": str,
@@ -128,11 +126,10 @@ def _py_type_of(prop: dict) -> Any:
 def _sanitize_field_name(name: str) -> str:
     """Return a pydantic-safe attribute name for `name`.
 
-    Pydantic v2 rejects fields whose attribute name starts with `_` (reserved
-    for private attrs) or collides with a Python keyword. We strip the leading
-    underscores and suffix `_` to any resulting keyword; the original name is
-    preserved via Field(alias=...) so JSON schema + tool_calls args stay
-    aligned to the BFCL schema.
+    Pydantic v2 rejects field names that start with `_` (reserved for private
+    attrs) or are Python keywords, so strip leading underscores and append
+    `_` to keywords. The original name is kept via Field(alias=...) so the
+    JSON schema and tool_call args still match the BFCL schema.
     """
     safe = name.lstrip("_") or "field"
     if keyword.iskeyword(safe):
@@ -179,21 +176,19 @@ def build_agent(tools: list[StructuredTool]):
         model=MODEL_ID,
         base_url=VLLM_BASE_URL,
         api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
-        # House default: light stochastic sampling + fixed seed gives per-seed
-        # reproducibility while breaking greedy-decoding degenerate loops.
+        # House default: light sampling with a fixed seed stays reproducible
+        # per seed and avoids greedy decoding's degenerate loops.
         temperature=0.2,
         top_p=0.9,
         seed=0,
-        # Per-LLM-call token cap. BFCL scoring only looks at the first
-        # tool-call emission; subsequent react turns are noise. Capping
-        # prevents runaway generation on turns where the model sees empty
-        # tool results and would otherwise stream until context overflow.
+        # Per-call token cap. BFCL only scores the first tool call; later
+        # ReAct turns see empty tool results and can otherwise keep generating
+        # until the context overflows.
         max_tokens=1024,
         extra_body={
             "repetition_penalty": 1.05,
-            # BFCL is single-turn function calling; long thinking makes Qwen3
-            # drift from the tool-call API and emit text-form calls that
-            # vLLM's qwen3_xml parser can't recognize. Disable thinking here.
+            # Long thinking makes Qwen3 drift from the tool-call API and emit
+            # text-form calls that vLLM's qwen3_xml parser can't recognize.
             "chat_template_kwargs": {"enable_thinking": False},
         },
     )
@@ -211,7 +206,7 @@ def extract_first_tool_calls(messages: list) -> list[dict]:
 
 
 def to_canonical(tool_calls: list[dict]) -> list[dict]:
-    """LangChain tool_calls → BFCL canonical form.
+    """Convert LangChain tool_calls to BFCL's canonical form.
 
     LangChain: [{"name": "fn", "args": {...}, "id": "..."}]
     BFCL:      [{"fn": {"arg": value, ...}}, ...]
@@ -226,10 +221,10 @@ def score_one(
     ground_truth: list[dict],
     category: str,
 ) -> dict:
-    """Delegate to bfcl-eval's AST checker.
+    """Score with bfcl-eval's AST checker.
 
-    `ast_checker` branches on `category`: parallel* → order-free parallel match,
-    *multiple* → pick-one, otherwise → simple single-call match.
+    `ast_checker` branches on `category`: parallel* -> order-free parallel
+    match, *multiple* -> pick one, anything else -> single-call match.
     """
     return ast_checker(
         function_schemas,

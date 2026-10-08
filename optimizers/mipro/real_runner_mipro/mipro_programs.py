@@ -112,7 +112,7 @@ def render_instruction_with_demos(instruction: str, demos: Any) -> str:
 
 
 class MIPRORolePredict(dspy.Predict):
-    """Prompt holder whose selected MIPRO demos are rendered into adapter prompts."""
+    """Prompt holder that renders selected MIPRO demos into adapter prompts."""
 
     def __init__(self, adapter: RealRunnerAdapter, role: str):
         validate_adapter(adapter)

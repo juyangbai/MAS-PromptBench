@@ -1,6 +1,5 @@
-"""Centralized topology specialized for APPS, LangGraph."""
+"""Centralized topology for APPS (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -91,11 +90,9 @@ def python_exec(code: str, stdin: str = "", timeout_s: int = _EXEC_TIMEOUT_S) ->
         return f"ERROR: {e}"
 
 
-# Delegation tools (routing markers)
-# The manager "calls" these to hand the floor to a specific worker. The
-# body echoes the instructions, producing a ToolMessage the worker can
-# read as context. The router after `manager_tools` inspects the name
-# to route to the right worker node.
+# Delegation tools (routing markers). The manager calls one to hand off to
+# a worker; the echoed instructions become a ToolMessage the worker reads,
+# and the router after `manager_tools` picks the worker by tool name.
 @tool("delegate_to_analyzer_worker")
 def delegate_to_analyzer_worker(instructions: str) -> str:
     """Hand the next turn to the analyzer_worker. Use this when you need
@@ -214,9 +211,8 @@ _MANAGER_TERMINATE_NUDGE = (
 )
 
 
-# Prompt scaffolding
-# APPS prompt convention from the APPS paper / lm-evaluation-harness:
-# "QUESTION: ... ANSWER:" scaffold with an explicit mode directive.
+# Prompt scaffolding: the "QUESTION: ... ANSWER:" format with an explicit
+# mode directive, following the APPS paper and lm-evaluation-harness.
 _FORMAT_STDIN_DIRECTIVE = "Use Standard Input format."
 _FORMAT_CALL_BASED_DIRECTIVE = "Use Call-Based format."
 
@@ -553,8 +549,7 @@ def _manager_node(state: CentralizedState) -> dict:
     llm = _build_llm().bind_tools(MANAGER_TOOLS)
     sys_msg = SystemMessage(content=_manager_system())
     ai = llm.invoke([sys_msg] + state["messages"])
-    # AutoGen messages carry a `.source` name; we mimic that on the
-    # AIMessage via additional_kwargs for trace rendering parity.
+    # Mimic AutoGen's `.source` field so traces render the same way.
     _tag_source(ai, "manager")
     return {"messages": [ai], "turn_count": int(state.get("turn_count", 0)) + 1}
 
@@ -575,13 +570,12 @@ def _route_from_manager(state: CentralizedState) -> str:
             return END
         if getattr(last, "tool_calls", None):
             return "manager_tools"
-    # No tool call, no TERMINATE — loop back and let the manager try again.
+    # No tool call and no TERMINATE: loop back so the manager tries again.
     return "manager"
 
 
 def _route_from_manager_tools(state: CentralizedState) -> str:
-    # Find the most recent AIMessage with tool_calls; its tool_calls tell
-    # us whether any delegation was requested.
+    # Check the latest AIMessage with tool_calls for a delegation request.
     for m in reversed(state["messages"]):
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
@@ -598,8 +592,8 @@ def _make_worker_node(name: str, tools: list, llm: ChatOpenAI):
     agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
 
     def node(state: CentralizedState) -> dict:
-        # create_react_agent returns {"messages": [full history incl. input]},
-        # so we splice out only the new messages it appended.
+        # create_react_agent returns the full history, input included, so keep
+        # only the messages it appended.
         prior = list(state["messages"])
         result = agent.invoke(
             {"messages": prior},
@@ -688,13 +682,11 @@ def _communications_to_record(m: BaseMessage) -> dict:
 def solve(problem: str, starter_code: str | None = None) -> dict:
     """Run the centralized team on one APPS problem.
 
-    Returns:
-        {
-            "code":      inner content of the last fenced ```python``` block or None,
-            "raw":       manager's last message content,
-            "messages":  list of {source, content} from every turn,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        code       last fenced ```python``` block, or None
+        raw        manager's last message
+        messages   {source, content} for every turn
+        telemetry  normalized 5-key token/call counts
     """
     compiled, _ = _build_graph()
     task = format_prompt(problem, starter_code)
@@ -751,7 +743,7 @@ def load_instances(
     difficulty: str | None = None,
     max_tests_per_row: int | None = 20,
 ) -> list[dict]:
-    """Load APPS test rows — same IDs as single/apps for parity."""
+    """Load APPS test rows, with the same IDs as single/apps."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)
@@ -926,7 +918,7 @@ def _canned_demo() -> None:
         _print_scoring(run_tests(out["code"], stdin_io))
     print(f"=== {len(out['messages'])} messages across the group chat ===")
 
-    # --- Call-based-mode problem ---
+    # Call-based mode problem
     functional_problem = (
         "Given a list of integers `nums` and an integer `target`, return the "
         "indices of the two numbers in `nums` that add up to `target`. Assume "
@@ -940,7 +932,7 @@ def _canned_demo() -> None:
         "    def twoSum(self, nums: List[int], target: int) -> List[int]:\n"
         "        "
     )
-    # APPS-native parallel-list form (inputs = arg-lists, outputs = return values).
+    # APPS form: inputs are arg lists, outputs are return values.
     functional_io = {
         "fn_name": "twoSum",
         "inputs":  [[[2, 7, 11, 15], 9], [[3, 2, 4], 6], [[3, 3], 6]],

@@ -1,6 +1,5 @@
 """Decentralized debate topology specialized for BFCL, OpenAI SDK."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -106,7 +105,7 @@ def _completion_kwargs() -> dict:
 
 
 def _chat(client: OpenAI, messages: list[dict]) -> dict:
-    """Single LLM call — BFCL debaters have no tools, pure text output."""
+    """One LLM call; BFCL debaters have no tools and return plain text."""
     resp = client.chat.completions.create(messages=messages, **_completion_kwargs())
     openai_sdk_accumulate(_TELEM_ACC, resp)
     msg = resp.choices[0].message
@@ -322,8 +321,9 @@ def run_one(
     category: str,
     out_dir: Path,
 ) -> dict:
-    """Solve one BFCL instance with N×R debate, best-of-N pick, score the
-    winner. Writes per-peer summaries to out_dir/traces/<id>.txt."""
+    """Solve one BFCL instance with an N x R debate, pick best-of-N and score
+    the winner. Writes per-peer summaries to out_dir/traces/<id>.txt.
+    """
     iid = instance["id"]
     summary: dict = {
         "id": iid, "category": category,

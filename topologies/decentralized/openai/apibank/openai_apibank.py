@@ -199,14 +199,14 @@ def _load_module_from_file(name: str, path: Path):
 
 
 def _install_sklearn_metrics_stub_if_needed() -> None:
-    """Avoid a broken local sklearn wheel blocking sentence_transformers import.
+    """Keep a broken local sklearn wheel from blocking sentence_transformers.
 
-    The official API-Bank ToolSearcher imports ``sentence_transformers``. In
-    the shared ``mas-promptbench`` environment, the installed scikit-learn wheel can be
-    ABI-incompatible with numpy. ToolSearcher only needs ``SentenceTransformer``
-    and ``util.cos_sim``; the sklearn imports are incidental. This stub supplies
-    the small metrics surface imported by transformers/sentence_transformers so
-    the official ToolSearcher code can run without mutating the conda env.
+    API-Bank's ToolSearcher imports ``sentence_transformers``. In the shared
+    ``mas-promptbench`` env the installed scikit-learn wheel can be
+    ABI-incompatible with numpy. ToolSearcher only needs
+    ``SentenceTransformer`` and ``util.cos_sim``, so this stubs the few
+    metrics that transformers/sentence_transformers import, letting the
+    official ToolSearcher run without changing the conda env.
     """
     try:
         from sklearn import metrics as sklearn_metrics  # type: ignore
@@ -345,9 +345,9 @@ def _pushd(path: Path):
 class LazyApiBankManager:
     """Lazy subset of API-Bank's ToolManager.
 
-    API-Bank's official ToolManager imports every API file at startup. That
-    pulls optional dependencies for APIs we are not evaluating. This manager
-    loads only the requested API classes while preserving official API call and
+    The official ToolManager imports every API file at startup, which pulls
+    in optional dependencies for APIs not under evaluation. This one loads
+    only the requested API classes and keeps the official call and
     correctness behavior.
     """
 
@@ -1107,8 +1107,8 @@ def score_prediction(task: dict, model_output: str | None) -> dict:
         _replay_prior(manager, task)
         result = manager.api_call(api_name, **params)
         api = manager.init_tool(api_name)
-        # Some official API-Bank checkers mutate their input dictionaries
-        # while comparing fuzzy fields. Keep scoring side-effect free because
+        # Some official API-Bank checkers mutate their input dicts while
+        # comparing fuzzy fields. Pass copies so scoring has no side effects:
         # team-size variants score several replicas against the same task.
         correct = bool(
             api.check_api_call_correctness(

@@ -1,6 +1,5 @@
 """Decentralized debate topology specialized for GPQA-Diamond, OpenAI SDK."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -30,10 +29,9 @@ from topologies.telemetry import (  # noqa: E402
 )
 
 
-# Module-level accumulator: reset at each solve() entry, summed across every
-# `client.chat.completions.create` call via the helper in _telemetry.py.
-# Accurate token counts require this because `response.usage` lives on each
-# per-call response, not on the aggregated contexts list.
+# Reset on each solve() and summed over every chat.completions.create
+# call (helper in _telemetry.py). Exact token counts need the per-call
+# `response.usage`, which the aggregated contexts list doesn't carry.
 _TELEM_ACC: dict = {
     "prompt_tokens": 0, "completion_tokens": 0,
     "total_tokens": 0, "n_llm_calls": 0, "n_tool_calls": 0,
@@ -46,12 +44,12 @@ def _reset_telem_acc() -> None:
 
 
 # Stall safeguards
-# Per-row wall-clock cap using SIGALRM when running on the main thread. The
-# concurrent runner may execute run_batch([row]) inside a ThreadPool worker,
-# where Python disallows signal handlers, so the guard becomes a no-op there.
-# Without this, 4 peers x 2 rounds x N tool loops can stall a single row for
-# many minutes when one LLM call hangs or the model loops on calculator ERROR
-# messages. max_tool_loops also lowered to shave each per-turn runaway budget.
+# Per-row wall-clock cap via SIGALRM on the main thread. The concurrent
+# runner may call run_batch([row]) in a ThreadPool worker, where signal
+# handlers aren't allowed, so there the guard is a no-op. Without it,
+# 4 peers x 2 rounds x N tool loops can stall a row for many minutes when
+# an LLM call hangs or the model loops on calculator ERROR messages.
+# max_tool_loops was also lowered to cap each turn's runaway budget.
 PER_ROW_TIMEOUT_S = 120
 _MAX_TOOL_LOOPS = 4  # was 5
 
@@ -66,8 +64,9 @@ def _row_timeout_handler(signum, frame):
 
 @contextlib.contextmanager
 def _row_timeout_guard(seconds: int):
-    """Install SIGALRM for `seconds`; uninstall on exit regardless of
-    outcome so timeouts in one row don't bleed into the next."""
+    """Arm SIGALRM for `seconds` and always disarm on exit, so one row's
+    timeout can't bleed into the next.
+    """
     import threading
     if threading.current_thread() is not threading.main_thread():
         yield
@@ -168,11 +167,11 @@ def _completion_kwargs() -> dict:
 
 
 def _chat_with_tools(client: OpenAI, messages: list[dict], max_tool_loops: int = _MAX_TOOL_LOOPS) -> dict:
-    """One agent turn: call the model, resolve any tool_calls locally, loop
-    until the model returns a content-only assistant message. Returns the
-    final assistant message dict (which gets appended to the agent's
-    context). Also mutates `messages` in-place to carry the tool call +
-    tool result turns so the model sees its own scratchpad.
+    """Run one agent turn, resolving tool calls locally until the model
+    returns a content-only message, and return that message.
+
+    Tool-call and tool-result turns are appended to `messages` in place so
+    the model sees its own scratchpad.
     """
     kwargs = _completion_kwargs()
     kwargs["tools"] = [_CALCULATOR_SCHEMA]
@@ -184,13 +183,13 @@ def _chat_with_tools(client: OpenAI, messages: list[dict], max_tool_loops: int =
         msg = resp.choices[0].message
         dump = msg.model_dump() if hasattr(msg, "model_dump") else dict(msg)
         tool_calls = dump.get("tool_calls") or []
-        # Append the assistant turn (tool_call OR content) to conversation.
+        # Append the assistant turn, whether tool call or content.
         messages.append(dump)
 
         if not tool_calls:
             return dump
 
-        # Resolve each tool call locally + append a tool-role message.
+        # Run each tool call locally and append a tool-role reply.
         for tc in tool_calls:
             fn = tc.get("function", {}) if isinstance(tc, dict) else {}
             name = fn.get("name", "")
@@ -205,16 +204,17 @@ def _chat_with_tools(client: OpenAI, messages: list[dict], max_tool_loops: int =
                 "content": result,
             })
 
-    # Tool-loop budget exhausted; return whatever the last assistant msg was.
+    # Out of tool loops; return the last assistant message.
     return dump
 
 
 # Debate loop
 def _peer_injection(others_final: list[dict], question: str) -> dict:
-    """Build the 'peers said X, Y, Z — revise if warranted' user message.
+    """Build the user message showing peers' answers and asking for revision
+    if warranted.
 
-    others_final: list of the OTHER peers' final assistant messages from the
-    previous round (content strings only, tool-call turns already resolved).
+    `others_final` holds the other peers' final assistant messages from the
+    previous round (tool-call turns already resolved).
     """
     body = ["These are the final responses from other peer agents in the previous round:"]
     for i, m in enumerate(others_final):
@@ -229,11 +229,10 @@ def _peer_injection(others_final: list[dict], question: str) -> dict:
 
 
 def run_debate(question: str, choices: list[str]) -> list[list[dict]]:
-    """Run N agents × R rounds on one GPQA-style MCQ.
+    """Run N agents x R rounds on one GPQA-style MCQ.
 
-    Returns: list of N contexts. Each context is the full conversation for
-    that peer (system + user + interleaved assistant/tool turns across all
-    rounds).
+    Returns the N per-peer contexts: system + user + every assistant/tool
+    turn across all rounds.
     """
     client = _build_client()
     mcq_body = format_mcq(question, choices)
@@ -246,8 +245,8 @@ def run_debate(question: str, choices: list[str]) -> list[list[dict]]:
         ]
         for _ in range(N_AGENTS)
     ]
-    # Track each peer's FINAL assistant message per round (for peer-injection
-    # into the next round). Shape: round_finals[r][i] = assistant dict.
+    # Each peer's final assistant message per round, injected into the next
+    # round: round_finals[r][i].
     round_finals: list[list[dict]] = []
 
     for r in range(N_ROUNDS):
@@ -266,8 +265,8 @@ def run_debate(question: str, choices: list[str]) -> list[list[dict]]:
 # Output parsing (aligned to single/independent/sequential/centralized gpqa)
 _LETTERS = ["A", "B", "C", "D"]
 
-# Strip markdown `**bold**` / backticks before matching — the 9B
-# frequently emits `**Answer:** B` which otherwise breaks the regexes.
+# Strip markdown bold and backticks before matching: the 9B model often
+# emits `**Answer:** B`, which otherwise breaks the regexes.
 _MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
 _ANSWER_RE = re.compile(
     r"\b(?:final\s+)?answer\b\s*[:\s]*\(?([A-D])\)?",
@@ -286,9 +285,8 @@ _BARE_LETTER_RE = re.compile(
 def extract_answer(text: str) -> str | None:
     """Return the MCQ letter from a peer's final output.
 
-    Matches the cascade + markdown stripping used by single/independent/
-    sequential/centralized gpqa so extracted letters are comparable
-    across topologies.
+    Same regex cascade and markdown stripping as single/independent/
+    sequential/centralized gpqa, so letters compare across topologies.
     """
     cleaned = _MARKDOWN_STRIP_RE.sub("", text)
     for pattern in (_ANSWER_RE, _OPTION_RE, _BARE_LETTER_RE):
@@ -321,15 +319,11 @@ def format_mcq(question: str, choices: list[str]) -> str:
 
 # Orchestration
 def solve(question: str, choices: list[str]) -> dict:
-    """Run the N-peer × R-round debate on one GPQA-style MCQ.
+    """Run the N-peer x R-round debate on one GPQA-style MCQ.
 
-    Returns:
-        {
-            "answer":         round-R majority letter (A/B/C/D) or None,
-            "per_peer":       [{peer, letter, raw}] — per-peer final
-                              assistant messages + extracted letters,
-            "all_contexts":   raw OpenAI chat contexts (one per peer),
-        }
+    Returns a dict with "answer" (round-R majority letter or None),
+    "per_peer" ([{peer, letter, raw}] from each peer's final message) and
+    "all_contexts" (raw chat contexts, one per peer).
     """
     _reset_telem_acc()
     with _row_timeout_guard(PER_ROW_TIMEOUT_S):
@@ -343,9 +337,9 @@ def solve(question: str, choices: list[str]) -> dict:
         per_peer.append({"peer": i, "letter": letter, "raw": final})
         if letter is not None:
             letters.append(letter)
-    # Prefer exact per-response usage counts from _TELEM_ACC; fall back to
-    # context-walk counts if the accumulator saw nothing (e.g. if the
-    # client lib stopped surfacing `response.usage` mid-run).
+    # Prefer exact per-response usage from _TELEM_ACC; fall back to walking
+    # the contexts if the accumulator saw nothing (e.g. the client stopped
+    # returning `response.usage` mid-run).
     telem = dict(_TELEM_ACC)
     if telem["n_llm_calls"] == 0:
         telem = openai_sdk_telemetry(contexts)
@@ -364,8 +358,9 @@ _HF_SPLIT = "train"
 
 
 def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Stable id for a GPQA row — md5 hash of question text. Matches
-    the other 4 gpqa topologies so per-row diffs line up on the same id."""
+    """Stable id for a GPQA row: md5 of the question text. Matches the other
+    4 gpqa topologies so per-row diffs line up.
+    """
     q = (row.get("Question") or "").strip()
     if q:
         return "gpqa_" + hashlib.md5(q.encode("utf-8")).hexdigest()[:10]
@@ -378,10 +373,11 @@ def load_instances(
     only: list[str] | None = None,
     shuffle_seed: int = 0,
 ) -> list[dict]:
-    """Load GPQA-Diamond rows with 4 choices shuffled DETERMINISTICALLY
-    per row (`Random(f"{shuffle_seed}|{row_id}")`). Aligned to
-    the other gpqa topologies so `correct_letter` matches for each row
-    id across topologies at the same `shuffle_seed`.
+    """Load GPQA-Diamond rows with the 4 choices shuffled deterministically.
+
+    Each row uses `Random(f"{shuffle_seed}|{row_id}")`, as in the other
+    gpqa topologies, so a row id gets the same `correct_letter` everywhere
+    for a given `shuffle_seed`.
     """
     from datasets import load_dataset
 
@@ -420,15 +416,11 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the N-peer × R-round debate on every instance, compare the
-    round-R majority-vote letter vs gold, return aggregate summary +
-    optionally write per-instance predictions to JSONL.
+    """Run the debate on every instance and score the round-R majority letter.
 
-    Per-instance record shape:
-        {id, question, choices, correct_letter,
-         predicted_letter, correct,
-         per_peer: [{peer, letter, raw_last}] — one entry per debater,
-         latency_s, error}
+    Returns an aggregate summary and optionally writes per-instance JSONL:
+        {id, question, choices, correct_letter, predicted_letter, correct,
+         per_peer: [{peer, letter, raw_last}], latency_s, error}
     """
     per_instance: list[dict] = []
     n = len(instances)
@@ -460,8 +452,8 @@ def run_batch(
             if is_correct:
                 n_correct += 1
 
-            # Per-peer record: keep letter + short tail of raw (last 300 chars)
-            # so the JSONL stays manageable. Full contexts omitted.
+            # Per peer keep only the letter and the last 300 chars of raw
+            # output so the JSONL stays small. Full contexts are dropped.
             compact_per_peer = [
                 {
                     "peer": p["peer"], "letter": p["letter"],

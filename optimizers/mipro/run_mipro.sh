@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # MIPRO prompt-optimization sweep.
 #
-# Runs DSPy MIPROv2 on each (dataset, topology) cell via the generic pilot
-# `real_runner_mipro.pilots.run_mipro_dataset` — one process per cell. The optimized
-# prompts + selected demos are written under results/mipro/<topology>_<dataset>/.
-# Seed prompts in configs/prompts/ are read-only and never modified.
+# Runs DSPy MIPROv2 through real_runner_mipro.pilots.run_mipro_dataset once
+# per (dataset, topology) cell, one process each. Optimized prompts and the
+# selected demos go to results/mipro/<topology>_<dataset>/. Seed prompts in
+# configs/prompts/ are only read, never modified.
 #
-# Override via env: MIPRO_REFL_ENDPOINT MIPRO_TASK_ENDPOINTS DATASETS TOPOLOGIES
+# Env overrides: MIPRO_REFL_ENDPOINT MIPRO_TASK_ENDPOINTS DATASETS TOPOLOGIES
 #   TRAIN_SIZE VAL_SIZE NUM_CANDIDATES NUM_TRIALS NUM_THREADS OUT_ROOT
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"

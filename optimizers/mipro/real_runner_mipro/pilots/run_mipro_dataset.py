@@ -375,7 +375,7 @@ def _toolhop_answer_replacement(match: re.Match) -> str:
 
 
 def sanitize_toolhop_compiled_prompt(text: str) -> str:
-    """Remove train/val-specific examples while keeping reusable behavior guidance."""
+    """Strip train/val-specific examples but keep reusable behavior guidance."""
     text = TOOLHOP_MONTH_DATE_RE.sub("DATE", text)
     text = TOOLHOP_ISO_DATE_RE.sub("DATE", text)
     text = TOOLHOP_QUOTED_PROPER_NOUN_RE.sub("'ENTITY_VALUE'", text)

@@ -1,6 +1,5 @@
 """Sequential topology specialized for HotpotQA, implemented in CrewAI."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -90,8 +89,9 @@ def wikipedia_page(title: str) -> str:
 
 # LLM
 def _build_llm() -> LLM:
-    """CrewAI routes completions through litellm; `openai/<model>` + api_base
-    points it at our local vLLM OpenAI-compatible endpoint."""
+    """CrewAI goes through litellm; `openai/<model>` plus api_base points it at
+    the local vLLM OpenAI-compatible endpoint.
+    """
     return LLM(
         model=f"openai/{MODEL_ID}",
         base_url=VLLM_BASE_URL,
@@ -109,7 +109,7 @@ def _build_llm() -> LLM:
 
 # Crew
 def build_crew(llm: LLM | None = None) -> Crew:
-    """Build the 3-stage retriever -> reasoner -> writer pipeline."""
+    """Build the 4-stage planner -> retriever -> reasoner -> writer pipeline."""
     if llm is None:
         llm = _build_llm()
 
@@ -246,10 +246,8 @@ _ANSWER_RE = re.compile(
 
 
 def extract_answer(text: str) -> str | None:
-    """Return the writer's short-form answer.
-
-    Prefers the last 'Answer: X' pattern. Falls back to the last non-empty
-    line of the cleaned text.
+    """Return the writer's short-form answer: the last 'Answer: X' match, else
+    the last non-empty line.
     """
     matches = _ANSWER_RE.findall(text)
     if matches:
@@ -259,9 +257,10 @@ def extract_answer(text: str) -> str | None:
 
 
 # Scoring
-# Verbatim HotpotQA normalization + EM + F1 from hotpot_evaluate_v1.py,
-# aligned to topologies/single/hotpotqa/langgraph_hotpotqa.py so
-# sequential-topology numbers are directly comparable.
+# HotpotQA normalization, EM and F1 copied verbatim from
+# hotpot_evaluate_v1.py and aligned with
+# topologies/single/hotpotqa/langgraph_hotpotqa.py, so sequential numbers
+# are directly comparable.
 def normalize_answer(s: str) -> str:
     s = s.lower()
     s = "".join(ch for ch in s if ch not in set(string.punctuation))
@@ -298,14 +297,11 @@ def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
 
 # Orchestration
 def solve(question: str) -> dict:
-    """Run the 3-stage sequential crew on one HotpotQA question.
+    """Run the 4-stage sequential crew on one HotpotQA question.
 
-    Returns:
-        {
-            "answer":   final short-form answer string or None,
-            "raw":      writer's full output text,
-            "by_stage": {retriever, reasoner, writer} -> each stage's output,
-        }
+    Returns a dict with "answer" (short-form answer or None), "raw" (the
+    writer's full output) and "by_stage" (output of planner, retriever,
+    reasoner and writer).
     """
     crew = build_crew()
     result = crew.kickoff(inputs={"question": question})
@@ -339,9 +335,9 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load HotpotQA dev rows. HotpotQA has stable string ids per row;
-    the first 100 rows at offset=0 are the same questions used by
-    single/hotpotqa and independent/hotpotqa for cross-topology parity.
+    """Load HotpotQA dev rows. Row ids are stable strings, and the first 100
+    rows at offset=0 are the questions used by single/hotpotqa and
+    independent/hotpotqa, for cross-topology parity.
     """
     from datasets import load_dataset
 
@@ -375,8 +371,8 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the 4-stage CrewAI pipeline on every instance, compute EM + F1
-    vs gold, return aggregate summary + optionally write per-instance
+    """Run the 4-stage crew on every instance and score EM + F1 against gold.
+    Returns an aggregate summary and optionally writes per-instance
     predictions to JSONL.
     """
     per_instance: list[dict] = []

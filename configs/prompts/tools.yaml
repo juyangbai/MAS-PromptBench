@@ -1,6 +1,6 @@
 # Tool catalog per (topology, dataset).
-# Entries are intentionally minimal (name + one-line purpose) to leave room
-# for a downstream prompt optimizer to refine.
+# Entries are kept minimal (name and a one-line purpose) so a prompt
+# optimizer has room to refine them.
 
 _none: &none "None."
 

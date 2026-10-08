@@ -1,6 +1,5 @@
-"""Decentralized debate topology specialized for SWE-bench Verified, LangGraph."""
+"""Decentralized debate topology for SWE-bench Verified (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -43,9 +42,9 @@ MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 N_AGENTS = int(os.environ.get("DECENTRALIZED_N_AGENTS", "2"))
 N_ROUNDS = int(os.environ.get("DECENTRALIZED_N_ROUNDS", "2"))
 
-# Match openai sibling's max_tool_loops=20. create_react_agent uses its own
-# recursion_limit; give it enough headroom to cover the same tool-loop budget
-# (roughly 3x max_tool_loops to account for alternating AI/Tool messages).
+# max_tool_loops=20, as in the openai sibling. create_react_agent has its own
+# recursion_limit; roughly 3x the loop budget covers the alternating AI/Tool
+# messages.
 _MAX_TOOL_LOOPS = 20
 _RECURSION_LIMIT = _MAX_TOOL_LOOPS * 3  # 60
 
@@ -72,10 +71,9 @@ SYSTEM_PROMPT = _load_prompt("debater")
 
 
 # Per-peer workdir tracking
-# Each peer has its OWN clone of the repo — tools need to resolve paths
-# against that peer's workdir, not a global one. ContextVar + per-turn
-# bind keeps it simple and works under sequential peer execution inside
-# the round_node (no threading concerns in this port).
+# Each peer works in its own repo clone, so tools must resolve paths against
+# that peer's workdir. A ContextVar bound per turn is enough because peers
+# run sequentially inside _round_node (no threading in this port).
 _REPO_DIR_VAR: ContextVar[Path] = ContextVar("_REPO_DIR_VAR", default=Path("."))
 
 
@@ -86,11 +84,11 @@ def _get_repo_dir() -> Path:
 def _repo_path(path: str) -> Path:
     repo = _get_repo_dir()
     candidate = (repo / path).resolve() if not Path(path).is_absolute() else Path(path).resolve()
-    candidate.relative_to(repo)  # raises if escapes
+    candidate.relative_to(repo)  # raises if path escapes the repo
     return candidate
 
 
-# Tools (LangChain @tool — same 5 tools as openai sibling)
+# Tools (LangChain @tool; same 5 tools as the openai sibling)
 @tool
 def file_read(path: str, offset: int = 0, limit: int | None = None) -> str:
     """Read a file from the repository working directory.
@@ -228,10 +226,10 @@ def _build_llm() -> ChatOpenAI:
 
 
 def _build_agent():
-    """Build a react agent carrying the shared 5-tool surface. Each peer
-    invokes this agent with its OWN message history + its OWN bound
-    `_REPO_DIR_VAR` context, so a single agent object is reused safely
-    across peers + rounds."""
+    """React agent with the shared 5 tools. Each peer calls it with its own
+    message history and `_REPO_DIR_VAR` binding, so one agent object is
+    reused across peers and rounds.
+    """
     return create_react_agent(model=_build_llm(), tools=TOOLS, prompt=SYSTEM_PROMPT)
 
 
@@ -314,14 +312,13 @@ def _last_ai(msgs: list[BaseMessage]) -> BaseMessage | None:
 def _invoke_peer_with_recovery(
     agent, ctx: list[BaseMessage],
 ) -> list[BaseMessage]:
-    """Invoke the react agent with BadRequestError recovery, matching the
-    openai sibling's `_chat_with_tools` 400-retry block.
+    """Invoke the react agent, retrying once on BadRequestError.
 
-    vLLM sometimes rejects a follow-up request when the prior assistant
-    turn's tool_call `arguments` contain an unterminated JSON string
-    (truncated at max_tokens, unescaped quotes, etc). Strip trailing
-    tool-result + poisoned assistant messages and retry once with a
-    user nudge so the peer can keep working.
+    Mirrors the 400-retry in the openai sibling's `_chat_with_tools`. vLLM
+    sometimes rejects a follow-up when the previous assistant turn's tool_call
+    `arguments` hold an unterminated JSON string (cut off at max_tokens,
+    unescaped quotes, etc). The retry drops the trailing tool results and the
+    bad assistant message and adds a user nudge so the peer can keep going.
     """
     try:
         result = agent.invoke(
@@ -330,9 +327,9 @@ def _invoke_peer_with_recovery(
         )
         return result["messages"]
     except Exception as e:
-        # Narrow the recovery to LangChain/OpenAI BadRequest-like errors.
-        # `langchain_openai` surfaces vLLM 400s via openai.BadRequestError.
-        # We string-match on the type name so we never import openai here.
+        # Only recover from BadRequest-like errors: langchain_openai surfaces
+        # vLLM 400s as openai.BadRequestError. Match on the type name so openai
+        # isn't imported here.
         etype = type(e).__name__
         is_bad_request = (
             "BadRequest" in etype
@@ -342,7 +339,7 @@ def _invoke_peer_with_recovery(
         if not is_bad_request:
             raise
 
-    # Recovery path: pop trailing tool messages + poisoned ai message, append nudge.
+    # Recovery: drop trailing tool messages and the bad AI turn, then nudge.
     repaired = list(ctx)
     # Remove trailing tool-role messages.
     while repaired and getattr(repaired[-1], "type", None) == "tool":
@@ -361,8 +358,8 @@ def _invoke_peer_with_recovery(
         )
         return result["messages"]
     except Exception as e2:
-        # Give up — publish a synthetic error AIMessage so best-of-N can
-        # proceed (the peer's workdir may still carry partial edits).
+        # Give up: return a synthetic error AIMessage so best-of-N can still
+        # run (the peer's workdir may hold partial edits).
         repaired.append(AIMessage(
             content=f"ERROR: peer crashed on retry: {type(e2).__name__}: {e2}"
         ))
@@ -370,9 +367,9 @@ def _invoke_peer_with_recovery(
 
 
 def _round_node(state: DebateState) -> dict:
-    """Run one debate round: iterate ALL N peers sequentially (see module
-    docstring for why sequential vs threaded), each in its own ContextVar
-    binding so tools land in its OWN workdir."""
+    """Run one debate round over all N peers in sequence. Each peer gets its
+    own ContextVar binding so its tools act on its own workdir.
+    """
     agent = _build_agent()
     r = int(state.get("round", 0))
     brief = state["brief"]
@@ -388,9 +385,8 @@ def _round_node(state: DebateState) -> dict:
             others = [prev_finals[-1][j] for j in range(len(contexts)) if j != i]
             ctx = ctx + [_peer_injection(others, brief)]
 
-        # Bind this peer's workdir for the duration of the agent invocation
-        # so the 5 @tool bodies resolve paths against peer_k/ and not a
-        # sibling's workdir.
+        # Bind this peer's workdir for the call so tools resolve paths under
+        # peer_k/ and not a sibling's workdir.
         token = _REPO_DIR_VAR.set(Path(workdir))
         try:
             try:
@@ -671,8 +667,9 @@ def best_of_n(
     instance: dict,
     eval_mode: str = "singularity",
 ) -> tuple[int | None, list[dict]]:
-    """Run compute_patch() + SIF eval on each peer's workdir; pick the
-    first resolved peer (lowest index), else max f2p_rate × p2p_rate."""
+    """Run compute_patch() and the SIF eval on each peer's workdir. Pick the
+    first resolved peer (lowest index), else max f2p_rate * p2p_rate.
+    """
     f2p = instance["FAIL_TO_PASS"]
     p2p = instance["PASS_TO_PASS"]
     if isinstance(f2p, str):
@@ -680,8 +677,8 @@ def best_of_n(
     if isinstance(p2p, str):
         p2p = json.loads(p2p)
 
-    # Compute patches sequentially (each peer has its OWN workdir, so
-    # there's no shared-state race — `git diff HEAD` is fast and local).
+    # Compute patches sequentially. Each peer has its own workdir (no
+    # shared-state race) and `git diff HEAD` is fast and local.
     scored: list[dict] = []
     for i, workdir in enumerate(peer_workdirs):
         scored.append({
@@ -690,11 +687,10 @@ def best_of_n(
             "report": None, "resolved": False, "score": 0.0,
         })
 
-    # Run Singularity evals sequentially — see module docstring on the
-    # sequential trade-off. (OpenAI sibling parallelizes SIF evals via
-    # threads; this port keeps them simple. Each eval spawns its own
-    # container, no shared Python state, so it would parallelize safely
-    # if wall-time becomes a concern later.)
+    # Run Singularity evals sequentially to keep things simple (the openai
+    # sibling uses threads). Each eval runs in its own container with no shared
+    # Python state, so they could be parallelized if wall time becomes a
+    # problem.
     if eval_mode != "none":
         for rec in scored:
             if not rec["patch"]:
@@ -720,8 +716,8 @@ def best_of_n(
 
 # Orchestration
 def _init_contexts(n: int, brief: str) -> list[list[BaseMessage]]:
-    """Each peer's initial history = [HumanMessage(brief)]. System prompt is
-    injected by create_react_agent via its `prompt=` arg, not embedded here.
+    """Start each peer with [HumanMessage(brief)]. create_react_agent adds the
+    system prompt via `prompt=`.
     """
     return [[HumanMessage(content=brief)] for _ in range(n)]
 
@@ -731,8 +727,9 @@ def solve(
     peer_workdirs: list[Path],
     eval_mode: str = "singularity",
 ) -> dict:
-    """Run N peers × R rounds. Each peer edits ITS OWN workdir — caller is
-    responsible for cloning N separate copies before calling solve()."""
+    """Run N peers x R rounds. Each peer edits its own workdir, so the caller
+    must clone N separate copies before calling solve().
+    """
     brief = format_task_brief(
         instance["problem_statement"],
         instance_id=instance.get("instance_id"),
@@ -746,8 +743,8 @@ def solve(
         "brief": brief,
         "peer_workdirs": list(peer_workdirs),
     }
-    # LangGraph's own per-graph recursion budget — the N_ROUNDS loop plus
-    # the internal react sub-graph invocations. Give it plenty of headroom.
+    # Recursion budget for the outer graph: the N_ROUNDS loop plus the react
+    # sub-graph calls, with plenty of headroom.
     result = compiled.invoke(init_state, config={"recursion_limit": 200})
     contexts = result.get("contexts") or []
 
@@ -787,10 +784,10 @@ def run_one(
     out_dir: Path,
     eval_mode: str = "singularity",
 ) -> dict:
-    """Clone N peer workdirs, run the debate, score via best-of-N, write
-    artifacts. Matches openai sibling's run_one pattern but with
-    sequential clones (threading removed along with the rest of the
-    concurrency — see module docstring)."""
+    """Clone peer workdirs, run the debate, score best-of-N, write artifacts.
+    Same as the openai sibling's run_one, except clones are made sequentially
+    (this port has no threading).
+    """
     iid = instance["instance_id"]
     summary: dict = {
         "instance_id": iid,
@@ -801,8 +798,7 @@ def run_one(
     }
     root = workdir_root / iid
 
-    # Clone N fresh copies — one per peer. Sequential (simpler; matches
-    # the sequential peer-execution trade-off in this port).
+    # One fresh clone per peer, made sequentially to match how peers run.
     peer_workdirs: list[Path] = [root / f"peer_{i}" for i in range(N_AGENTS)]
     t0 = time.time()
     for i, workdir in enumerate(peer_workdirs):
@@ -889,9 +885,10 @@ def run_batch(
     eval_mode: str = "singularity",
     keep_workdirs: bool = False,
 ) -> None:
-    """Iterate Verified instances and run_one() each. N peer clones per
-    instance → disk footprint ≈ N × single. Default keep_workdirs=False
-    removes each instance's peer clones after it's scored."""
+    """Run run_one() on each Verified instance. Each instance needs N peer
+    clones (about N x the single-agent disk use); with the default
+    keep_workdirs=False they are deleted once the instance is scored.
+    """
     import shutil as _sh
 
     workdir_root = workdir_root or Path(

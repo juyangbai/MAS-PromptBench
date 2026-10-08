@@ -67,7 +67,11 @@ def _best_of_n(
     ground_truth: list[dict],
     category: str,
 ) -> tuple[dict | None, list[dict]]:
-    """Match the real BFCL decentralized benchmark's gold-aware selection."""
+    """Gold-aware peer selection, as in the real decentralized BFCL benchmark.
+
+    Picks the lowest-numbered peer whose call scores correct, else the
+    lowest-numbered peer with any call.
+    """
     from real_runner_mipro.datasets.bfcl import score_model_output
 
     scored = []

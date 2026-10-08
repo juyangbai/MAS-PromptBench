@@ -1,6 +1,5 @@
 """Decentralized debate topology specialized for HotpotQA, OpenAI SDK."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -41,11 +40,10 @@ def _reset_telem_acc() -> None:
 
 
 # Stall safeguards
-# Per-row wall-clock cap using SIGALRM when running on the main thread. The
-# concurrent runner may execute run_batch([row]) inside a ThreadPool worker,
-# where Python disallows signal handlers, so the guard becomes a no-op there.
-# Hard bridge questions can make peers chain Wikipedia tool calls for many
-# minutes.
+# Per-row wall-clock cap via SIGALRM on the main thread. The concurrent
+# runner may call run_batch([row]) in a ThreadPool worker, where signal
+# handlers aren't allowed, so there the guard is a no-op. Hard bridge
+# questions can make peers chain Wikipedia tool calls for many minutes.
 PER_ROW_TIMEOUT_S = 120
 _MAX_TOOL_LOOPS = 4  # was 6
 
@@ -60,8 +58,9 @@ def _row_timeout_handler(signum, frame):
 
 @contextlib.contextmanager
 def _row_timeout_guard(seconds: int):
-    """Install SIGALRM for `seconds`; uninstall on exit regardless of
-    outcome so timeouts in one row don't bleed into the next."""
+    """Arm SIGALRM for `seconds` and always disarm on exit, so one row's
+    timeout can't bleed into the next.
+    """
     import threading
     if threading.current_thread() is not threading.main_thread():
         yield
@@ -91,9 +90,9 @@ def _load_prompt(role: str) -> str:
     return append_output_contract_from_path((_PROMPTS_DIR / f"{role}.txt").read_text().strip(), __file__, role)
 
 
-# Same short-form format nudge used in single/independent/centralized
-# hotpotqa. Without it Qwen3.5-9B peers emit verbose prose ("Yes, both
-# were American") that scores EM=0 on yes/no questions.
+# Same short-form nudge as single/independent/centralized hotpotqa. Without
+# it Qwen3.5-9B peers answer in prose ("Yes, both were American"), which
+# scores EM=0 on yes/no questions.
 _OUTPUT_FORMAT_NUDGE = (
     "\n\nFINAL OUTPUT FORMAT:\n"
     "After your reasoning, end with a single line exactly of the form:\n"
@@ -321,8 +320,9 @@ def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
 
 # Aggregation (aligned to independent/hotpotqa)
 def bucket_majority(answers: list[str]) -> str | None:
-    """Majority over normalized buckets; return the RAW form of the first
-    peer in the winning bucket (preserves capitalization for EM/F1)."""
+    """Majority over normalized buckets; returns the raw form of the first
+    peer in the winning bucket (keeps capitalization for EM/F1).
+    """
     valid = [a for a in answers if a]
     if not valid:
         return None
@@ -335,22 +335,19 @@ def bucket_majority(answers: list[str]) -> str | None:
                 break
         else:
             buckets.append([a])
-    # max() returns first bucket of max len — first peer to land in that
-    # bucket keeps insertion order, so tie-break by lowest peer index.
+    # max() returns the first longest bucket, so ties go to the lowest peer
+    # index.
     best = max(buckets, key=len)
     return best[0]
 
 
 # Orchestration
 def solve(question: str) -> dict:
-    """Run N-peer × R-round debate on one HotpotQA question.
+    """Run the N-peer x R-round debate on one HotpotQA question.
 
-    Returns:
-        {
-            "answer":       round-R bucket-majority answer (str) or None,
-            "per_peer":     [{peer, answer, raw}],
-            "all_contexts": raw OpenAI chat contexts (one per peer),
-        }
+    Returns a dict with "answer" (round-R bucket-majority answer or None),
+    "per_peer" ([{peer, answer, raw}]) and "all_contexts" (raw chat
+    contexts, one per peer).
     """
     _reset_telem_acc()
     with _row_timeout_guard(PER_ROW_TIMEOUT_S):
@@ -385,9 +382,9 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load HotpotQA dev rows. HotpotQA has stable string ids per row;
-    the first 100 rows at offset=0 are the same questions used by the
-    other 4 hotpotqa topologies for cross-topology parity."""
+    """Load HotpotQA dev rows. Row ids are stable, and the first 100 rows at
+    offset=0 are the same questions the other 4 hotpotqa topologies use.
+    """
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, _HF_CONFIG, trust_remote_code=True)[_HF_SPLIT]
@@ -420,9 +417,9 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the N-peer × R-round debate on every instance, bucket-majority
-    → short-form answer, compute EM + F1 vs gold, return aggregate
-    summary + optionally write per-instance predictions to JSONL.
+    """Run the debate on every instance, take the bucket-majority short-form
+    answer and score EM + F1 against gold. Returns an aggregate summary and
+    optionally writes per-instance predictions to JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

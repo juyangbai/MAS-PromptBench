@@ -1,6 +1,5 @@
 """Centralized topology specialized for competition MATH, AutoGen."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -65,11 +64,11 @@ def calculator(expression: str) -> str:
 
 # LLM
 def _build_client() -> OpenAIChatCompletionClient:
-    """OpenAI-compatible client pointed at local vLLM (Qwen3.5-9B).
+    """OpenAI-compatible client for the local vLLM (Qwen3.5-9B).
 
-    `extra_body` threads Qwen3-specific sampling params (repetition
-    penalty + enable_thinking=False so the model doesn't burn its token
-    budget inside a <think> block).
+    `extra_body` carries the Qwen3 sampling params: repetition penalty, and
+    enable_thinking=False so the model doesn't burn its token budget inside
+    a <think> block.
     """
     return OpenAIChatCompletionClient(
         model=MODEL_ID,
@@ -136,10 +135,9 @@ def build_team() -> SelectorGroupChat:
         tools=[calculator],
     )
 
-    # Force manager-routing: after any worker speaks, the manager MUST be
-    # the next speaker (so workers never chain turns with each other).
-    # When the last message is already the manager's, let the default
-    # LLM-based selector pick the next worker (or return None to end).
+    # After any worker turn, route back to the manager so workers never chain
+    # turns with each other. After a manager turn, return None and let the
+    # default LLM-based selector pick the next worker.
     def _selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
         if not messages:
             return manager.name
@@ -167,20 +165,20 @@ def build_team() -> SelectorGroupChat:
 
 
 # Stall safeguards
-# Per-row wall-clock cap + tighter MaxMessageTermination. On symbolic
-# rows (matrix inverses, trig identities) the calculator tool returns
-# ERROR for non-numeric expressions and the team loops trying variants
-# for 20+ messages. Both caps trip early on stuck rows.
+# Per-row wall-clock cap plus a tighter MaxMessageTermination. On
+# symbolic rows (matrix inverses, trig identities) the calculator returns
+# ERROR for non-numeric expressions and the team loops on variants for
+# 20+ messages. Both caps stop stuck rows early.
 PER_ROW_TIMEOUT_S = 120
 _MAX_MESSAGES = 18  # was 24
 
 
 # Output parsing
 def extract_boxed(text: str) -> str | None:
-    """Return the inner content of the LAST \boxed{...} in the text.
+    """Return the inner content of the last \boxed{...} in `text`, or None.
 
-    Handles nested braces (e.g., \boxed{\frac{1}{2}}) via brace
-    counting. Aligned to single/math's extractor.
+    Counts braces so nesting like \boxed{\frac{1}{2}} works. Same as
+    single/math's extractor.
     """
     marker = r"\boxed{"
     idx = text.rfind(marker)
@@ -203,9 +201,9 @@ def extract_answer(text: str) -> str | None:
     return extract_boxed(text)
 
 
-# Scoring (aligned port of Hendrycks MATH is_equiv)
+# Scoring (port of Hendrycks MATH is_equiv)
 # Source: https://github.com/hendrycks/math/blob/main/modeling/math_equivalence.py
-# Do not modify — this is the community-standard MATH scorer used by
+# Do not modify. This is the standard MATH scorer used by
 # lm-evaluation-harness and published MATH results.
 
 
@@ -337,12 +335,9 @@ def exact_match_score(pred: str, gold: str) -> float:
 async def solve_async(problem: str) -> dict:
     """Run the centralized team on one MATH problem.
 
-    Returns:
-        {
-            "answer":   inner content of the LAST \\boxed{...} or None,
-            "raw":      manager's last message content,
-            "messages": list of {source, content} from every turn,
-        }
+    Returns a dict with "answer" (contents of the last \\boxed{...}, or
+    None), "raw" (the manager's last message) and "messages"
+    ({source, content} per turn).
     """
     team = build_team()
     result = await asyncio.wait_for(team.run(task=problem), timeout=PER_ROW_TIMEOUT_S)
@@ -369,10 +364,9 @@ def solve(problem: str) -> dict:
     return asyncio.run(solve_async(problem))
 
 
-# Dataset loader
-# qwedsacf/competition_math filtered to Precalculus / Level 5 (312 rows).
-# Gold is extracted from the LAST \\boxed{...} in the `solution` column.
-# IDs are stable MD5 of problem text for cross-topology parity.
+# Dataset loader: qwedsacf/competition_math, Precalculus / Level 5 only
+# (312 rows). Gold is the last \boxed{...} in the `solution` column. IDs
+# are the MD5 of the problem text, stable across topologies.
 _HF_DATASET = "qwedsacf/competition_math"
 _HF_SPLIT = "train"
 _SUBJECT = "Precalculus"
@@ -431,9 +425,10 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every problem, compare boxed answer vs gold via
-    Hendrycks `is_equiv`, return aggregate summary + optionally write
-    per-instance predictions to JSONL.
+    """Run `solve()` on every problem and score with Hendrycks `is_equiv`.
+
+    Returns an aggregate summary; if `out_path` is set, per-instance
+    predictions are also written there as JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)

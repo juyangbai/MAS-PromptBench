@@ -1,6 +1,5 @@
 """Sequential topology specialized for MATH (competition math), LangGraph."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -89,9 +88,9 @@ def _escape_braces(s: str) -> str:
     return s.replace("{", "{{").replace("}", "}}")
 
 
-# Per-stage task descriptions (same as CrewAI Task.description)
-# NB: literal `{` / `}` in the templates (e.g. inside `\\boxed{...}`) are
-# doubled to `{{` / `}}` so `str.format(**inputs)` leaves them intact.
+# Per-stage task descriptions (same as CrewAI Task.description).
+# Literal braces in the templates (e.g. in `\\boxed{...}`) are doubled to
+# `{{` / `}}` so `str.format(**inputs)` leaves them intact.
 _TASK_DESCRIPTIONS = {
     "decomposer": (
         "Decompose the problem below into a short ordered list of "
@@ -187,7 +186,7 @@ def _make_plain_node(role, sys_prompt, llm, template, prior_roles):
 
 
 def _build_graph(llm: ChatOpenAI):
-    """Build the 4-stage decomposer -> computer -> checker -> verifier pipeline."""
+    """4-stage pipeline: decomposer -> computer -> checker -> verifier."""
     stages = [
         (
             "decomposer",
@@ -236,7 +235,7 @@ def _build_graph(llm: ChatOpenAI):
 
 # Output Parsing
 def extract_boxed(text: str) -> str | None:
-    """Return the inner content of the LAST \\boxed{...} (brace-counted)."""
+    """Return the inner content of the last \\boxed{...} (brace-counted)."""
     marker = r"\boxed{"
     idx = text.rfind(marker)
     if idx < 0:
@@ -260,8 +259,8 @@ def extract_answer(text: str) -> str | None:
 
 
 # Scoring
-# Verbatim Hendrycks MATH equivalence from math_equivalence.py, byte-
-# identical to topologies/single/math/langgraph_math.py so sequential
+# Verbatim Hendrycks MATH equivalence from math_equivalence.py,
+# byte-identical to topologies/single/math/langgraph_math.py so sequential
 # EM is directly comparable with single/independent numbers.
 def _fix_fracs(string):
     substrs = string.split("\\frac")
@@ -390,13 +389,11 @@ def exact_match_score(pred: str, gold: str) -> float:
 def solve(problem: str) -> dict:
     """Run the 4-stage sequential graph on one MATH problem.
 
-    Returns:
-        {
-            "answer":   boxed LaTeX (str) or None,
-            "raw":      verifier's full output text,
-            "by_stage": {decomposer, computer, checker, verifier} -> text,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        answer     boxed LaTeX, or None
+        raw        verifier's full output text
+        by_stage   {decomposer, computer, checker, verifier} -> text
+        telemetry  normalized 5-key token/call counts
     """
     llm = _build_llm()
     compiled, roles = _build_graph(llm)
@@ -416,10 +413,9 @@ def solve(problem: str) -> dict:
     }
 
 
-# Dataset loader
-# qwedsacf/competition_math filtered to Precalculus / Level 5 (312 rows).
-# Gold is extracted from the LAST \\boxed{...} in the `solution` column.
-# IDs are stable MD5 of problem text for cross-topology parity.
+# Dataset loader: qwedsacf/competition_math, Precalculus / Level 5 only
+# (312 rows). Gold is the last \boxed{...} in the `solution` column. IDs
+# are the MD5 of the problem text, stable across topologies.
 _HF_DATASET = "qwedsacf/competition_math"
 _HF_SPLIT = "train"
 _SUBJECT = "Precalculus"
@@ -482,8 +478,8 @@ def run_one(instance: dict, out_dir: Path) -> dict:
         "level": instance.get("level"),
     }
 
-    # Assign a stable numeric index for the trace filename. If the instance
-    # carries one, use it; else fall back to the id hash.
+    # Stable numeric index for the trace filename: the instance's own idx if
+    # it has one, else a hash of the id.
     idx = instance.get("idx")
     if idx is None:
         import hashlib
@@ -527,9 +523,10 @@ def run_batch(
     out_dir: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every problem, compare boxed answer vs gold via
-    Hendrycks `is_equiv`, return aggregate summary + optionally write
-    per-instance predictions to JSONL.
+    """Run `solve()` on every problem and score with Hendrycks `is_equiv`.
+
+    Returns an aggregate summary; if `out_path` is set, per-instance
+    predictions are also written there as JSONL.
     """
     _default_root = Path(__file__).resolve().parents[4]
     out_dir = out_dir or (_default_root / "results" / "math_sequential_langgraph")

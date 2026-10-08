@@ -1,6 +1,5 @@
-"""Decentralized debate topology specialized for GPQA-Diamond, LangGraph."""
+"""Decentralized debate topology for GPQA-Diamond (LangGraph)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -42,16 +41,15 @@ from topologies.telemetry import langchain_telemetry, normalize  # noqa: E402
 
 
 # Stall safeguards
-# Per-row wall-clock cap using SIGALRM (main-thread only — batch runner
-# iterates rows on main thread, so this is safe). Without this, 4 peers
-# × 2 rounds × N tool loops can stall a single row for many minutes when
-# one LLM call hangs or the model loops on calculator ERROR messages.
+# Per-row wall-clock cap via SIGALRM (main thread only; the batch runner
+# iterates rows on the main thread). Without it, 4 peers x 2 rounds x N tool
+# loops can stall one row for many minutes when an LLM call hangs or the
+# model loops on calculator ERROR messages.
 PER_ROW_TIMEOUT_S = 120
 _MAX_TOOL_LOOPS = 4
 
-# create_react_agent uses its own recursion_limit; give it enough headroom
-# to cover the tool-loop budget (roughly 3x max_tool_loops to account for
-# alternating AI/Tool messages).
+# create_react_agent has its own recursion_limit; roughly 3x the tool-loop
+# budget covers the alternating AI/Tool messages.
 _RECURSION_LIMIT = _MAX_TOOL_LOOPS * 3
 
 
@@ -65,14 +63,11 @@ def _row_timeout_handler(signum, frame):
 
 @contextlib.contextmanager
 def _row_timeout_guard(seconds: int):
-    """Install SIGALRM for `seconds`; uninstall on exit regardless of
-    outcome so timeouts in one row don't bleed into the next.
+    """Install a SIGALRM handler for `seconds` and always restore the old
+    one on exit, so one row's timeout can't leak into the next.
 
-    Python's `signal` module only works on the main thread — when the
-    batch runner executes us under a ThreadPoolExecutor worker, installing
-    SIGALRM raises `ValueError: signal only works in main thread`. Skip
-    the guard when not on the main thread; concurrency is the caller's
-    responsibility there.
+    `signal` only works on the main thread, so under a ThreadPoolExecutor
+    worker the guard is skipped and timeouts are left to the caller.
     """
     import threading
     if threading.current_thread() is not threading.main_thread():
@@ -145,17 +140,18 @@ def _build_llm() -> ChatOpenAI:
 
 
 def _build_agent():
-    """One react agent, reused across all peers + rounds. Each peer keeps
-    its own message history; the agent is stateless."""
+    """One stateless react agent shared by all peers and rounds; each peer
+    keeps its own message history.
+    """
     return create_react_agent(model=_build_llm(), tools=TOOLS, prompt=SYSTEM_PROMPT)
 
 
 # Peer injection (aligned template to openai sibling)
 def _peer_injection(others_final: list[BaseMessage], question: str) -> HumanMessage:
-    """Build the 'peers said X, Y, Z — revise if warranted' user message.
+    """Build the 'peers said X, Y, Z - revise if warranted' user message.
 
-    others_final: list of the OTHER peers' final AIMessages from the
-    previous round (content strings only, tool-call turns already resolved).
+    `others_final` is the other peers' final AIMessages from the previous
+    round (tool-call turns resolved; only content is used).
     """
     body = ["These are the final responses from other peer agents in the previous round:"]
     for i, m in enumerate(others_final):
@@ -239,8 +235,8 @@ def _build_graph():
 # Output parsing (aligned to openai sibling)
 _LETTERS = ["A", "B", "C", "D"]
 
-# Strip markdown `**bold**` / backticks before matching — the 9B
-# frequently emits `**Answer:** B` which otherwise breaks the regexes.
+# Strip markdown bold and backticks before matching: the 9B model often
+# emits `**Answer:** B`, which otherwise breaks the regexes.
 _MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
 _ANSWER_RE = re.compile(
     r"\b(?:final\s+)?answer\b\s*[:\s]*\(?([A-D])\)?",
@@ -259,9 +255,8 @@ _BARE_LETTER_RE = re.compile(
 def extract_answer(text: str) -> str | None:
     """Return the MCQ letter from a peer's final output.
 
-    Matches the cascade + markdown stripping used by single/independent/
-    sequential/centralized gpqa so extracted letters are comparable
-    across topologies.
+    Same regex cascade and markdown stripping as single/independent/
+    sequential/centralized gpqa, so letters compare across topologies.
     """
     cleaned = _MARKDOWN_STRIP_RE.sub("", text)
     for pattern in (_ANSWER_RE, _OPTION_RE, _BARE_LETTER_RE):
@@ -282,7 +277,7 @@ def best_of_n(per_peer_letters: list[Optional[str]]) -> Optional[str]:
         return None
     counts = Counter(l for _, l in valid_with_idx)
     max_count = max(counts.values())
-    # Walk peers in ascending index order; return first whose letter is a top.
+    # Tie-break: first peer (lowest index) whose letter has the top count.
     for i, l in valid_with_idx:
         if counts[l] == max_count:
             return l
@@ -299,23 +294,20 @@ def format_mcq(question: str, choices: list[str]) -> str:
 
 # Orchestration
 def _init_contexts(n: int, mcq: str) -> list[list[BaseMessage]]:
-    """Each peer's initial history = [HumanMessage(mcq)]. System prompt is
-    injected by create_react_agent via its `prompt=` arg, not embedded here.
+    """Start each peer with [HumanMessage(mcq)]. create_react_agent adds the
+    system prompt via `prompt=`.
     """
     return [[HumanMessage(content=mcq)] for _ in range(n)]
 
 
 def solve(question: str, choices: list[str]) -> dict:
-    """Run the N-peer × R-round debate on one GPQA-style MCQ.
+    """Run the N-peer x R-round debate on one GPQA-style MCQ.
 
-    Returns:
-        {
-            "answer":       best-of-N letter (A/B/C/D) or None,
-            "per_peer":     [{peer, letter, raw}] — per-peer final
-                            assistant messages + extracted letters,
-            "all_contexts": raw LangChain message contexts (one per peer),
-            "telemetry":    normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        answer:       best-of-N letter (A/B/C/D) or None
+        per_peer:     [{peer, letter, raw}], final message + letter per peer
+        all_contexts: raw LangChain message contexts, one per peer
+        telemetry:    normalized 5-key token/call counts
     """
     compiled = _build_graph()
     mcq = format_mcq(question, choices)
@@ -360,8 +352,9 @@ _HF_SPLIT = "train"
 
 
 def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Stable id for a GPQA row — md5 hash of question text. Matches
-    the other gpqa topologies so per-row diffs line up on the same id."""
+    """Stable row id from the md5 of the question text. Same scheme as the
+    other gpqa topologies, so per-row diffs line up.
+    """
     q = (row.get("Question") or "").strip()
     if q:
         return "gpqa_" + hashlib.md5(q.encode("utf-8")).hexdigest()[:10]
@@ -374,10 +367,11 @@ def load_instances(
     only: list[str] | None = None,
     shuffle_seed: int = 0,
 ) -> list[dict]:
-    """Load GPQA-Diamond rows with 4 choices shuffled DETERMINISTICALLY
-    per row (`Random(f"{shuffle_seed}|{row_id}")`). Aligned to
-    the other gpqa topologies so `correct_letter` matches for each row
-    id across topologies at the same `shuffle_seed`.
+    """Load GPQA-Diamond rows with the 4 choices shuffled deterministically.
+
+    Each row uses `Random(f"{shuffle_seed}|{row_id}")`, as in the other
+    gpqa topologies, so a row id gets the same `correct_letter` everywhere
+    for a given `shuffle_seed`.
     """
     from datasets import load_dataset
 
@@ -416,15 +410,12 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the N-peer × R-round debate on every instance, compare the
-    best-of-N letter vs gold, return aggregate summary + optionally
-    write per-instance predictions to JSONL.
+    """Run the debate on every instance and score the best-of-N letter.
 
-    Per-instance record shape:
-        {id, question, choices, correct_letter,
-         predicted_letter, correct,
-         per_peer: [{peer, letter, raw_tail}] — one entry per debater,
-         latency_s, error}
+    Returns an aggregate summary. If `out_path` is set, also writes one JSONL
+    record per instance:
+        {id, question, choices, correct_letter, predicted_letter, correct,
+         per_peer: [{peer, letter, raw_tail}], latency_s, error}
     """
     per_instance: list[dict] = []
     n = len(instances)
@@ -456,8 +447,8 @@ def run_batch(
             if is_correct:
                 n_correct += 1
 
-            # Per-peer record: keep letter + short tail of raw (last 300 chars)
-            # so the JSONL stays manageable. Full contexts omitted.
+            # Per peer keep only the letter and the last 300 chars of raw
+            # output so the JSONL stays small. Full contexts are dropped.
             compact_per_peer = [
                 {
                     "peer": p["peer"], "letter": p["letter"],

@@ -1,6 +1,5 @@
-"""Sequential topology specialized for GPQA-Diamond, implemented in LangGraph."""
+"""Sequential LangGraph topology specialized for GPQA-Diamond."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -173,7 +172,8 @@ def _make_tool_node(role, sys_prompt, tools, llm, template, prior_roles):
 
 def _build_graph(llm: ChatOpenAI):
     """Build the 4-stage analyzer -> solver -> critic -> verifier pipeline.
-    ALL 4 stages have access to the calculator tool."""
+    Every stage has the calculator tool.
+    """
     stages = [
         (
             "solver",
@@ -207,8 +207,8 @@ def _build_graph(llm: ChatOpenAI):
 # Output Parsing
 _LETTERS = ["A", "B", "C", "D"]
 
-# Strip markdown `**bold**` / `*italic*` / backticks before matching — the
-# 9B frequently emits "**Answer:** B" which broke the bare regexes.
+# Strip markdown (`**bold**`, `*italic*`, backticks) before matching; the
+# 9B often emits "**Answer:** B", which broke the bare regexes.
 _MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
 # Primary: "Final answer: X" / "Answer: X" (what the verifier is asked for).
 _ANSWER_RE = re.compile(
@@ -229,8 +229,8 @@ _BARE_LETTER_RE = re.compile(
 def extract_answer(text: str) -> str | None:
     """Return the MCQ letter from the verifier's final output.
 
-    Matches the 3-pattern cascade + markdown stripping used by
-    single/independent/centralized/decentralized gpqa so extracted
+    Uses the same 3-pattern cascade and markdown stripping as the
+    single/independent/centralized/decentralized gpqa runners, so extracted
     letters are comparable across topologies.
     """
     cleaned = _MARKDOWN_STRIP_RE.sub("", text)
@@ -253,13 +253,11 @@ def format_mcq(question: str, choices: list[str]) -> str:
 def solve(question: str, choices: list[str]) -> dict:
     """Run the 4-stage sequential graph on one GPQA-style MCQ.
 
-    Returns:
-        {
-            "answer":    final letter A/B/C/D or None,
-            "raw":       verifier's final output text,
-            "by_stage":  {analyzer, solver, critic, verifier} -> each stage's output,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        answer     final letter A/B/C/D, or None
+        raw        verifier's final output text
+        by_stage   {analyzer, solver, critic, verifier} -> stage output
+        telemetry  normalized 5-key token/call counts
     """
     llm = _build_llm()
     compiled, roles = _build_graph(llm)
@@ -286,9 +284,9 @@ _HF_SPLIT = "train"
 
 
 def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Stable id for a GPQA row — hash of question text. Matches
-    single/gpqa + independent/gpqa so per-row comparisons line up
-    across topologies."""
+    """Stable row id from a hash of the question text. Matches single/gpqa and
+    independent/gpqa so per-row comparisons line up across topologies.
+    """
     q = (row.get("Question") or "").strip()
     if q:
         return "gpqa_" + hashlib.md5(q.encode("utf-8")).hexdigest()[:10]
@@ -301,11 +299,11 @@ def load_instances(
     only: list[str] | None = None,
     shuffle_seed: int = 0,
 ) -> list[dict]:
-    """Load GPQA-Diamond rows from HuggingFace with 4 choices shuffled
-    DETERMINISTICALLY per row (`Random(f"{shuffle_seed}|{row_id}")`).
-    Same algorithm + same default seed as single/gpqa + independent/gpqa
-    — identical `shuffle_seed` produces identical choice orderings, so
-    `correct_letter` matches for each row id across topologies.
+    """Load GPQA-Diamond rows from HuggingFace, shuffling the 4 choices
+    deterministically per row (`Random(f"{shuffle_seed}|{row_id}")`).
+    Same algorithm and default seed as single/gpqa and independent/gpqa, so
+    the same `shuffle_seed` gives the same choice order, and the same
+    `correct_letter`, for each row id across topologies.
     """
     from datasets import load_dataset
 
@@ -344,14 +342,12 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the 4-stage LangGraph sequential pipeline on every instance,
-    compare verifier-emitted letter vs gold, return aggregate summary +
-    optionally write per-instance predictions to JSONL.
+    """Run the 4-stage sequential pipeline on every instance and compare the
+    verifier's letter against gold. Returns a summary and optionally writes
+    per-instance records to JSONL:
 
-    Per-instance record shape:
-        {id, question, choices, correct_letter,
-         predicted_letter, correct,
-         by_stage: {analyzer, solver, critic, verifier} (string excerpts),
+        {id, question, choices, correct_letter, predicted_letter, correct,
+         by_stage: {analyzer, solver, critic, verifier} (excerpts),
          latency_s, error}
     """
     per_instance: list[dict] = []
@@ -384,8 +380,7 @@ def run_batch(
             if is_correct:
                 n_correct += 1
 
-            # Keep only short excerpts of each stage in the predictions
-            # JSONL — full stage text is available via re-run if needed.
+            # Only short stage excerpts go in the JSONL; rerun for full text.
             by_stage = out.get("by_stage") or {}
             excerpts = {k: (v or "")[:800] for k, v in by_stage.items()}
             rec = {

@@ -1,6 +1,5 @@
-"""Independent topology specialized for HotpotQA."""
+"""Independent topology for HotpotQA."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -45,8 +44,8 @@ _PROMPT_PATH = (
     _REPO_ROOT / "configs" / "prompts" / "independent" / "hotpotqa" / "solver.txt"
 )
 
-# Same answer-format nudge as single/hotpotqa — without it, Qwen3.5-9B
-# emits verbose prose instead of the minimal short-form HotpotQA's
+# Same answer-format nudge as single/hotpotqa. Without it Qwen3.5-9B
+# answers in prose instead of the minimal short form that HotpotQA's
 # official scorer needs.
 _OUTPUT_FORMAT_NUDGE = (
     "\n\nFINAL OUTPUT FORMAT:\n"
@@ -125,10 +124,7 @@ def format_prompt(question: str) -> str:
 
 
 def _build_one_agent(seed: int):
-    """Build one replica's react agent, seeded differently from its siblings.
-
-    Same model/tools/prompt across replicas; only the seed varies.
-    """
+    """Build one replica's react agent (replicas differ only in seed)."""
     llm = ChatOpenAI(
         model=MODEL_ID,
         base_url=VLLM_BASE_URL,
@@ -152,7 +148,7 @@ def _build_one_agent(seed: int):
 
 
 # Output Parsing
-# Primary: "Answer: X", "The answer is X", "**Answer:** X" (until newline/EOS).
+# Primary: "Answer: X", "The answer is X", "**Answer:** X", up to EOL/EOS.
 _ANSWER_RE = re.compile(
     r"\banswer\b\s*(?:is\s+)?[:\s]+\**\s*(.+?)\s*\**\s*(?:\n|$)",
     re.IGNORECASE,
@@ -168,11 +164,7 @@ def strip_thinking(text: str) -> str:
 
 
 def extract_answer(text: str) -> str | None:
-    """Return the model's short-form answer.
-
-    Prefers the last 'Answer: X' pattern. Falls back to the last non-empty
-    line of the cleaned text.
-    """
+    """Return the last 'Answer: X' match, else the last non-empty line."""
     matches = _ANSWER_RE.findall(text)
     if matches:
         return matches[-1].strip().rstrip(".,")
@@ -181,9 +173,10 @@ def extract_answer(text: str) -> str | None:
 
 
 # Scoring
-# Verbatim HotpotQA normalization + EM + F1 from hotpot_evaluate_v1.py,
-# matching topologies/single/hotpotqa/langgraph_hotpotqa.py byte-for-byte
-# so ensemble-level numbers remain comparable to single-topology numbers.
+# HotpotQA normalization, EM and F1 copied verbatim from
+# hotpot_evaluate_v1.py (byte-identical to
+# topologies/single/hotpotqa/langgraph_hotpotqa.py), so ensemble numbers
+# stay comparable with single-topology numbers.
 def normalize_answer(s: str) -> str:
     s = s.lower()
     s = "".join(ch for ch in s if ch not in set(string.punctuation))
@@ -220,12 +213,10 @@ def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
 
 # Aggregation
 def majority_vote(answers: list[dict]) -> str | None:
-    """Majority vote over per-replica answers after HotpotQA normalization.
+    """Majority vote over answers bucketed by HotpotQA normalization.
 
-    Each answer is bucketed by its normalized form; the most-common bucket
-    wins. The returned string is the RAW answer text of the first replica
-    in that bucket (preserves case/punctuation for downstream EM/F1, which
-    re-normalizes anyway).
+    Returns the raw answer of the first replica in the largest bucket
+    (EM/F1 re-normalize it anyway).
     """
     valid = [a for a in answers if a.get("answer")]
     if not valid:
@@ -252,10 +243,10 @@ class AgentInput(TypedDict):
 
 
 # Stall safeguards
-# Per-row wall-clock cap; without this, a hard bridge question can let
-# 4 concurrent agents chew >15 min (seen in practice: 1068s max row).
-# Keep this high enough for legitimate multi-hop Wikipedia lookups while the
-# per-row wall-clock timeout below still bounds runaway rows.
+# Per-row wall-clock cap: without it, a hard bridge question can keep
+# 4 concurrent agents busy for >15 min (seen in practice: 1068s max row).
+# The recursion limit stays high enough for legitimate multi-hop Wikipedia
+# lookups, since the per-row timeout still bounds runaway rows.
 PER_ROW_TIMEOUT_S = 120
 _RECURSION_LIMIT = int(os.environ.get("HOTPOTQA_INDEPENDENT_RECURSION_LIMIT", "35"))
 
@@ -307,12 +298,10 @@ def build_graph() -> StateGraph:
 def solve(question: str) -> dict:
     """Run the ensemble on one HotpotQA question.
 
-    Returns:
-        {
-            "answer":    majority-vote string answer (raw form), or None,
-            "per_agent": list of {agent_id, seed, answer, raw, messages},
-            "votes":     Counter of normalized-answer -> count,
-        }
+    Returns a dict with:
+        answer:    majority-vote answer (raw form) or None
+        per_agent: [{agent_id, seed, answer, raw, messages}]
+        votes:     Counter of normalized answer -> count
     """
     compiled = build_graph().compile()
     prompt = format_prompt(question)
@@ -346,9 +335,9 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load HotpotQA dev rows. HotpotQA has stable string ids per row;
-    the first 100 rows at offset=0 are the same questions used by
-    single/hotpotqa so per-row comparisons line up across topologies.
+    """Load HotpotQA dev rows. Row ids are stable strings, and the first 100
+    rows at offset=0 are the questions used by single/hotpotqa, so per-row
+    comparisons line up across topologies.
     """
     from datasets import load_dataset
 
@@ -383,14 +372,13 @@ def run_batch(
     verbose: bool = True,
     _propagate_errors: bool = False,
 ) -> dict:
-    """Run the N-replica ensemble on every instance, aggregate via
-    normalized-majority, compute EM + F1 vs gold, return aggregate
-    summary + optionally write per-instance predictions to JSONL.
+    """Run the N-replica ensemble on each instance, majority-vote over
+    normalized answers, and score EM/F1 against gold. Returns a summary and
+    optionally writes per-instance records to JSONL:
 
-    Per-instance record shape:
-        {id, question, gold_answer, predicted_answer (majority-vote),
-         em, f1, precision, recall, votes (normalized form -> count),
-         per_agent: [{agent_id, seed, answer, raw}],  # omit messages list
+        {id, question, gold_answer, predicted_answer (majority vote),
+         em, f1, precision, recall, votes (normalized -> count),
+         per_agent: [{agent_id, seed, answer, raw}],  # no messages
          type, level, latency_s, error}
     """
     per_instance: list[dict] = []
@@ -515,12 +503,12 @@ def _canned_demo() -> None:
         print(f"--- agent_{a['agent_id']} (seed {a['seed']}) -> {a['answer']!r} ---")
 
 def run_one(instance: dict, out_dir: Path | None = None) -> dict:
-    """Single-instance entrypoint for `concurrent_runner.py`.
+    """Single-instance entry point for `concurrent_runner.py`.
 
-    Calls `run_batch([instance], _propagate_errors=True)` so any transient
-    exception (APIConnectionError, TimeoutError, BadRequestError "Unterminated
-    string", etc.) bubbles up to the runner's retry-with-backoff wrapper
-    instead of being swallowed into an `error` field on a "successful" row.
+    Uses `_propagate_errors=True` so transient errors (APIConnectionError,
+    TimeoutError, BadRequestError "Unterminated string", etc.) reach the
+    runner's retry-with-backoff instead of being stored in an `error` field
+    on a row that looks successful.
     """
     summary = run_batch([instance], out_path=None, verbose=False, _propagate_errors=True)
     return summary["per_instance"][0]

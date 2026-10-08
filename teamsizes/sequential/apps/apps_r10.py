@@ -1,6 +1,5 @@
 """Sequential topology specialized for APPS, implemented in LangGraph."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -450,12 +449,12 @@ def _run_stdin_test(code: str, stdin: str, expected: str, timeout_s: int) -> dic
     }
 
 
-# Worker script for call-based tests. Runs in a fresh subprocess with APPS'
-# reliability_guard (disables os.kill/system/fork/..., shutil.rmtree, etc.)
-# and optional resource.setrlimit caps. Guard ported verbatim from APPS'
-# testing_util.py. Communicates result back via a temp JSON file.
-# argv: [1]=max_memory_bytes (0=>unlimited), [2]=fn_name, [3]=args_json,
-#       [4]=outfile; stdin: user's submission source.
+# Worker script for call-based tests. Runs in a fresh subprocess under
+# APPS' reliability_guard (ported verbatim from testing_util.py; disables
+# os.kill/system/fork/..., shutil.rmtree, etc.) plus optional
+# resource.setrlimit caps, and passes its result back via a temp JSON file.
+# argv: [1]=max_memory_bytes (0 = unlimited), [2]=fn_name, [3]=args_json,
+#       [4]=outfile; stdin: the submission source.
 _CALL_BASED_WORKER = """
 import os, sys, json, platform, resource, shutil, subprocess, builtins, faulthandler
 
@@ -646,13 +645,11 @@ def exact_match_score(pass_rate: float) -> float:
 def solve(problem: str, starter_code: str | None = None) -> dict:
     """Run the 4-stage sequential graph on one APPS problem.
 
-    Returns:
-        {
-            "code":      final Python program (str) or None,
-            "raw":       debugger's final text,
-            "by_stage":  {analyzer, coder, tester, debugger} -> each stage's output,
-            "telemetry": normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        code       final Python program, or None
+        raw        debugger's final text
+        by_stage   {analyzer, coder, tester, debugger} -> stage output
+        telemetry  normalized 5-key token/call counts
     """
     llm = _build_llm()
     compiled, roles = _build_graph(llm)
@@ -664,7 +661,7 @@ def solve(problem: str, starter_code: str | None = None) -> dict:
     stages_out = result.get("by_stage") or {}
     final = stages_out.get(roles[-1], "")
 
-    # Prefer the debugger's emission; fall back to the coder's if empty.
+    # Prefer the last stage's code; fall back to the coder's.
     code = extract_code(final)
     if code is None:
         code = extract_code(stages_out.get("coder", ""))
@@ -703,7 +700,7 @@ def load_instances(
     difficulty: str | None = None,
     max_tests_per_row: int | None = 20,
 ) -> list[dict]:
-    """Load APPS test rows — same IDs as single/apps for parity."""
+    """Load APPS test rows, with the same IDs as single/apps."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)

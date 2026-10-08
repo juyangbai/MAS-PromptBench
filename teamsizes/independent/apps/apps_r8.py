@@ -1,6 +1,5 @@
-"""Independent topology specialized for APPS."""
+"""Independent topology for APPS."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -452,12 +451,9 @@ def best_of_n(
     input_output: dict,
     timeout_s: int = _APPS_TEST_TIMEOUT_S,
 ) -> dict | None:
-    """Score each candidate and return the best one.
-
-    Selection order:
-      1. First candidate (lowest agent_id) with pass_rate == 1.0.
-      2. Else candidate with highest pass_rate (first on tie).
-      3. None iff no candidate has extractable code.
+    """Score each candidate and return the best: the first (lowest agent_id)
+    with pass_rate 1.0, else the highest pass_rate (first on ties). None if
+    no candidate has extractable code.
     """
     valid = [a for a in answers if a.get("code")]
     if not valid:
@@ -541,19 +537,16 @@ def solve(
 ) -> dict:
     """Run the ensemble on one APPS problem.
 
-    If `input_output` is provided, the N candidates are scored and
-    best-of-N is applied. If omitted, the raw per-agent candidates are
-    returned without aggregation (useful for collecting predictions +
-    scoring later).
+    With `input_output`, the N candidates are scored and best-of-N picks the
+    winner. Without it, the raw per-agent candidates are returned unscored,
+    so predictions can be collected now and scored later.
 
-    Returns:
-        {
-            "code":      best-of-N code (str) or None,
-            "pass_rate": float in [0, 1] (if scored), else None,
-            "winner":    agent_id of the selected candidate (if scored),
-            "per_agent": list of {agent_id, seed, code, raw, messages,
-                                  pass_rate?, test_detail?},
-        }
+    Returns a dict with:
+        code:      best-of-N code (str) or None
+        pass_rate: float in [0, 1] if scored, else None
+        winner:    agent_id of the selected candidate (if scored)
+        per_agent: [{agent_id, seed, code, raw, messages,
+                     pass_rate?, test_detail?}]
     """
     compiled = build_graph().compile()
     prompt = format_prompt(problem, starter_code)
@@ -580,7 +573,7 @@ def solve(
         }
 
     winner = best_of_n(per_agent, input_output, timeout_s=timeout_s)
-    # Annotate every replica with pass_rate for reporting parity with winner.
+    # Annotate every replica with its pass_rate, not just the winner.
     if winner is not None:
         for a in per_agent:
             if a.get("code") is None:
@@ -625,7 +618,7 @@ def load_instances(
     difficulty: str | None = None,
     max_tests_per_row: int | None = 20,
 ) -> list[dict]:
-    """Load APPS test rows — same schema/IDs as single/apps for parity."""
+    """Load APPS test rows with the same schema and ids as single/apps."""
     from datasets import load_dataset
 
     ds = load_dataset(_HF_DATASET, split=_HF_SPLIT, trust_remote_code=True)
@@ -812,12 +805,12 @@ def _canned_demo() -> None:
         print(f"\n=== Winner's code ===\n{out['code']}\n")
 
 def run_one(instance: dict, out_dir: Path | None = None) -> dict:
-    """Single-instance entrypoint for `concurrent_runner.py`.
+    """Single-instance entry point for `concurrent_runner.py`.
 
-    Calls `run_batch([instance], _propagate_errors=True)` so any transient
-    exception (APIConnectionError, TimeoutError, BadRequestError "Unterminated
-    string", etc.) bubbles up to the runner's retry-with-backoff wrapper
-    instead of being swallowed into an `error` field on a "successful" row.
+    Uses `_propagate_errors=True` so transient errors (APIConnectionError,
+    TimeoutError, BadRequestError "Unterminated string", etc.) reach the
+    runner's retry-with-backoff instead of being stored in an `error` field
+    on a row that looks successful.
     """
     summary = run_batch([instance], out_path=None, verbose=False, _propagate_errors=True)
     return summary["per_instance"][0]

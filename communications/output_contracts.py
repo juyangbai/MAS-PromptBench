@@ -1,9 +1,9 @@
 """Output contract helpers for msg communication-format experiments.
 
 The msg baselines reuse the scorer-facing contracts from the main topology
-runners. Communication-format prompts are layered separately in
-``communications.communication_formats`` so final HotpotQA/LCB artifacts remain
-compatible with the existing evaluators.
+runners. Communication-format prompts are layered on separately in
+``communications.communication_formats``, so final HotpotQA/LCB artifacts
+still work with the existing evaluators.
 """
 from __future__ import annotations
 

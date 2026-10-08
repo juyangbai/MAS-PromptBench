@@ -1,13 +1,10 @@
-# Per (topology, benchmark, role) catalog. The prompt generator in
-# configs/generate_role_prompts.py reads this + domains.yaml + tools.yaml +
-# meta_prompt.txt and writes one prompt file per tuple at
-#     configs/prompts/<topology>/<benchmark>/<role>.txt
+# Role catalog per (topology, benchmark, role). configs/generate_role_prompts.py
+# combines it with domains.yaml, tools.yaml and meta_prompt.txt and writes one
+# prompt per entry to configs/prompts/<topology>/<benchmark>/<role>.txt.
 #
-# Each topology has a `description` (what the topology is) and a `benchmarks`
-# dict keyed by benchmark name. Each benchmark has its OWN set of role
-# names + descriptions — role types are benchmark-specific because the
-# natural division of labor differs across tasks (a SWE "patcher" is not
-# the same role as a MATH "computer").
+# Each topology has a `description` and a `benchmarks` dict keyed by benchmark
+# name. Roles are defined per benchmark because the natural split of work
+# differs by task (a SWE "patcher" is not a MATH "computer").
 #
 # Uncomment a topology block to make it active for the generator.
 
@@ -168,20 +165,16 @@ topologies:
       manager sees the whole conversation; each worker sees ONLY the
       manager's current delegation (not other workers' outputs or each
       other's histories).
-    # IMPLEMENTATION NOTE — AutoGen's SelectorGroupChat (the standard
-    # centralized pattern in AutoGen; see its selector-group-chat.ipynb
-    # tutorial) shares a single conversation history across all agents.
-    # `selector_func` gates WHO SPEAKS NEXT (workers can never address
-    # each other; control always returns to the manager after any worker
-    # turn) but does NOT filter CONTEXT — workers can read prior
-    # workers' messages in the shared transcript. The strict
-    # "each worker sees ONLY the manager's current delegation" wording
-    # above describes a tighter context-isolation model (closer to
-    # LangGraph's Agent Supervisor or CrewAI's hierarchical process);
-    # the AutoGen-idiomatic implementation trades that stricter
-    # isolation for framework alignment. If stricter isolation is
-    # required for the cross-topology comparison, it would need a
-    # bespoke per-worker dispatcher, not SelectorGroupChat.
+    # AutoGen's SelectorGroupChat (its standard centralized pattern, see the
+    # selector-group-chat.ipynb tutorial) shares one conversation history
+    # across all agents. selector_func controls who speaks next (workers
+    # never address each other, and control returns to the manager after
+    # every worker turn) but doesn't filter context: workers can read
+    # earlier workers' messages. The "each worker sees only the manager's
+    # current delegation" wording above describes stricter isolation, closer
+    # to LangGraph's Agent Supervisor or CrewAI's hierarchical process.
+    # Getting that in AutoGen would need a custom per-worker dispatcher
+    # instead of SelectorGroupChat.
     benchmarks:
       gpqa:
         manager: "Reads the MCQ, plans the dispatch (analysis, candidate-answer selection, verification), and synthesizes the final letter."

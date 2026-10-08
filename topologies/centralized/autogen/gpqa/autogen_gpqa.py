@@ -1,6 +1,5 @@
 """Centralized topology specialized for GPQA-Diamond, AutoGen."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -68,13 +67,12 @@ def calculator(expression: str) -> str:
 
 # LLM
 def _build_client() -> OpenAIChatCompletionClient:
-    """Build an OpenAI-compatible client pointed at our local vLLM.
+    """OpenAI-compatible client pointed at the local vLLM server.
 
-    vLLM doesn't advertise its own model_info, so we pass the minimum
-    `model_info` AutoGen needs (tool/function calling yes; vision no).
-    `extra_body` threads Qwen3-specific sampling params (repetition
-    penalty, and enable_thinking=False so the model doesn't burn its
-    token budget inside a <think> block).
+    vLLM doesn't advertise model_info, so pass the minimum AutoGen needs
+    (function calling yes, vision no). `extra_body` carries Qwen3 sampling
+    params: repetition penalty, and enable_thinking=False so the model
+    doesn't spend its token budget inside a <think> block.
     """
     return OpenAIChatCompletionClient(
         model=MODEL_ID,
@@ -141,10 +139,10 @@ def build_team() -> SelectorGroupChat:
         tools=[calculator],
     )
 
-    # Force manager-routing: after any worker speaks, the manager MUST be
-    # the next speaker (so workers never chain turns with each other).
-    # When the last message is already the manager's, let the SelectorGroupChat's
-    # default LLM-based selector pick the next worker (or end).
+    # Force manager routing: after any worker speaks, the manager goes next,
+    # so workers never chain turns with each other. When the last message is
+    # already the manager's, SelectorGroupChat's default LLM-based selector
+    # picks the next worker (or ends).
     def _selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
         if not messages:
             return manager.name
@@ -172,9 +170,9 @@ def build_team() -> SelectorGroupChat:
 
 
 # Stall safeguards
-# Per-row wall-clock cap + tighter MaxMessageTermination. Without these
-# the manager/worker loop can spiral on ambiguous rows (manager keeps
-# asking workers to re-verify), burning >3 min per row.
+# Per-row wall-clock cap plus a tighter MaxMessageTermination. Without
+# them the manager/worker loop can spiral on ambiguous rows (the manager
+# keeps asking workers to re-verify), burning >3 min per row.
 PER_ROW_TIMEOUT_S = 120
 _MAX_MESSAGES = 16  # was 20
 
@@ -182,9 +180,9 @@ _MAX_MESSAGES = 16  # was 20
 # Output parsing
 _LETTERS = ["A", "B", "C", "D"]
 
-# Strip markdown `**bold**` / backticks before regex matching — the 9B
-# frequently emits `"**Answer:** B"` and the bare regexes miss the
-# match without this. Same fix as single/sequential/independent gpqa.
+# Strip markdown (`**bold**`, backticks) before matching: the 9B often
+# emits "**Answer:** B", which the bare regexes miss. Same fix as
+# single/sequential/independent gpqa.
 _MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
 # Primary: "Answer: X" / "Final answer: X"
 _ANSWER_RE = re.compile(
@@ -206,8 +204,9 @@ _BARE_LETTER_RE = re.compile(
 def extract_answer(text: str) -> str | None:
     """Return the MCQ letter from the manager's final output.
 
-    Matches the cascade + markdown stripping used by single/sequential/
-    independent/decentralized gpqa so resolve rates are byte-comparable.
+    Same regex cascade and markdown stripping as the single, sequential,
+    independent and decentralized gpqa runners, so resolve rates are
+    directly comparable.
     """
     cleaned = _MARKDOWN_STRIP_RE.sub("", text)
     for pattern in (_ANSWER_RE, _OPTION_RE, _BARE_LETTER_RE):
@@ -229,12 +228,9 @@ def format_mcq(question: str, choices: list[str]) -> str:
 async def solve_async(question: str, choices: list[str]) -> dict:
     """Run the centralized team on one GPQA-style MCQ.
 
-    Returns:
-        {
-            "answer":   final letter A/B/C/D or None,
-            "raw":      manager's last message (contains 'Answer: X TERMINATE'),
-            "messages": list of {source, content} from all agents' turns,
-        }
+    Returns a dict with "answer" (final letter or None), "raw" (the
+    manager's last message, ending 'Answer: X TERMINATE') and "messages"
+    ({source, content} for every agent turn).
     """
     team = build_team()
     mcq = format_mcq(question, choices)
@@ -249,7 +245,7 @@ async def solve_async(question: str, choices: list[str]) -> dict:
         }
         for m in result.messages
     ]
-    # Find the manager's last message — that's where 'Answer: X' lives.
+    # The manager's last message carries 'Answer: X'.
     manager_msgs = [m for m in messages if m["source"] == "manager"]
     final = manager_msgs[-1]["content"] if manager_msgs else ""
     return {
@@ -271,9 +267,11 @@ _HF_SPLIT = "train"
 
 
 def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Stable id for a GPQA row — md5 hash of question text. Matches
-    single/independent/sequential gpqa so per-row comparisons line up
-    on the same id across topologies."""
+    """Stable row id: md5 of the question text.
+
+    Same as single/independent/sequential gpqa, so per-row results line up
+    by id across topologies.
+    """
     q = (row.get("Question") or "").strip()
     if q:
         return "gpqa_" + hashlib.md5(q.encode("utf-8")).hexdigest()[:10]
@@ -286,10 +284,11 @@ def load_instances(
     only: list[str] | None = None,
     shuffle_seed: int = 0,
 ) -> list[dict]:
-    """Load GPQA-Diamond rows with 4 choices shuffled DETERMINISTICALLY
-    per row (`Random(f"{shuffle_seed}|{row_id}")`). Aligned to
-    the other gpqa topologies so `correct_letter` matches for each row
-    id across topologies at the same `shuffle_seed`.
+    """Load GPQA-Diamond rows with the 4 choices shuffled deterministically.
+
+    Each row uses `Random(f"{shuffle_seed}|{row_id}")`, as in the other
+    gpqa topologies, so a row id gets the same `correct_letter` everywhere
+    for a given `shuffle_seed`.
     """
     from datasets import load_dataset
 
@@ -328,17 +327,13 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run the 4-agent centralized team on every instance, compare
-    manager-emitted letter vs gold, return aggregate summary +
-    optionally write per-instance predictions to JSONL.
+    """Run the 4-agent team on every instance and score the manager's letter.
 
-    Per-instance record shape:
-        {id, question, choices, correct_letter,
-         predicted_letter, correct,
+    Returns an aggregate summary and optionally writes per-instance JSONL:
+        {id, question, choices, correct_letter, predicted_letter, correct,
          raw, n_messages, latency_s, error}
-    (Full message transcripts are not persisted — AutoGen group-chat
-    transcripts for a single GPQA row can balloon to multi-KB per row.
-    The manager's final content is preserved in `raw` for auditing.)
+    Full transcripts are not saved (a GPQA group chat can run to several KB
+    per row); `raw` keeps the manager's final message for auditing.
     """
     per_instance: list[dict] = []
     n = len(instances)

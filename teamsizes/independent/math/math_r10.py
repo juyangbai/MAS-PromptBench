@@ -1,6 +1,5 @@
 """Independent topology specialized for MATH (competition math)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -41,8 +40,8 @@ _PROMPT_PATH = (
     _REPO_ROOT / "configs" / "prompts" / "independent" / "math" / "solver.txt"
 )
 
-# Same \boxed{...} format nudge as single/math — without it, Qwen3.5-9B
-# sometimes emits "the answer is 42" without the box, breaking extraction.
+# Same \boxed{...} format nudge as single/math. Without it Qwen3.5-9B
+# sometimes writes "the answer is 42" with no box, which breaks extraction.
 _OUTPUT_FORMAT_NUDGE = (
     "\n\nFINAL OUTPUT FORMAT:\n"
     "After all reasoning, end with a single line containing the final "
@@ -122,7 +121,7 @@ def strip_thinking(text: str) -> str:
 
 
 def extract_boxed(text: str) -> str | None:
-    """Return the inner content of the LAST \\boxed{...} (brace-counted)."""
+    """Return the inner content of the last \\boxed{...} (brace-counted)."""
     marker = r"\boxed{"
     idx = text.rfind(marker)
     if idx < 0:
@@ -274,15 +273,14 @@ def exact_match_score(pred: str, gold: str) -> float:
 
 # Aggregation
 def majority_vote(answers: list[dict]) -> str | None:
-    """Majority vote over per-replica boxed answers, using Hendrycks
-    equivalence to bucket.
+    """Majority vote over per-replica boxed answers, bucketed by Hendrycks
+    equivalence.
 
-    Two replicas' answers go in the same bucket iff `is_equiv(a, b)` —
-    so `\\frac{1}{2}` and `0.5` are treated as one vote even though their
-    surface strings differ. The returned string is the RAW text of the
-    first replica in the winning bucket, preserving LaTeX so downstream
-    `is_equiv(ensemble, gold)` still works. Ties broken by first
-    occurrence (lowest agent index) among equally-common buckets.
+    Answers share a bucket iff `is_equiv(a, b)`, so `\\frac{1}{2}` and
+    `0.5` count as one vote. Returns the raw text of the first replica in
+    the winning bucket, keeping the LaTeX so `is_equiv(ensemble, gold)`
+    still works downstream. Ties between buckets go to the first occurrence
+    (lowest agent index).
     """
     valid = [a for a in answers if a.get("answer") is not None]
     if not valid:
@@ -315,11 +313,11 @@ class AgentInput(TypedDict):
 
 
 # Stall safeguards
-# Per-row wall-clock cap; on symbolic problems (matrix inversion, trig
-# identities) the calculator tool returns ERROR for non-numeric inputs
-# and the model loops retrying variants. With 4 concurrent agents each
-# retrying, a single row can burn 15+ min of GPU time. Timeout + lower
-# recursion_limit cap worst case from both angles.
+# Per-row wall-clock cap. On symbolic problems (matrix inversion, trig
+# identities) the calculator tool returns ERROR for non-numeric input and
+# the model keeps retrying variants; with 4 concurrent agents doing that,
+# one row can burn 15+ min of GPU time. The timeout and the lower
+# recursion_limit bound the worst case from both sides.
 PER_ROW_TIMEOUT_S = 120
 _RECURSION_LIMIT = 15
 
@@ -371,12 +369,10 @@ def build_graph() -> StateGraph:
 def solve(problem: str) -> dict:
     """Run the ensemble on one MATH problem.
 
-    Returns:
-        {
-            "answer":    equivalence-majority boxed answer (raw LaTeX) or None,
-            "per_agent": list of {agent_id, seed, answer, raw, messages},
-            "buckets":   list of [raw_answer, count] for each equivalence bucket,
-        }
+    Returns a dict with:
+        answer     equivalence-majority boxed answer (raw LaTeX), or None
+        per_agent  [{agent_id, seed, answer, raw, messages}]
+        buckets    [raw_answer, count] for each equivalence bucket
     """
     compiled = build_graph().compile()
     prompt = format_prompt(problem)
@@ -390,8 +386,7 @@ def solve(problem: str) -> dict:
     result = asyncio.run(_run())
     per_agent = sorted(result["answers"], key=lambda a: a["agent_id"])
 
-    # Re-derive bucket sizes for reporting. Matches majority_vote's
-    # bucketing logic.
+    # Re-derive bucket sizes for reporting (same bucketing as majority_vote).
     valid = [a for a in per_agent if a.get("answer") is not None]
     buckets: list[list[dict]] = []
     for a in valid:
@@ -412,9 +407,8 @@ def solve(problem: str) -> dict:
 
 # Dataset loader
 # qwedsacf/competition_math filtered to Precalculus / Level 5 (312 rows).
-# Gold is extracted from the LAST \\boxed{...} in the `solution` column.
-# IDs are stable MD5 of problem text so they match single/math's IDs
-# row-for-row for cross-topology parity.
+# Gold is the last \\boxed{...} in the `solution` column. IDs are a stable
+# MD5 of the problem text, so they match single/math's IDs row for row.
 _HF_DATASET = "qwedsacf/competition_math"
 _HF_SPLIT = "train"
 _SUBJECT = "Precalculus"
@@ -474,9 +468,9 @@ def run_batch(
     verbose: bool = True,
     _propagate_errors: bool = False,
 ) -> dict:
-    """Run `solve()` on every problem, compare ensemble boxed answer vs gold
-    via Hendrycks `is_equiv`, return aggregate summary + optionally write
-    per-instance predictions to JSONL.
+    """Run `solve()` on every problem and check the ensemble's boxed answer
+    against gold with Hendrycks `is_equiv`. Returns a summary and optionally
+    writes per-instance predictions to JSONL.
     """
     per_instance: list[dict] = []
     n = len(instances)
@@ -588,12 +582,12 @@ def _canned_demo() -> None:
         print(f"--- agent_{a['agent_id']} (seed {a['seed']}) -> {a['answer']!r} ---")
 
 def run_one(instance: dict, out_dir: Path | None = None) -> dict:
-    """Single-instance entrypoint for `concurrent_runner.py`.
+    """Single-instance entry point for `concurrent_runner.py`.
 
-    Calls `run_batch([instance], _propagate_errors=True)` so any transient
-    exception (APIConnectionError, TimeoutError, BadRequestError "Unterminated
-    string", etc.) bubbles up to the runner's retry-with-backoff wrapper
-    instead of being swallowed into an `error` field on a "successful" row.
+    Uses `_propagate_errors=True` so transient errors (APIConnectionError,
+    TimeoutError, BadRequestError "Unterminated string", etc.) reach the
+    runner's retry-with-backoff instead of being stored in an `error` field
+    on a row that looks successful.
     """
     summary = run_batch([instance], out_path=None, verbose=False, _propagate_errors=True)
     return summary["per_instance"][0]

@@ -1,4 +1,6 @@
-"""Independent topology: 4 LLM agents fan out from START, no inter-agent communication."""
+"""Independent topology: 4 LLM agents fan out from START with no
+inter-agent communication.
+"""
 
 import asyncio
 import operator

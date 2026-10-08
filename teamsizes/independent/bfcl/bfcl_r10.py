@@ -1,6 +1,5 @@
-"""Independent topology specialized for BFCL (Berkeley Function Calling)."""
+"""Independent topology for BFCL (Berkeley Function Calling)."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -59,14 +58,12 @@ AST_CATEGORIES = ("simple", "multiple", "parallel", "parallel_multiple")
 
 # Model registration in bfcl-eval
 def _register_model_with_bfcl(model_id: str) -> None:
-    """Tell bfcl-eval how to handle function names for `model_id`.
+    """Register `model_id` in bfcl-eval's MODEL_CONFIG_MAPPING.
 
-    `ast_checker` -> `convert_func_name` looks up the model in
-    MODEL_CONFIG_MAPPING to decide whether to rewrite '.' -> '_' in
-    function names. Qwen3.5-9B handles dots fine (same as the registered
-    qwen3-8b/-14b entries), but our model name isn't in the registry, so
-    without this we hit KeyError on any instance with a dotted name
-    (e.g. math.factorial).
+    `ast_checker` -> `convert_func_name` looks the model up there to decide
+    whether to rewrite '.' -> '_' in function names, and raises KeyError for
+    an unregistered model on any dotted name (e.g. math.factorial).
+    Qwen3.5-9B handles dots like the registered qwen3-8b/-14b entries.
     """
     if model_id in MODEL_CONFIG_MAPPING:
         return
@@ -112,11 +109,10 @@ def _py_type_of(prop: dict) -> Any:
 def _sanitize_field_name(name: str) -> str:
     """Return a pydantic-safe attribute name for `name`.
 
-    Pydantic v2 rejects fields whose attribute name starts with `_` (reserved
-    for private attrs) or collides with a Python keyword. Strip the leading
-    underscores and suffix `_` to any resulting keyword; the original name is
-    preserved via Field(alias=...) so JSON schema + tool_calls args stay
-    aligned to the BFCL schema.
+    Pydantic v2 rejects names that start with `_` or are Python keywords, so
+    strip leading underscores and append `_` to keywords. The original name
+    is kept via Field(alias=...) so the JSON schema and tool_call args still
+    match BFCL.
     """
     safe = name.lstrip("_") or "field"
     if keyword.iskeyword(safe):
@@ -167,8 +163,8 @@ def _build_one_agent(tools: list[StructuredTool], seed: int):
         temperature=0.2,
         top_p=0.9,
         seed=seed,
-        # Bounded per-turn output; matches single/bfcl for runaway-generation
-        # protection on the turn where the model sees empty tool results.
+        # Cap per-turn output (as in single/bfcl) to stop runaway generation on
+        # the turn where the model sees empty tool results.
         max_tokens=2048,
         extra_body={
             "repetition_penalty": 1.05,
@@ -216,14 +212,11 @@ def score_one(
 
 # Aggregation
 def _canonical_key(model_output: list[dict]) -> str:
-    """Stable bucket key for canonical-form majority vote.
+    """Bucket key for majority vote: the canonical calls as a JSON string.
 
-    Two replicas share a bucket iff their calls are byte-equal after:
-      - sorting args within each call by key
-      - sorting the list of calls by a deterministic (func_name, args_json)
-        pair so parallel subsets ignore call-emission order
-
-    JSON-serialized so the key is hashable.
+    Args are sorted within each call and calls are sorted by their JSON
+    form, so replicas share a key iff they make the same calls in any order
+    (parallel subsets are order-invariant).
     """
     normalized = []
     for call in model_output:
@@ -237,13 +230,11 @@ def _canonical_key(model_output: list[dict]) -> str:
 
 
 def majority_vote(answers: list[dict]) -> dict | None:
-    """Group replicas by canonical-form equality; return a representative
-    from the largest bucket.
+    """Majority vote over canonical outputs.
 
-    Selection order:
-      1. Largest bucket of byte-equal canonical outputs wins.
-      2. Ties: first occurrence (lowest agent_id).
-      3. None iff no replica produced a non-empty call.
+    Returns the lowest-agent_id replica from the largest bucket of identical
+    outputs; ties go to the bucket with the lowest first agent_id. None if
+    no replica produced a call.
     """
     valid = [a for a in answers if a.get("model_output")]
     if not valid:
@@ -346,14 +337,12 @@ def build_graph() -> StateGraph:
 def solve(instance: dict) -> dict:
     """Run the ensemble on one BFCL instance.
 
-    Returns:
-        {
-            "model_output":    winning canonical call(s) (list of dicts) or [],
-            "winner":          agent_id of the selected replica,
-            "buckets":         list of [canonical_key_json, count] pairs,
-            "per_agent":       list of {agent_id, seed, tool_calls, model_output,
-                                        messages, solve_s, error?},
-        }
+    Returns a dict with:
+        model_output: winning canonical call(s) (list of dicts) or []
+        winner:       agent_id of the selected replica
+        buckets:      [canonical_key_json, count] pairs
+        per_agent:    [{agent_id, seed, tool_calls, model_output, messages,
+                        solve_s, error?}]
     """
     compiled = build_graph().compile()
     prompt = instance["question"][0]  # BFCL nested: [[msgs...]]

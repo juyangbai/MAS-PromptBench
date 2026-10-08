@@ -1,6 +1,5 @@
 """Sequential topology specialized for BFCL, implemented in LangGraph."""
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -9,7 +8,7 @@ import operator
 import os
 import re
 import sys
-import time  # noqa: F401 — used by run_one
+import time  # noqa: F401 (used by run_one)
 from pathlib import Path
 
 from teamsizes.output_contracts import append_output_contract_from_path
@@ -49,14 +48,13 @@ def _load_prompt(role: str) -> str:
 
 # Model registration in bfcl-eval
 def _register_model_with_bfcl(model_id: str) -> None:
-    """Tell bfcl-eval how to handle function names for `model_id`.
+    """Register `model_id` in bfcl-eval's MODEL_CONFIG_MAPPING.
 
-    `ast_checker` -> `convert_func_name` looks up the model in
-    MODEL_CONFIG_MAPPING to decide whether to rewrite '.' -> '_' in
-    function names. Qwen3.5-9B handles dots fine (same as the
-    registered qwen3-8b/-14b entries), but our model name isn't in
-    the registry, so without this we hit KeyError on any instance
-    with a dotted name (e.g. `math.factorial`).
+    `ast_checker` -> `convert_func_name` looks the model up there to decide
+    whether to rewrite '.' -> '_' in function names. Unregistered models
+    raise KeyError on any instance with a dotted name (e.g. `math.factorial`).
+    Qwen3.5-9B handles dots fine, same as the registered qwen3-8b/-14b
+    entries.
     """
     if model_id in MODEL_CONFIG_MAPPING:
         return
@@ -220,7 +218,7 @@ def _make_plain_node(role, sys_prompt, llm, template, prior_roles):
 
 
 def _build_graph(llm: ChatOpenAI):
-    """Build the 4-stage analyzer -> inspector -> caller -> verifier pipeline."""
+    """4-stage pipeline: analyzer -> inspector -> caller -> verifier."""
     stages = [
         (
             'intent_extractor',
@@ -310,14 +308,13 @@ _FENCED_RE = re.compile(r"```(?:\w*)\s*([\s\S]*?)\s*```")
 
 
 def extract_canonical(text: str) -> list[dict] | None:
-    """Extract the last fenced JSON list-of-dicts from `text`.
-
-    Returns None if no fenced JSON parses to a non-empty list-of-dicts.
+    """Extract the last fenced JSON list of dicts from `text`, or None if no
+    fenced block parses to a non-empty list of dicts.
     """
     candidates: list[str] = []
     for m in _FENCED_RE.finditer(text):
         candidates.append(m.group(1))
-    # Prefer the LAST fenced block (the verifier's final emission).
+    # Prefer the last fenced block (the verifier's final output).
     for cand in reversed(candidates):
         try:
             parsed = json.loads(cand)
@@ -388,15 +385,16 @@ def load_instances(
 
 # Orchestration
 def _escape_braces(s: str) -> str:
-    """Escape `{` / `}` in a value so .format() treats them as literal
-    text. Raw JSON of schemas contains braces that would otherwise be
-    parsed as format placeholders."""
+    """Escape `{` and `}` so .format() treats them as literal text; raw JSON
+    schemas are full of braces.
+    """
     return s.replace("{", "{{").replace("}", "}}")
 
 
 def _flatten_user_request(question: list) -> str:
-    """BFCL stores `question` as [[msgs...]]; for single-turn subsets we
-    take the concatenated user-turn contents."""
+    """BFCL stores `question` as [[msgs...]]; for single-turn subsets, join
+    the turns' contents into one string.
+    """
     if not question:
         return ""
     turns = question[0] if isinstance(question[0], list) else question
@@ -414,14 +412,11 @@ def _flatten_user_request(question: list) -> str:
 def solve(instance: dict) -> dict:
     """Run the 4-stage sequential graph on one BFCL instance.
 
-    Returns:
-        {
-            "model_output": canonical call list [{fn: {arg: val}}] or [],
-            "by_stage":     {analyzer, inspector, caller, verifier}
-                            -> each stage's text output,
-            "raw":          verifier's final text,
-            "telemetry":    normalized 5-key token/call counts,
-        }
+    Returns a dict with:
+        model_output  canonical call list [{fn: {arg: val}}], or []
+        by_stage      {analyzer, inspector, caller, verifier} -> stage text
+        raw           verifier's final text
+        telemetry     normalized 5-key token/call counts
     """
     llm = _build_llm()
     compiled, roles = _build_graph(llm)

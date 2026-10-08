@@ -1,17 +1,13 @@
-"""Single-agent ReAct topology specialized for HotpotQA.
+"""Single-agent ReAct topology for HotpotQA (open-domain multi-hop QA).
 
-Open-domain multi-hop question answering. Uses real Wikipedia retrieval
-(HotpotQA was built from Wikipedia, so Wikipedia is the canonical source).
-Two tools let the agent search for candidate articles, then read the one
-it needs:
+Retrieves from live Wikipedia, HotpotQA's source corpus, with two tools:
     wikipedia_search(query)  -> titles + short summaries
     wikipedia_page(title)    -> full article text (truncated)
 
 Requires: pip install wikipedia
-The system prompt is loaded from configs/prompts/single/hotpotqa/solver.txt.
+System prompt: configs/prompts/single/hotpotqa/solver.txt.
 """
 
-# Config
 from __future__ import annotations
 
 import argparse
@@ -46,13 +42,13 @@ MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PROMPT_PATH = _REPO_ROOT / "configs" / "prompts" / "single" / "hotpotqa" / "solver.txt"
 
-# The generated solver.txt describes the multi-hop retrieval procedure but
-# does NOT constrain the output format. HotpotQA's official scorer expects
-# SHORT-form answers (e.g., "yes", "no", "1997", "Paris") and compares
-# after normalize_answer. Without an explicit format constraint the 9B
-# emits prose like "Both individuals were of the same nationality:
-# American", which scores EM=0 even when the reasoning is correct. This
-# nudge is appended at load time — the prompt file on disk is unchanged.
+# The generated solver.txt describes the multi-hop retrieval steps but not
+# the output format. HotpotQA's official scorer expects short answers
+# ("yes", "no", "1997", "Paris") compared after normalize_answer. Without a
+# format constraint the 9B model writes prose like "Both individuals were
+# of the same nationality: American", which scores EM=0 even when the
+# reasoning is right. The nudge is appended at load time; the prompt file
+# on disk is unchanged.
 _OUTPUT_FORMAT_NUDGE = (
     "\n\nFINAL OUTPUT FORMAT:\n"
     "After your reasoning, end with a single line exactly of the form:\n"
@@ -161,11 +157,7 @@ def strip_thinking(text: str) -> str:
 
 
 def extract_answer(text: str) -> str | None:
-    """Return the model's short-form answer.
-
-    Prefers the last 'Answer: X' pattern. Falls back to the last non-empty
-    line of the cleaned text.
-    """
+    """Return the last 'Answer: X' match, else the last non-empty line."""
     matches = _ANSWER_RE.findall(text)
     if matches:
         return matches[-1].strip().rstrip(".,")
@@ -194,8 +186,8 @@ def exact_match_score(pred: str, gold: str) -> float:
 def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
     """HotpotQA token-level F1 (official): returns (f1, precision, recall).
 
-    For yes/no/noanswer questions, a non-matching prediction scores (0, 0, 0)
-    — no partial credit from token overlap.
+    On yes/no/noanswer questions a non-matching prediction scores
+    (0, 0, 0), with no partial credit for token overlap.
     """
     normalized_pred = normalize_answer(pred)
     normalized_gold = normalize_answer(gold)
@@ -222,11 +214,9 @@ def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
 def solve(question: str, agent=None) -> dict:
     """Run the agent on one HotpotQA question.
 
-    Strips Qwen3's <think>...</think> reasoning from every AI message so both
-    the returned `raw` string and the `messages` list are clean.
-
-    Optional `agent` param lets callers reuse a pre-built agent across a
-    batch to avoid rebuild-per-instance cost.
+    Strips Qwen3 <think>...</think> reasoning from every AI message, so both
+    `raw` and `messages` come back clean. Pass `agent` to reuse a pre-built
+    agent across a batch.
 
     Returns {'answer': str | None, 'raw': str, 'messages': list}.
     """
@@ -249,11 +239,10 @@ def solve(question: str, agent=None) -> dict:
 
 # Dataset loader
 _HF_DATASET = "hotpot_qa"
-# `distractor` and `fullwiki` have the SAME 7,405 dev questions + same gold
-# answers — only the per-question context paragraphs differ. Our agent
-# retrieves live from Wikipedia via the `wikipedia` package, so the
-# paragraphs in the HF record are never consumed. `distractor` is the
-# smaller/faster download.
+# `distractor` and `fullwiki` have the same 7,405 dev questions and gold
+# answers; only the per-question context paragraphs differ. The agent
+# retrieves live from Wikipedia and never reads those paragraphs, so use
+# the smaller `distractor` download.
 _HF_CONFIG = "distractor"
 _HF_SPLIT = "validation"
 
@@ -263,22 +252,19 @@ def load_instances(
     offset: int = 0,
     only: list[str] | None = None,
 ) -> list[dict]:
-    """Load HotpotQA dev rows and emit topology-ready instances.
+    """Load HotpotQA dev rows as topology-ready instances.
 
-    HotpotQA rows already have stable string ids (`row["id"]`), so we use
-    them directly — no hash-based row-id scheme needed like GPQA. The
-    first 100 rows (offset=0, limit=100) are deterministic across
-    topologies for direct comparison.
+    Rows already have stable string ids (`row["id"]`), so no hash-based id
+    is needed as with GPQA. The first 100 rows (offset=0, limit=100) are
+    the same across topologies for direct comparison.
 
-    Returns list of dicts:
-        {
-            "id":       str (HF row id),
-            "question": str,
-            "answer":   gold short-form answer (str),
-            "type":     "comparison" | "bridge",
-            "level":    "easy" | "medium" | "hard",
-            "raw":      full HF row (for auditing).
-        }
+    Returns a list of dicts:
+        id        HF row id (str)
+        question  str
+        answer    gold short-form answer (str)
+        type      "comparison" | "bridge"
+        level     "easy" | "medium" | "hard"
+        raw       full HF row (for auditing)
     """
     from datasets import load_dataset
 
@@ -313,22 +299,19 @@ def run_batch(
     out_path: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Run `solve()` on every instance, compute EM + F1 vs gold, return
-    aggregate summary + optionally write per-instance predictions to
-    JSONL.
+    """Run `solve()` on every instance and score EM + F1 against gold.
 
-    Returns:
-        {
-            "n":         total attempted,
-            "n_extracted": non-null predictions,
-            "em_sum":    sum of EM over all instances,
-            "f1_sum":    sum of F1 over all instances,
-            "em":        em_sum / n (0 for extraction-fail),
-            "f1":        f1_sum / n,
-            "extracted_em": em_sum / n_extracted,
-            "extracted_f1": f1_sum / n_extracted,
-            "per_instance": list of per-row dicts,
-        }
+    Optionally writes per-instance predictions to `out_path` (JSONL).
+    Returns a summary dict:
+        n             instances attempted
+        n_extracted   non-null predictions
+        em_sum        sum of EM over all instances
+        f1_sum        sum of F1 over all instances
+        em            em_sum / n (extraction failures count as 0)
+        f1            f1_sum / n
+        extracted_em  em_sum / n_extracted
+        extracted_f1  f1_sum / n_extracted
+        per_instance  list of per-row dicts
     """
     agent = build_agent()  # build once; reuse across the batch
     per_instance: list[dict] = []

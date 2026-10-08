@@ -1,8 +1,8 @@
 """Team-size adapters backed by the real ``teamsizes`` modules.
 
-These adapters intentionally live under ``optimizers/gepa`` only. They make
-the real team-size runners look like normal GEPA pairs while leaving the
-baseline ``teamsizes/`` implementations untouched.
+Kept under ``optimizers/gepa`` only. They make the real team-size runners
+look like normal GEPA pairs without touching the baseline ``teamsizes/``
+code.
 """
 from __future__ import annotations
 

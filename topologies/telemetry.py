@@ -17,10 +17,10 @@ _ZERO = {
 def _ai_token_usage(msg) -> dict:
     """Pull token usage off one LangChain AIMessage.
 
-    LangChain's ChatOpenAI sets both `response_metadata["token_usage"]`
-    and `usage_metadata` on AIMessage. The schemas differ slightly; we
-    probe response_metadata first (what `invoke()` returns) then fall
-    back to usage_metadata (what streaming exposes).
+    ChatOpenAI sets both `response_metadata["token_usage"]` and
+    `usage_metadata`, with slightly different schemas. Read
+    response_metadata first (what `invoke()` returns), then fall back to
+    usage_metadata (what streaming exposes).
     """
     rm = getattr(msg, "response_metadata", None) or {}
     usage = rm.get("token_usage") or rm.get("usage") or {}
@@ -71,9 +71,9 @@ def langchain_telemetry(messages: Iterable) -> dict:
 def langchain_ensemble_telemetry(per_agent: Iterable[dict]) -> dict:
     """Aggregate telemetry across the N replicas of an independent ensemble.
 
-    Each replica dict must carry a `messages` list (LangGraph result's
-    messages). Returns the ensemble TOTAL (sums, not averages) — so
-    `n_llm_calls` on a row reflects work across all 4 agents combined.
+    Each replica dict needs a `messages` list (from the LangGraph result).
+    Returns the ensemble total (sums, not averages), so `n_llm_calls` on a
+    row counts work across all 4 agents.
     """
     total = dict(_ZERO)
     for rep in per_agent or []:
@@ -87,10 +87,10 @@ def langchain_ensemble_telemetry(per_agent: Iterable[dict]) -> dict:
 def crewai_telemetry(crew_or_metrics, n_stages: int | None = None) -> dict:
     """Pull usage off a CrewAI Crew (after kickoff) or its UsageMetrics.
 
-    CrewAI aggregates token usage at the crew level, not per task, so
-    `crew.usage_metrics` is authoritative. `successful_requests` gives
-    n_llm_calls. Tool-call count isn't tracked by CrewAI; we leave it 0
-    and let callers override with a hand-counted value if they care.
+    CrewAI tracks token usage per crew, not per task, so
+    `crew.usage_metrics` is authoritative; `successful_requests` gives
+    n_llm_calls. CrewAI doesn't count tool calls, so that stays 0 unless the
+    caller overrides it with a hand-counted value.
     """
     um = (
         getattr(crew_or_metrics, "usage_metrics", None)
@@ -127,8 +127,8 @@ def autogen_telemetry(task_result) -> dict:
     """Aggregate telemetry across all messages of an AutoGen TaskResult.
 
     AutoGen attaches `models_usage` (RequestUsage) to each agent message;
-    user-sim messages and tool-result messages have None. One
-    `models_usage` present ≈ one LLM call.
+    user-sim and tool-result messages have None. Each `models_usage` counts
+    as roughly one LLM call.
     """
     telem = dict(_ZERO)
     for m in getattr(task_result, "messages", None) or []:
@@ -140,9 +140,9 @@ def autogen_telemetry(task_result) -> dict:
         telem["completion_tokens"] += int(getattr(usage, "completion_tokens", 0) or 0)
     telem["total_tokens"] = telem["prompt_tokens"] + telem["completion_tokens"]
 
-    # Count tool-call message types to approximate n_tool_calls. AutoGen
-    # emits ToolCallRequestEvent / ToolCallSummaryMessage-like types; we
-    # detect by class name to avoid a hard dep on the import location.
+    # Approximate n_tool_calls by counting ToolCall*Request* messages
+    # (e.g. ToolCallRequestEvent). Matching on class name avoids a hard
+    # dependency on where AutoGen defines these types.
     for m in getattr(task_result, "messages", None) or []:
         cls = type(m).__name__
         if "ToolCall" in cls and "Request" in cls:
@@ -152,18 +152,17 @@ def autogen_telemetry(task_result) -> dict:
 
 # OpenAI SDK (decentralized topology)
 def openai_sdk_accumulate(acc: dict, response) -> None:
-    """In-place accumulate usage from one openai response into `acc`.
+    """Add the usage from one OpenAI response into `acc`, in place.
 
-    Decentralized runners make many `client.chat.completions.create`
-    calls per row; wrap each call's response through this function to
-    keep a running total. Call-site pattern:
+    Decentralized runners call `client.chat.completions.create` many times
+    per row; pass each response through here to keep a running total:
 
         telem = dict(_ZERO)
         ...
         resp = client.chat.completions.create(...)
         openai_sdk_accumulate(telem, resp)
 
-    If `acc` doesn't have the keys yet we seed them here.
+    Missing keys in `acc` are seeded with zeros.
     """
     for k, v in _ZERO.items():
         acc.setdefault(k, v)
@@ -183,11 +182,10 @@ def openai_sdk_accumulate(acc: dict, response) -> None:
 def openai_sdk_telemetry(contexts: Iterable[list[dict]]) -> dict:
     """Coarse fallback when the runner didn't accumulate per-call usage.
 
-    Given the debate's per-peer message histories, count tool calls
-    (every message with role='tool') and LLM calls (messages where role
-    == 'assistant' — every AI response costs one call). Token counts
-    are zero in this path; the recommended path is to wire
-    `openai_sdk_accumulate` in _chat_with_tools for exact token counts.
+    From the debate's per-peer message histories, counts tool calls (role
+    'tool') and LLM calls (role 'assistant', one call per AI response).
+    Token counts stay zero here; for exact counts, wire
+    `openai_sdk_accumulate` into _chat_with_tools instead.
     """
     telem = dict(_ZERO)
     for ctx in contexts or []:
@@ -205,11 +203,13 @@ def openai_sdk_telemetry(contexts: Iterable[list[dict]]) -> dict:
 
 
 
-# Utility: coerce any dict-ish into the fixed 5-key shape
+# Normalization (fixed 5-key telemetry shape)
 def normalize(telem: dict | None) -> dict:
-    """Return a dict that has exactly the 5 telemetry keys; use as
-    post-processing before writing a row so schema stays uniform even
-    when a helper returns a sparser dict."""
+    """Return a dict with exactly the 5 telemetry keys.
+
+    Apply it before writing a row so the schema stays uniform even when a
+    helper returns fewer keys.
+    """
     out = dict(_ZERO)
     if telem:
         for k in _ZERO:
