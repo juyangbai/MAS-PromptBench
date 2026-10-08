@@ -2,6 +2,9 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <!-- page transition to and from the docs ("Short glide, ordered") -->
+  <script src="static/js/mpb-transition.js"></script>
+  <link rel="stylesheet" href="static/css/mpb-transition.css">
   <meta name="description" content="MAS-PromptBench: a benchmark for system-prompt optimization in multi-agent LLM systems (MAS). We study whether, when, and by how much prompt optimization improves MAS performance across tasks, topologies, communication protocols, and team sizes.">
   <meta property="og:title" content="MAS-PromptBench: When Does Prompt Optimization Improve Multi-Agent LLM Systems?"/>
   <meta property="og:description" content="A benchmark and systematic study of system-prompt optimization for multi-agent LLM systems. Gains range from +24 to -16 points depending on configuration."/>
@@ -109,6 +112,15 @@
       -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 0.6rem !important;
+    }
+    /* the wordmark that glides to and from the docs: it carries the title's own
+       gradient, sized to the full title width and centered, so the shading is unchanged */
+    .brand-title { container-type: inline-size; }
+    .brand-title .mpb-title {
+      display: inline-block; padding-inline: .06em;
+      background: inherit; background-size: 100cqw 100%; background-position: 50% 0; background-repeat: no-repeat;
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     .paper-subtitle { color: var(--pa-ink); font-weight: 600; line-height: 1.3; }
     .pa-tagline { color: var(--pa-muted); }
@@ -570,6 +582,8 @@
       .chart-box.tall { height: 360px; }
     }
   </style>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
 </head>
 <body>
 
@@ -578,12 +592,12 @@
   <div class="container is-max-desktop">
     <div class="columns is-centered">
       <div class="column has-text-centered">
-        <span class="pa-eyebrow reveal">Benchmark &middot; Multi-Agent LLM Systems</span>
-        <h1 class="brand-title reveal">MAS-PromptBench</h1>
-        <h2 class="subtitle is-3 paper-subtitle reveal">
+        <span class="pa-eyebrow reveal mpb-still">Benchmark &middot; Multi-Agent LLM Systems</span>
+        <h1 class="brand-title reveal mpb-still"><span class="mpb-title" id="mpb-title">MAS-PromptBench</span></h1>
+        <h2 class="subtitle is-3 paper-subtitle reveal mpb-still">
           When Does Prompt Optimization Improve Multi-Agent LLM Systems?
         </h2>
-        <p class="is-size-5 pa-tagline reveal" style="margin-bottom: 0;">
+        <p class="is-size-5 pa-tagline reveal mpb-still" style="margin-bottom: 0;">
           A benchmark for system-prompt optimization in multi-agent LLM systems
         </p>
         <!-- <p class="publication-authors reveal" style="margin-top: 1.1rem;">
@@ -600,17 +614,23 @@
   <div class="container is-max-desktop">
     <div class="columns is-centered">
       <div class="column has-text-centered">
-        <div class="publication-links reveal">
+        <div class="publication-links reveal mpb-still">
           <span class="link-block">
             <a href="https://arxiv.org/abs/2606.23664" target="_blank" class="external-link button is-normal">
-              <span class="icon"><img src="static/images/document.gif" alt="Paper icon"></span>
+              <span class="icon"><img src="static/images/document.png" alt="Paper icon"></span>
               <span>Paper</span>
             </a>
           </span>
           <span class="link-block">
             <a href="https://github.com/juyangbai/MAS-PromptBench" target="_blank" class="external-link button is-normal">
-              <span class="icon"><img src="static/images/coding.gif" alt="Code icon"></span>
+              <span class="icon"><img src="static/images/coding.png" alt="Code icon"></span>
               <span>Code</span>
+            </a>
+          </span>
+          <span class="link-block">
+            <a href="docs/" class="external-link button is-normal">
+              <span class="icon"><img src="static/images/docs.svg" alt="Docs icon"></span>
+              <span>Docs</span>
             </a>
           </span>
         </div>
