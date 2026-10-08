@@ -1,0 +1,101 @@
+site_name: MAS-PromptBench
+site_description: Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.
+site_url: https://juyangbai.github.io/MAS-PromptBench/docs/
+repo_url: https://github.com/juyangbai/MAS-PromptBench
+repo_name: juyangbai/MAS-PromptBench
+edit_uri: edit/main/docs/
+copyright: MAS-PromptBench is released under the MIT License.
+
+theme:
+  name: null
+  custom_dir: docs_theme
+  locale: en
+  search_index_only: true
+  static_templates:
+    - 404.html
+
+extra:
+  project_page: https://juyangbai.github.io/MAS-PromptBench/
+
+plugins:
+  - search
+
+exclude_docs: |
+  _snippets/
+
+markdown_extensions:
+  - toc:
+      permalink: "#"
+      permalink_title: Link to this section
+      toc_depth: 3
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - def_list
+  - footnotes
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.highlight:
+      use_pygments: true
+      pygments_lang_class: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets:
+      base_path: [docs/_snippets]
+      check_paths: true
+  - pymdownx.arithmatex:
+      generic: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Overview: getting-started/overview.md
+      - Installation: getting-started/installation.md
+      - Connect a Model: getting-started/connect-a-model.md
+      - Quick Start: getting-started/quick-start.md
+  - Tasks:
+      - All Tasks: tasks/index.md
+      - Reasoning:
+          - GPQA-Diamond: tasks/gpqa.md
+          - HotpotQA: tasks/hotpotqa.md
+          - MATH: tasks/math.md
+      - Coding:
+          - LiveCodeBench: tasks/livecodebench.md
+          - APPS: tasks/apps.md
+          - SWE-Bench Verified: tasks/swe-bench.md
+      - Tool-Calling:
+          - BFCL: tasks/bfcl.md
+          - ToolHop: tasks/toolhop.md
+          - API-Bank: tasks/api-bank.md
+  - Multi-Agent Systems:
+      - Workflow Topologies: mas/topologies.md
+      - Single: mas/single.md
+      - Independent: mas/independent.md
+      - Sequential: mas/sequential.md
+      - Centralized: mas/centralized.md
+      - Decentralized: mas/decentralized.md
+      - Communication Protocols: mas/communication-protocols.md
+      - Team Sizes: mas/team-sizes.md
+  - Optimizers:
+      - Overview: optimizers/index.md
+      - GEPA: optimizers/gepa.md
+      - MIPRO: optimizers/mipro.md
+      - Run an Optimizer: optimizers/running.md
+  - Evaluation:
+      - Evaluation Protocol: evaluation/protocol.md
+      - Read the Results: evaluation/results.md
+  - Extending:
+      - Add a Dataset: extending/add-dataset.md
+      - Add a Topology: extending/add-topology.md
+      - Add an Optimizer: extending/add-optimizer.md
+  - Reference:
+      - Command-Line Flags: reference/cli.md
+      - Environment Variables: reference/environment.md
+      - Repository Map: reference/repository.md
+
+validation:
+  links:
+    anchors: warn
+    unrecognized_links: warn
