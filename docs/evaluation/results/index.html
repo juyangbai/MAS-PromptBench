@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="Read the Results · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/evaluation/results/">
+  <title>Read the Results · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url="../.." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="../..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="../..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
+  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link is-active" href="./" aria-current="page">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../extending/add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../../extending/add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../../extending/add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../reference/cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../../reference/environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../../reference/repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Evaluation</span>
+    </p>
+    <article class="prose">
+      <h1 id="read-the-results">Read the Results<a class="headerlink" href="#read-the-results" title="Link to this section">#</a></h1>
+<p class="lede">Every optimizer run leaves a folder of JSON and text files, and every baseline run leaves JSONL records. This page says what each file holds, how the keep-or-reject decision is recorded, and how to turn scores into the percentage-point gains the paper reports.</p>
+<h2 id="optimizer-run-folder">Optimizer run folder<a class="headerlink" href="#optimizer-run-folder" title="Link to this section">#</a></h2>
+<pre class="highlight"><code class="language-text">optimizers/gepa/results/gepa/centralized_hotpotqa/
+├── status.json            # current phase, rewritten at each step
+├── baseline_val.jsonl     # seed prompts, one record per validation row
+├── compiled_val.jsonl     # compiled prompts, same rows
+├── optimized_val.jsonl    # copy of whichever side was kept
+├── meta.json              # everything about the run, written last
+├── compiled/&lt;role&gt;.txt    # optimized prompt per role, cleaned
+├── compiled_raw/&lt;role&gt;.txt
+└── gepa_state/            # GEPA's own log folder</code></pre>
+<p>A MIPRO folder has <code>mipro_state/</code> instead of <code>gepa_state/</code>, plus <code>compiled_demos/&lt;role&gt;.json</code>. Without <code>--out</code>, the folder is <code>optimizers/&lt;optimizer&gt;/results/&lt;topology&gt;_&lt;dataset&gt;_real_&lt;optimizer&gt;/</code>.</p>
+<h2 id="statusjson">status.json<a class="headerlink" href="#statusjson" title="Link to this section">#</a></h2>
+<p>The pilot overwrites <code>status.json</code> at each phase. It always holds <code>phase</code> and <code>updated_at</code>, plus the fields of that phase:</p>
+<table>
+<thead>
+<tr>
+<th><code>phase</code></th>
+<th>Extra fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>started</code></td>
+<td><code>dataset</code>, <code>topology</code>, <code>train_size</code>, <code>val_size</code>, <code>num_threads</code>; GEPA adds <code>max_full_evals</code>, MIPRO adds <code>auto</code>, <code>num_candidates</code>, <code>num_trials</code></td>
+</tr>
+<tr>
+<td><code>loading_dataset</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>baseline_eval_started</code></td>
+<td><code>train_ids</code>, <code>val_ids</code>, level, repo and profile counts, <code>split_manifest</code>, <code>protected_eval_sample</code>, <code>adapter_roles</code></td>
+</tr>
+<tr>
+<td><code>baseline_eval_done</code></td>
+<td><code>baseline_score</code></td>
+</tr>
+<tr>
+<td><code>gepa_compile_started</code> / <code>mipro_compile_started</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>gepa_compile_done</code> / <code>mipro_compile_done</code></td>
+<td><code>prompt_sanitizer</code></td>
+</tr>
+<tr>
+<td><code>compiled_eval_started</code></td>
+<td><code>prompt_sanitizer</code></td>
+</tr>
+<tr>
+<td><code>complete</code></td>
+<td><code>baseline_score</code>, <code>compiled_score</code>; MIPRO adds <code>accept_compiled_prompt</code>, <code>selected_prompt_source</code>; GEPA <code>--baseline-only</code> has <code>baseline_only</code> instead of <code>compiled_score</code></td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td><code>error_type</code>, <code>error</code>, <code>traceback</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="validation-records">Validation records<a class="headerlink" href="#validation-records" title="Link to this section">#</a></h2>
+<p>Each line of <code>baseline_val.jsonl</code>, <code>compiled_val.jsonl</code> and <code>optimized_val.jsonl</code> is one validation row:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Instance ID</td>
+</tr>
+<tr>
+<td><code>score</code></td>
+<td>Metric score for the row, 0 to 1</td>
+</tr>
+<tr>
+<td><code>latency_s</code></td>
+<td>Wall time for the full multi-agent run</td>
+</tr>
+<tr>
+<td><code>answer</code></td>
+<td>Final answer text the metric saw</td>
+</tr>
+<tr>
+<td><code>winner</code>, <code>vote_summary</code></td>
+<td>Winning agent and vote buckets, where the topology votes</td>
+</tr>
+<tr>
+<td><code>agent_trace</code></td>
+<td>Role-level trace text</td>
+</tr>
+<tr>
+<td><code>communication_*</code></td>
+<td>Parse and report fields, on communication-protocol cells</td>
+</tr>
+</tbody>
+</table>
+<p>GEPA records can also carry <code>predicted_answer</code>, <code>runner_correct</code>, <code>runner_answer_correct</code>, <code>scoring_prev_tool_content</code> and <code>previous_tool_content</code> when the adapter returns them.</p>
+<h2 id="compiled-and-compiled_raw">compiled/ and compiled_raw/<a class="headerlink" href="#compiled-and-compiled_raw" title="Link to this section">#</a></h2>
+<p><code>compiled_raw/&lt;role&gt;.txt</code> is each role's instruction exactly as it was evaluated in the compiled run. <code>compiled/&lt;role&gt;.txt</code> is the same text with any reasoning preamble removed: everything up to the last <code>&lt;/think&gt;</code>, and the code fence around the prompt that follows it. <code>compiled_prompt_files</code> in <code>meta.json</code> lists the <code>compiled/</code> files. Neither file contains the output contract, which is attached at run time. For MIPRO both files include the rendered demonstrations, and <code>compiled_demos/&lt;role&gt;.json</code> stores the demos as <code>{"role": ..., "demos": [...]}</code>. For ToolHop and LCB, a sanitizer edits the prompts before the compiled run; <code>compiled_prompt_sanitizer</code> in <code>meta.json</code> lists what changed.</p>
+<h2 id="metajson">meta.json<a class="headerlink" href="#metajson" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Identity</td>
+<td><code>cell</code>, <code>mode</code> (<code>real-runner-gepa</code>, <code>real-runner-gepa-baseline-only</code> or <code>real-runner-mipro-v2</code>), <code>dataset</code>, <code>topology</code></td>
+</tr>
+<tr>
+<td>Split</td>
+<td><code>train_size</code>, <code>val_size</code>, <code>offset</code>, <code>split_seed</code>, <code>actual_train_ids</code>, <code>actual_val_ids</code>, <code>actual_{train,val}_level_counts</code>, <code>actual_{train,val}_repo_counts</code>, <code>actual_{train,val}_profile_counts</code>, <code>split_manifest</code>, <code>protected_eval_sample</code></td>
+</tr>
+<tr>
+<td>Eval-ID protection</td>
+<td><code>exclude_real_eval_ids</code>, <code>excluded_real_eval_id_count</code>, <code>excluded_real_eval_ids</code>, <code>train_real_eval_overlap</code>, <code>val_real_eval_overlap</code></td>
+</tr>
+<tr>
+<td>Prompts</td>
+<td><code>adapter_roles</code>, <code>compiled_prompt_files</code>, <code>compiled_prompt_quality</code>, <code>compiled_prompt_sanitizer</code>; MIPRO adds <code>compiled_demo_files</code>, <code>selected_demo_counts</code></td>
+</tr>
+<tr>
+<td>GEPA settings</td>
+<td><code>n_agents</code>, <code>n_rounds</code>, <code>auto</code>, <code>max_full_evals</code>, <code>reflection_minibatch_size</code>, <code>num_threads</code>, <code>component_selector</code>, <code>skip_perfect_score</code>, <code>gepa_log_dir</code></td>
+</tr>
+<tr>
+<td>MIPRO settings</td>
+<td><code>n_agents</code>, <code>n_rounds</code>, <code>auto</code>, <code>num_candidates</code>, <code>num_trials</code>, <code>max_bootstrapped_demos</code>, <code>max_labeled_demos</code>, <code>metric_threshold</code>, <code>minibatch</code>, <code>minibatch_size</code>, <code>minibatch_full_eval_steps</code>, <code>num_threads</code>, <code>seed</code>, <code>init_temperature</code>, <code>view_data_batch_size</code>, <code>program_aware_proposer</code>, <code>data_aware_proposer</code>, <code>tip_aware_proposer</code>, <code>fewshot_aware_proposer</code>, <code>dataset_summary_compacted</code>, <code>mipro_log_dir</code></td>
+</tr>
+<tr>
+<td>Environment</td>
+<td><code>output_contracts</code>, <code>output_contract_version</code>, <code>dspy_cache_dir</code>, <code>dspy_version</code>, <code>task_model</code>, <code>reflection_model</code>, <code>task_endpoints</code>, <code>reflection_endpoint</code></td>
+</tr>
+<tr>
+<td>Scores</td>
+<td><code>baseline_score</code>, <code>compiled_score</code>, <code>delta</code>, <code>accept_compiled_prompt</code>, <code>selected_prompt_source</code>, <code>selection_reason</code>, <code>acceptance_diagnostics</code>, <code>baseline_failure_summary</code>, <code>compiled_failure_summary</code>, <code>baseline_records</code>, <code>compiled_records</code></td>
+</tr>
+<tr>
+<td>Team-size cells</td>
+<td><code>teamsizes_enabled</code>, <code>base_topology</code>, <code>team_size</code>, <code>teamsizes_module</code></td>
+</tr>
+<tr>
+<td>Communication cells</td>
+<td><code>communications_enabled</code>, <code>base_topology</code>, <code>communications_format</code>, <code>communications_module</code>, <code>communications_base_module</code></td>
+</tr>
+</tbody>
+</table>
+<p>A failure summary holds <code>n</code>, <code>zero_score_count</code>, <code>zero_score_ids</code>, <code>infra_error_count</code>, <code>infra_error_ids</code> and <code>model_failure_count</code>. A GEPA <code>--baseline-only</code> run writes a shorter file with <code>compiled_score</code> and <code>delta</code> set to <code>null</code>. <code>n_agents</code> and <code>n_rounds</code> record the flags even on topologies that ignore them.</p>
+<h2 id="acceptance-and-selection_reason">Acceptance and <code>selection_reason</code><a class="headerlink" href="#acceptance-and-selection_reason" title="Link to this section">#</a></h2>
+<p><code>delta</code> is always <code>compiled_score - baseline_score</code>, whether or not the compiled prompts were kept. The decision is in <code>accept_compiled_prompt</code> and <code>selected_prompt_source</code> (<code>compiled</code> or <code>baseline</code>), and <code>acceptance_diagnostics.policy</code> names the rule applied.</p>
+<table>
+<thead>
+<tr>
+<th><code>selection_reason</code></th>
+<th>Kept</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>compiled_score &gt;= baseline_score</code></td>
+<td>compiled</td>
+</tr>
+<tr>
+<td><code>compiled_score &lt; baseline_score; keep baseline prompt for final eval</code></td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><code>compiled validation has infra errors; keep baseline prompt for final eval</code></td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><code>toolhop compiled_score &gt; baseline_score</code></td>
+<td>compiled</td>
+</tr>
+<tr>
+<td><code>toolhop compiled_score tied baseline with row-level improvements and no regressions</code></td>
+<td>compiled</td>
+</tr>
+<tr>
+<td><code>toolhop compiled_score &lt; baseline_score; keep baseline prompt for final eval</code></td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><code>toolhop compiled_score tied baseline but regressed validation rows; keep baseline prompt</code></td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><code>toolhop compiled_score tied baseline with no row-level gain; keep baseline prompt</code></td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><code>toolhop compiled prompt failed anti-memorization quality checks; keep baseline prompt</code></td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><code>baseline-only run; no compiled prompt produced</code></td>
+<td>baseline</td>
+</tr>
+</tbody>
+</table>
+<p>An infrastructure error is any compiled record whose trace or answer contains a known failure marker, such as a connection error, a context-length error or a Python traceback.</p>
+<h2 id="baseline-runner-outputs">Baseline runner outputs<a class="headerlink" href="#baseline-runner-outputs" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Runner family</th>
+<th>Output flag</th>
+<th>Files</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpqa</code>, <code>hotpotqa</code>, <code>math</code>, <code>lcb</code>, <code>apps</code></td>
+<td><code>--out &lt;file.jsonl&gt;</code></td>
+<td>One JSONL record per instance; nothing is saved without <code>--out</code></td>
+</tr>
+<tr>
+<td><code>bfcl</code>, <code>swe</code></td>
+<td><code>--out-dir &lt;dir&gt;</code></td>
+<td><code>predictions.jsonl</code>, <code>results.jsonl</code>, <code>traces/</code>; SWE-bench adds <code>patches/&lt;id&gt;.diff</code>. The default folder differs per runner, for example <code>results/bfcl</code> for Single</td>
+</tr>
+<tr>
+<td><code>toolhop</code>, <code>apibank</code></td>
+<td><code>--out-dir &lt;dir&gt;</code></td>
+<td><code>predictions.jsonl</code>, <code>results.jsonl</code>, <code>traces/</code>; default <code>results/&lt;dataset&gt;/&lt;topology&gt;_&lt;framework&gt;/</code></td>
+</tr>
+<tr>
+<td>Communication runners</td>
+<td><code>--out &lt;file.jsonl&gt;</code></td>
+<td>Default <code>results/communications_baseline/&lt;topology&gt;_&lt;dataset&gt;_&lt;format&gt;/results.jsonl</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>scripts/run_topologies.sh</code> writes the first family to <code>results/topologies_baseline/&lt;topology&gt;_&lt;dataset&gt;/predictions.jsonl</code>, with the framework in the topology part (for example <code>centralized_autogen_hotpotqa</code>). Team-size runners follow their topology's family, but their default paths don't include the team size, so always pass an explicit path.</p>
+<h2 id="percentage-points">Percentage points<a class="headerlink" href="#percentage-points" title="Link to this section">#</a></h2>
+<p>Scores are fractions in [0, 1]. Multiply by 100 for percent and report a gain as the difference in percentage points (pp). On 25 validation rows one row is 4 pp.</p>
+<h2 id="load-every-run">Load every run<a class="headerlink" href="#load-every-run" title="Link to this section">#</a></h2>
+<p>This reads every <code>meta.json</code> under the GEPA sweep root and prints the baseline, the score of the prompts that were kept, and both deltas in pp. Run it from the repository root; it needs only the standard library.</p>
+<pre class="highlight"><code class="language-python">import json
+from pathlib import Path
+
+ROOT = Path("optimizers/gepa/results/gepa")  # OUT_ROOT used by run_gepa.sh
+
+rows = []
+for path in sorted(ROOT.glob("*/meta.json")):
+    meta = json.loads(path.read_text())
+    if meta.get("compiled_score") is None:  # --baseline-only run
+        continue
+    base = 100 * meta["baseline_score"]
+    kept = 100 * (meta["compiled_score"] if meta["accept_compiled_prompt"]
+                  else meta["baseline_score"])
+    rows.append((meta["topology"], meta["dataset"], base, kept,
+                 kept - base, 100 * meta["delta"]))
+
+print(f"{'topology':&lt;46}{'dataset':&lt;10}{'base':&gt;7}{'opt':&gt;7}{'Δ pp':&gt;8}{'raw Δ':&gt;8}")
+for topo, ds, base, opt, gain, raw in rows:
+    print(f"{topo:&lt;46}{ds:&lt;10}{base:7.1f}{opt:7.1f}{gain:+8.1f}{raw:+8.1f}")</code></pre>
+<p><code>Δ pp</code> is the gain of the prompts the pilot kept, so it is never negative. <code>raw Δ</code> is the compiled prompts' change, which shows regressions the acceptance rule caught. For MIPRO, point <code>ROOT</code> at <code>optimizers/mipro/results/mipro</code>.</p>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/evaluation/results.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../protocol/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Evaluation Protocol</b></a>
+      <a class="pager-link next" href="../../extending/add-dataset/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Add a Dataset</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#optimizer-run-folder">Optimizer run folder</a>
+      </li>
+      <li><a href="#statusjson">status.json</a>
+      </li>
+      <li><a href="#validation-records">Validation records</a>
+      </li>
+      <li><a href="#compiled-and-compiled_raw">compiled/ and compiled_raw/</a>
+      </li>
+      <li><a href="#metajson">meta.json</a>
+      </li>
+      <li><a href="#acceptance-and-selection_reason">Acceptance and selection_reason</a>
+      </li>
+      <li><a href="#baseline-runner-outputs">Baseline runner outputs</a>
+      </li>
+      <li><a href="#percentage-points">Percentage points</a>
+      </li>
+      <li><a href="#load-every-run">Load every run</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="../../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

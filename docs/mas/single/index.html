@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="Single · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/mas/single/">
+  <title>Single · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url="../.." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="../..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="../..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link is-active" href="./" aria-current="page">Single</a></li>
+  <li><a class="nav-link" href="../independent/">Independent</a></li>
+  <li><a class="nav-link" href="../sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
+  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../extending/add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../../extending/add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../../extending/add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../reference/cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../../reference/environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../../reference/repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Multi-Agent Systems</span>
+    </p>
+    <article class="prose">
+      <h1 id="single">Single<a class="headerlink" href="#single" title="Link to this section">#</a></h1>
+<p class="lede">One agent solves the task end to end in a reason-act loop with its tools. It is the control condition: every multi-agent result is read against it.</p>
+<div class="diagram-wrap"><svg class="topo-diagram" style="--tc: var(--t-single)" viewBox="0 0 620 192" role="img" aria-label="Single topology: one agent calls tools in a loop and answers." xmlns="http://www.w3.org/2000/svg"><rect class="io" x="15.0" y="103.0" width="74" height="34" rx="17"/><text x="52.0" y="124.5" text-anchor="middle">Task</text><path class="edge-io" d="M89.0 120.0 L220.5 120.0"/><path class="head-io" d="M228.0 120.0 L220.5 115.9 L220.5 124.1Z"/><rect class="node-strong" x="230.0" y="91.0" width="160" height="58" rx="12"/><text class="t-on" x="310.0" y="118.0" text-anchor="middle">Agent</text><text class="t-small t-on" x="310.0" y="133.0" text-anchor="middle">reasons and acts</text><rect class="node" x="250.0" y="12.0" width="120" height="36" rx="12"/><text x="310.0" y="34.5" text-anchor="middle">Tools</text><path class="edge" d="M290.0 91.0 L290.0 57.5"/><path class="head" d="M290.0 50.0 L285.9 57.5 L294.1 57.5Z"/><path class="edge" d="M330.0 50.0 L330.0 83.5"/><path class="head" d="M330.0 91.0 L334.1 83.5 L325.9 83.5Z"/><text class="t-small" x="282" y="74" text-anchor="end">call</text><text class="t-small" x="338" y="74" text-anchor="start">result</text><path class="edge-io" d="M390.0 120.0 L522.5 120.0"/><path class="head-io" d="M530.0 120.0 L522.5 115.9 L522.5 124.1Z"/><rect class="io" x="531.0" y="103.0" width="74" height="34" rx="17"/><text x="568.0" y="124.5" text-anchor="middle">Answer</text><text class="t-small" x="310" y="178" text-anchor="middle">Loops until the agent replies without a tool call</text></svg></div>
+
+<div class="facts">
+<div><span>Agents</span>1</div>
+<div><span>Rounds</span>ReAct loop</div>
+<div><span>Frameworks</span>LangGraph</div>
+<div><span>Aggregation</span>None</div>
+</div>
+<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Link to this section">#</a></h2>
+<ol>
+<li>The runner reads the seed prompt <code>configs/prompts/single/&lt;dataset&gt;/solver.txt</code> and wraps it with the dataset's protected output contract from <code>topologies/output_contracts.py</code> (for HotpotQA: end with one line <code>Answer: &lt;short-form&gt;</code>).</li>
+<li>It builds one agent with LangGraph's prebuilt <code>create_react_agent</code>, bound to the dataset's tools: <code>wikipedia_search</code> and <code>wikipedia_page</code> for HotpotQA, <code>calculator</code> for GPQA and MATH, <code>python_exec</code> for LiveCodeBench and APPS, <code>file_read</code>, <code>file_write</code>, <code>list_dir</code>, <code>search_repo</code> and <code>shell_exec</code> for SWE-bench, and tools built from the function schemas for BFCL.</li>
+<li>The agent alternates between reasoning and tool calls. Each tool result is appended to its history. The loop ends when the model replies without a tool call, or when LangGraph's recursion limit is reached (25 steps; 100 for SWE-bench).</li>
+<li>The runner parses the final message with the dataset's extractor and scores it.</li>
+</ol>
+<p>There is no hand-off, no second agent and no vote. Whatever the one prompt makes the model do is the result.</p>
+<h2 id="agent-role-and-seed-prompt">Agent role and seed prompt<a class="headerlink" href="#agent-role-and-seed-prompt" title="Link to this section">#</a></h2>
+<p>Every dataset uses a single role, <code>solver</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Dataset folder</th>
+<th>Seed prompt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpqa</code>, <code>hotpotqa</code>, <code>math</code>, <code>lcb</code>, <code>apps</code>, <code>bfcl</code>, <code>swe</code>, <code>toolhop</code>, <code>apibank</code></td>
+<td><code>configs/prompts/single/&lt;dataset&gt;/solver.txt</code></td>
+</tr>
+</tbody>
+</table>
+<p>The role descriptions the prompts were generated from are under <code>single:</code> in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/configs/prompts/roles.yaml"><code>configs/prompts/roles.yaml</code></a>. The optimizer reads these files and never overwrites them; it writes its compiled prompt to its own output folder.</p>
+<h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Link to this section">#</a></h2>
+<ul>
+<li><strong>Reference scaffold:</strong> <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/single/langgraph_base.py"><code>topologies/single/langgraph_base.py</code></a> shows the pattern in 54 lines: <code>create_react_agent</code> with toy tools (<code>add</code>, <code>multiply</code>, a mock <code>web_search</code>). It is a demo, not a benchmark runner.</li>
+<li><strong>Dataset runners:</strong> <code>topologies/single/&lt;dataset&gt;/langgraph_&lt;dataset&gt;.py</code>, one per dataset. Each wires real tools, the dataset loader, the scorer and the batch loop around the same ReAct agent.</li>
+<li><strong>ToolHop and API-Bank:</strong> these two runners don't use LangGraph objects. They call the endpoint through the <code>openai</code> client in a plain tool loop (ToolHop allows 9 turns by default, <code>TOOLHOP_MAX_TURNS</code>). Every other topology's ToolHop and API-Bank runner carries a copy of the same core.</li>
+</ul>
+<h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Link to this section">#</a></h2>
+<p>Run from the repository root with a model endpoint configured (<a href="../../getting-started/connect-a-model/">Connect a Model</a>).</p>
+<pre class="highlight"><code class="language-bash">python -m topologies.single.hotpotqa.langgraph_hotpotqa</code></pre>
+<pre class="highlight"><code class="language-bash">python -m topologies.single.hotpotqa.langgraph_hotpotqa --batch --limit 100 \
+  --out results/topologies_baseline/single_hotpotqa/predictions.jsonl</code></pre>
+<p>Other datasets follow the same module path with a different folder and file name, for example <code>topologies.single.math.langgraph_math</code>. BFCL, SWE-bench, ToolHop and API-Bank take <code>--out-dir</code> instead of <code>--out</code>, and BFCL and SWE-bench reject <code>--batch</code>. See <a href="../../reference/cli/">Command-Line Flags</a> for each family.</p>
+<h2 id="optimize-it">Optimize it<a class="headerlink" href="#optimize-it" title="Link to this section">#</a></h2>
+<p>The optimizer topology name is <code>single</code>. It has one prompt to tune, <code>solver</code>.</p>
+<pre class="highlight"><code class="language-bash">cd optimizers/gepa
+python -m real_runner_gepa.pilots.run_gepa_dataset --dataset math --topology single \
+  --train-size 25 --val-size 25 --max-full-evals 5 --out results/gepa/single_math</code></pre>
+<p>See <a href="../../optimizers/running/">Run an Optimizer</a> for endpoints and outputs.</p>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/mas/single.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../topologies/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Workflow Topologies</b></a>
+      <a class="pager-link next" href="../independent/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Independent</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#how-it-works">How it works</a>
+      </li>
+      <li><a href="#agent-role-and-seed-prompt">Agent role and seed prompt</a>
+      </li>
+      <li><a href="#implementation">Implementation</a>
+      </li>
+      <li><a href="#run-it">Run it</a>
+      </li>
+      <li><a href="#optimize-it">Optimize it</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="../../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

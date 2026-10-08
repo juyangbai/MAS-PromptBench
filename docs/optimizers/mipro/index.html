@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="MIPRO · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/optimizers/mipro/">
+  <title>MIPRO · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url="../.." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="../..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="../..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../">Overview</a></li>
+  <li><a class="nav-link" href="../gepa/">GEPA</a></li>
+  <li><a class="nav-link is-active" href="./" aria-current="page">MIPRO</a></li>
+  <li><a class="nav-link" href="../running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../extending/add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../../extending/add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../../extending/add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../reference/cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../../reference/environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../../reference/repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Optimizers</span>
+    </p>
+    <article class="prose">
+      <h1 id="mipro">MIPRO<a class="headerlink" href="#mipro" title="Link to this section">#</a></h1>
+<p class="lede">MIPRO searches over two things at once: the instruction text of each role and a set of few-shot demonstrations for it. This page explains how DSPy's MIPROv2 runs over the real topology runners, lists every flag of the pilot with its default, and shows a worked command.</p>
+<div class="facts">
+<div><span>Entry point</span>run_mipro_dataset</div>
+<div><span>Changes</span>Instructions + demos</div>
+<div><span>Sweep split</span>25 train / 25 val</div>
+<div><span>Sweep budget</span>3 candidates, 3 trials</div>
+</div>
+<h2 id="how-the-search-runs">How the search runs<a class="headerlink" href="#how-the-search-runs" title="Link to this section">#</a></h2>
+<p>The pilot <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/mipro/real_runner_mipro/pilots/run_mipro_dataset.py"><code>run_mipro_dataset.py</code></a> loads the dataset, draws the train and validation splits, scores the seed prompts on validation, then calls <code>MIPROv2.compile(seed_program, trainset=train, valset=val)</code>. DSPy's MIPROv2 works in three steps, and every candidate it scores is a full run of the real multi-agent system.</p>
+<ol>
+<li><strong>Bootstrap demos.</strong> It runs the program on training rows and keeps traces whose metric score passes as candidate demo sets, up to <code>--max-bootstrapped-demos</code> per set. <code>--max-labeled-demos</code> adds raw training examples; its pilot default is 0.</li>
+<li><strong>Propose instructions.</strong> The proposal model writes <code>--num-candidates</code> instructions per role. Four toggles decide what it sees: the program (<code>--program-aware-proposer</code>), a summary of the training data (<code>--data-aware-proposer</code>, built from batches of <code>--view-data-batch-size</code> rows), a random prompting tip (<code>--tip-aware-proposer</code>) and the bootstrapped demos (<code>--fewshot-aware-proposer</code>).</li>
+<li><strong>Search combinations.</strong> For <code>--num-trials</code> trials, an Optuna TPE sampler picks one instruction and one demo set per role, and the program is scored on the validation split. With <code>--minibatch</code>, trials use <code>--minibatch-size</code> rows and the best candidate gets a full validation pass every <code>--minibatch-full-eval-steps</code> trials. The best combination is returned.</li>
+</ol>
+<p>MIPRO uses only the metric's numeric score. The feedback text that GEPA reflects on is ignored.</p>
+<h3 id="how-demos-reach-the-runner">How demos reach the runner<a class="headerlink" href="#how-demos-reach-the-runner" title="Link to this section">#</a></h3>
+<p>The topology runners read plain system prompts, not DSPy demo objects. The MIPRO bridge (<a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/mipro/real_runner_mipro/mipro_programs.py"><code>mipro_programs.py</code></a>) therefore renders each role's selected demos into its prompt, under a <code>### MIPROv2 Selected Demonstrations</code> heading, as one JSON block per demo. Long values are trimmed: strings to at most 1,400 characters (head and tail kept), dictionaries to 12 keys and lists to 6 items. The prompt the runner executes is the instruction plus these blocks.</p>
+<h3 id="data-summary-compaction">Data summary compaction<a class="headerlink" href="#data-summary-compaction" title="Link to this section">#</a></h3>
+<p>For LCB, the data summary the proposal model reads is built from compacted rows: the problem is cut to 2,500 characters, starter code to 1,000, and hidden tests are replaced by a count. Execution and scoring still use the full rows. <code>meta.json</code> records whether this happened in <code>dataset_summary_compacted</code>.</p>
+<h3 id="budget">Budget<a class="headerlink" href="#budget" title="Link to this section">#</a></h3>
+<p>Without <code>--auto</code>, <code>--num-candidates</code> and <code>--num-trials</code> both default to 3. <code>--auto light|medium|heavy</code> uses DSPy's preset budget instead; passing <code>--num-candidates</code> or <code>--num-trials</code> together with <code>--auto</code> stops the pilot with an error. There is no early stopping.</p>
+<h2 id="flags">Flags<a class="headerlink" href="#flags" title="Link to this section">#</a></h2>
+<p>All flags of <code>python -m real_runner_mipro.pilots.run_mipro_dataset</code>, with defaults from its argument parser:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--dataset</code></td>
+<td>required</td>
+<td>One of <code>apibank apps bfcl gpqa hotpotqa lcb math swe toolhop</code></td>
+</tr>
+<tr>
+<td><code>--topology</code></td>
+<td>required</td>
+<td>A name from <code>registry.topologies(dataset)</code>; see <a href="../running/#choose-a-topology-name">topology names</a></td>
+</tr>
+<tr>
+<td><code>--train-size</code></td>
+<td><code>1</code></td>
+<td>Training rows</td>
+</tr>
+<tr>
+<td><code>--val-size</code></td>
+<td><code>1</code></td>
+<td>Validation rows</td>
+</tr>
+<tr>
+<td><code>--offset</code></td>
+<td><code>0</code></td>
+<td>Rows dropped from the pool before the split</td>
+</tr>
+<tr>
+<td><code>--split-seed</code></td>
+<td><code>0</code></td>
+<td>Seed for the split shuffle</td>
+</tr>
+<tr>
+<td><code>--n-agents</code></td>
+<td><code>2</code></td>
+<td>Agents for <code>independent</code>, <code>decentralized</code>, <code>decentralized_openai</code> and the independent/decentralized communication variants</td>
+</tr>
+<tr>
+<td><code>--n-rounds</code></td>
+<td><code>1</code></td>
+<td>Debate rounds for the decentralized variants</td>
+</tr>
+<tr>
+<td><code>--auto</code></td>
+<td>none</td>
+<td><code>light</code>, <code>medium</code> or <code>heavy</code></td>
+</tr>
+<tr>
+<td><code>--num-candidates</code></td>
+<td><code>3</code> without <code>--auto</code></td>
+<td>Instruction and demo-set candidates per role</td>
+</tr>
+<tr>
+<td><code>--num-trials</code></td>
+<td><code>3</code> without <code>--auto</code></td>
+<td>Search trials</td>
+</tr>
+<tr>
+<td><code>--max-bootstrapped-demos</code></td>
+<td><code>4</code></td>
+<td>Bootstrapped demos per set</td>
+</tr>
+<tr>
+<td><code>--max-labeled-demos</code></td>
+<td><code>0</code></td>
+<td>Raw training examples per set</td>
+</tr>
+<tr>
+<td><code>--metric-threshold</code></td>
+<td>none</td>
+<td>Minimum score for a bootstrapped trace to become a demo</td>
+</tr>
+<tr>
+<td><code>--minibatch</code></td>
+<td>off</td>
+<td>Score trials on validation minibatches</td>
+</tr>
+<tr>
+<td><code>--minibatch-size</code></td>
+<td><code>35</code></td>
+<td>Rows per minibatch</td>
+</tr>
+<tr>
+<td><code>--minibatch-full-eval-steps</code></td>
+<td><code>5</code></td>
+<td>Trials between full validation passes</td>
+</tr>
+<tr>
+<td><code>--num-threads</code></td>
+<td><code>1</code></td>
+<td>Parallel evaluation threads</td>
+</tr>
+<tr>
+<td><code>--seed</code></td>
+<td><code>9</code></td>
+<td>Optimizer seed</td>
+</tr>
+<tr>
+<td><code>--init-temperature</code></td>
+<td><code>1.0</code></td>
+<td>Proposal sampling temperature</td>
+</tr>
+<tr>
+<td><code>--view-data-batch-size</code></td>
+<td><code>10</code></td>
+<td>Rows per batch in the data summary</td>
+</tr>
+<tr>
+<td><code>--max-errors</code></td>
+<td>none</td>
+<td>Errors tolerated before aborting; none uses DSPy's setting</td>
+</tr>
+<tr>
+<td><code>--[no-]program-aware-proposer</code></td>
+<td>on</td>
+<td>Show the program to the proposer</td>
+</tr>
+<tr>
+<td><code>--[no-]data-aware-proposer</code></td>
+<td>on</td>
+<td>Show the data summary</td>
+</tr>
+<tr>
+<td><code>--[no-]tip-aware-proposer</code></td>
+<td>on</td>
+<td>Add a prompting tip</td>
+</tr>
+<tr>
+<td><code>--[no-]fewshot-aware-proposer</code></td>
+<td>on</td>
+<td>Show bootstrapped demos</td>
+</tr>
+<tr>
+<td><code>--provide-traceback</code></td>
+<td>off</td>
+<td>Include tracebacks of failed runs in DSPy's logs</td>
+</tr>
+<tr>
+<td><code>--verbose</code></td>
+<td>off</td>
+<td>Verbose DSPy output</td>
+</tr>
+<tr>
+<td><code>--out</code></td>
+<td><code>optimizers/mipro/results/&lt;topology&gt;_&lt;dataset&gt;_real_mipro</code></td>
+<td>Output folder; a relative path resolves from your working directory</td>
+</tr>
+</tbody>
+</table>
+<p>The MIPRO pilot has no <code>--baseline-only</code> and no <code>--early-stop-patience</code>. Team-size names such as <code>sequential_r4</code> take their agent count from the name.</p>
+<div class="admonition warning">
+<p class="admonition-title">Match the runner shape</p>
+<p>The topology runners default to 4 agents and 2 debate rounds, but this pilot defaults to 2 and 1, and <code>run_mipro.sh</code> does not override them. Pass <code>--n-agents 4 --n-rounds 2</code> for Independent and Decentralized cells.</p>
+</div>
+<h2 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Link to this section">#</a></h2>
+<p>Each MIPRO variable falls back to its GEPA counterpart, so one set of exports can serve both optimizers.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Fallback</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MIPRO_TASK_ENDPOINTS</code></td>
+<td><code>GEPA_TASK_ENDPOINTS</code></td>
+<td><code>localhost</code> ports 15000 to 15007</td>
+<td>Comma-separated agent endpoints</td>
+</tr>
+<tr>
+<td><code>MIPRO_REFL_ENDPOINT</code></td>
+<td><code>GEPA_REFL_ENDPOINT</code></td>
+<td><code>http://localhost:15000/v1</code></td>
+<td>Proposal-model endpoint</td>
+</tr>
+<tr>
+<td><code>MIPRO_TASK_MODEL</code></td>
+<td><code>TASK_MODEL</code></td>
+<td><code>Qwen/Qwen3.5-9B</code></td>
+<td>Agent model name</td>
+</tr>
+<tr>
+<td><code>MIPRO_REFL_MODEL</code></td>
+<td><code>REFL_MODEL</code></td>
+<td><code>Qwen/Qwen3.5-122B-A10B-FP8</code></td>
+<td>Proposal model name</td>
+</tr>
+<tr>
+<td><code>MIPRO_EXCLUDE_REAL_EVAL_IDS</code></td>
+<td><code>GEPA_EXCLUDE_REAL_EVAL_IDS</code></td>
+<td>on when unset</td>
+<td><code>0</code>, <code>false</code>, <code>no</code> or <code>off</code> puts eval IDs back in the pool</td>
+</tr>
+<tr>
+<td><code>MIPRO_DATA_SUMMARY_COMPACT_DATASETS</code></td>
+<td><code>MIPRO_REFLECTION_COMPACT_DATASETS</code>, then <code>GEPA_REFLECTION_COMPACT_DATASETS</code></td>
+<td><code>lcb</code></td>
+<td>Datasets with a compacted data summary; <code>*</code> for all</td>
+</tr>
+<tr>
+<td><code>MODEL_ID</code></td>
+<td>none</td>
+<td>unset</td>
+<td>When set, overrides the model name the agents request</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>none</td>
+<td><code>EMPTY</code></td>
+<td>Key for both endpoints</td>
+</tr>
+</tbody>
+</table>
+<p><code>REAL_RUNNER_TASK_MAX_TOKENS</code>, <code>REAL_RUNNER_FAIL_ON_ADAPTER_ERROR</code>, <code>LCB_COMPILED_PROMPT_CHAR_LIMIT</code>, <code>LCB_COMPILED_PROMPT_HEAD_CHARS</code> and <code>BFCL_CATEGORY</code> behave as on the <a href="../gepa/#environment-variables">GEPA page</a>. The proposal model samples at temperature 1.0 with up to 48,000 output tokens.</p>
+<h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Link to this section">#</a></h2>
+<p>The <code>--out</code> folder holds <code>status.json</code>, <code>baseline_val.jsonl</code>, <code>compiled_val.jsonl</code>, <code>optimized_val.jsonl</code>, <code>meta.json</code>, <code>compiled/&lt;role&gt;.txt</code> (instruction plus rendered demos), <code>compiled_raw/&lt;role&gt;.txt</code>, <code>compiled_demos/&lt;role&gt;.json</code> (<code>{"role": ..., "demos": [...]}</code>) and MIPRO's log folder <code>mipro_state/</code>. <code>meta.json</code> adds <code>compiled_demo_files</code> and <code>selected_demo_counts</code>. <a href="../../evaluation/results/">Read the Results</a> covers every file.</p>
+<h2 id="worked-command">Worked command<a class="headerlink" href="#worked-command" title="Link to this section">#</a></h2>
+<pre class="highlight"><code class="language-bash">cd optimizers/mipro
+export MIPRO_TASK_ENDPOINTS=http://localhost:8000/v1,http://localhost:8001/v1
+export MIPRO_REFL_ENDPOINT=http://localhost:9000/v1
+python -m real_runner_mipro.pilots.run_mipro_dataset \
+  --dataset math --topology decentralized \
+  --train-size 25 --val-size 25 --num-candidates 3 --num-trials 3 \
+  --num-threads 4 --n-agents 4 --n-rounds 2 \
+  --out results/mipro/decentralized_math</code></pre>
+<p>Results land in <code>optimizers/mipro/results/mipro/decentralized_math/</code>. For a wiring check, use <code>--train-size 1 --val-size 1 --num-candidates 1 --num-trials 1</code> and inspect the files under <code>--out</code>.</p>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/optimizers/mipro.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../gepa/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>GEPA</b></a>
+      <a class="pager-link next" href="../running/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Run an Optimizer</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#how-the-search-runs">How the search runs</a>
+        <ul><li><a href="#how-demos-reach-the-runner">How demos reach the runner</a></li><li><a href="#data-summary-compaction">Data summary compaction</a></li><li><a href="#budget">Budget</a></li>
+        </ul>
+      </li>
+      <li><a href="#flags">Flags</a>
+      </li>
+      <li><a href="#environment-variables">Environment variables</a>
+      </li>
+      <li><a href="#outputs">Outputs</a>
+      </li>
+      <li><a href="#worked-command">Worked command</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="../../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

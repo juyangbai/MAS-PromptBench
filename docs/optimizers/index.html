@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="Overview · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/optimizers/">
+  <title>Overview · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url=".." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link is-active" href="./" aria-current="page">Overview</a></li>
+  <li><a class="nav-link" href="gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../evaluation/protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../evaluation/results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../extending/add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../extending/add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../extending/add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../reference/cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../reference/environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../reference/repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Optimizers</span>
+    </p>
+    <article class="prose">
+      <h1 id="optimizers">Optimizers<a class="headerlink" href="#optimizers" title="Link to this section">#</a></h1>
+<p class="lede">MAS-PromptBench optimizes the system prompts of a multi-agent system while the model weights stay frozen. GEPA and MIPRO both score every candidate prompt set by running the real topology runner, so the prompts they return run unchanged in the benchmark.</p>
+<h2 id="what-gets-optimized">What gets optimized<a class="headerlink" href="#what-gets-optimized" title="Link to this section">#</a></h2>
+<p>A multi-agent system <span class="arithmatex">\( M \)</span> is a topology plus a set of roles: a planner, a solver, a manager, a debater and so on. Each role has a system prompt. The seed prompts live in <code>configs/prompts/&lt;topology&gt;/&lt;dataset&gt;/&lt;role&gt;.txt</code>, one file per role. The optimizers treat the joint set <span class="arithmatex">\( \pi = (\pi_1, \dots, \pi_K) \)</span> of role prompts as the only variable. The agent model, the topology wiring, the tools and the scorer stay fixed.</p>
+<p>The quantity of interest is the prompt-optimization gain:</p>
+<div class="arithmatex">\[
+\Delta = \mathbb{E}_{(x, y) \sim \mathcal{D}}\left[\mu\big(M(x; \pi^\ast), y\big) - \mu\big(M(x; \pi^0), y\big)\right]
+\]</div>
+<p>Here <span class="arithmatex">\( \pi^0 \)</span> is the seed prompt set, <span class="arithmatex">\( \pi^\ast \)</span> the optimized set, <span class="arithmatex">\( \mu \)</span> the task scorer and <span class="arithmatex">\( (x, y) \)</span> a task instance with its reference answer. A run's <code>meta.json</code> reports the sample estimate as <code>delta = compiled_score - baseline_score</code>, both means over the same validation rows. Scores are fractions in [0, 1]; multiply by 100 for percentage points.</p>
+<p>Neither optimizer writes to <code>configs/</code>. Compiled prompts go to the run's <code>--out</code> folder.</p>
+<h2 id="the-real-runner-bridge">The real-runner bridge<a class="headerlink" href="#the-real-runner-bridge" title="Link to this section">#</a></h2>
+<p>Each optimizer has its own bridge package: <a href="https://github.com/juyangbai/MAS-PromptBench/tree/main/optimizers/gepa/real_runner_gepa"><code>real_runner_gepa/</code></a> and <a href="https://github.com/juyangbai/MAS-PromptBench/tree/main/optimizers/mipro/real_runner_mipro"><code>real_runner_mipro/</code></a>. They follow the same three layers.</p>
+<ol>
+<li><strong>Adapter</strong> (<code>adapters/</code>). One class per <code>(topology, dataset)</code> pair implements the <code>RealRunnerAdapter</code> protocol in <code>protocol.py</code>: <code>roles()</code>, <code>get_prompt()</code>, <code>set_prompt()</code>, <code>reset()</code>, <code>run_example()</code> and <code>format_role_trace()</code>. It loads the seed prompts, imports the real runner module (for example <code>topologies.single.hotpotqa.langgraph_hotpotqa</code>) and, for each example, patches the module's prompt loader, model client, endpoint, model name and agent or round counts before calling the runner's own solve function.</li>
+<li><strong>Program</strong> (<code>programs.py</code>, plus <code>mipro_programs.py</code> for MIPRO). A DSPy module registers one predictor per mutable role. The predictor's instruction text is the role prompt, so the optimizer finds and edits the roles through <code>named_predictors()</code>.</li>
+<li><strong>Forward pass.</strong> <code>forward()</code> copies the current instructions into the adapter, runs the real runner once, and records one trace per role for the optimizer to read.</li>
+</ol>
+<p><code>registry.py</code> maps each <code>(dataset, topology)</code> name to its adapter class. The bridge also re-attaches two things the optimizer cannot edit: the protected final-output contract for the role that emits the answer, and a few format nudges (code-first for APPS and LCB coders, patch-first for SWE). See <a href="../evaluation/protocol/#output-contracts">Evaluation Protocol</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Scoring during optimization</p>
+<p>The runner code is the real one, but the metric each optimizer maximizes lives in <code>datasets/&lt;dataset&gt;.py</code>. For LCB and APPS it runs only the first three tests, and for SWE-bench it checks that the patch is a non-trivial unified diff. <a href="../evaluation/protocol/#scorers">Evaluation Protocol</a> lists every metric.</p>
+</div>
+<h2 id="gepa-and-mipro-compared">GEPA and MIPRO compared<a class="headerlink" href="#gepa-and-mipro-compared" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>GEPA</th>
+<th>MIPRO</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Method</td>
+<td>Reflective prompt evolution (DSPy <code>GEPA</code>)</td>
+<td>Instruction and few-shot demo search (DSPy <code>MIPROv2</code>)</td>
+</tr>
+<tr>
+<td>What changes</td>
+<td>Role instruction text</td>
+<td>Role instruction text plus selected demos, rendered into the prompt</td>
+</tr>
+<tr>
+<td>Proposal signal</td>
+<td>Reflection model reads each role's trace and the metric's feedback text</td>
+<td>Proposal model sees the program, a data summary, tips and bootstrapped demos</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>Mutates one role or all roles per step, tracks candidates on the validation split</td>
+<td>Proposes candidates, then a Bayesian search over instruction and demo combinations</td>
+</tr>
+<tr>
+<td>Budget flags</td>
+<td><code>--max-full-evals</code> or <code>--auto</code></td>
+<td><code>--num-candidates</code> and <code>--num-trials</code>, or <code>--auto</code></td>
+</tr>
+<tr>
+<td>Early stopping</td>
+<td><code>--early-stop-patience</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td>Extra output</td>
+<td><code>gepa_state/</code></td>
+<td><code>mipro_state/</code>, <code>compiled_demos/</code></td>
+</tr>
+<tr>
+<td>Entry point</td>
+<td><code>real_runner_gepa.pilots.run_gepa_dataset</code></td>
+<td><code>real_runner_mipro.pilots.run_mipro_dataset</code></td>
+</tr>
+<tr>
+<td>Sweep launcher</td>
+<td><code>optimizers/gepa/run_gepa.sh</code></td>
+<td><code>optimizers/mipro/run_mipro.sh</code></td>
+</tr>
+</tbody>
+</table>
+<p>The paper's headline results use GEPA.</p>
+<h2 id="trainval-split-and-acceptance">Train/val split and acceptance<a class="headerlink" href="#trainval-split-and-acceptance" title="Link to this section">#</a></h2>
+<p>Each run draws two disjoint splits from the dataset's optimization pool:</p>
+<ul>
+<li><strong>Train</strong> (<code>--train-size</code>): rows the optimizer learns from. GEPA reflects on minibatches of them; MIPRO bootstraps demos and writes its data summary from them.</li>
+<li><strong>Validation</strong> (<code>--val-size</code>): rows the optimizer uses to compare candidates, and the rows the pilot uses for the before/after measurement.</li>
+</ul>
+<p>The frozen eval IDs in <code>benchmarks/&lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json</code> are excluded from the pool unless you turn exclusion off. The pilot defaults are 1 train and 1 validation row, a smoke-test size; the sweeps use 25 and 25. <a href="../evaluation/protocol/#trainval-splits-for-optimization">Evaluation Protocol</a> covers the split rules.</p>
+<p>After optimization the pilot scores the seed prompts and the compiled prompts on the same validation rows and applies one rule: keep the compiled prompts when <code>compiled_score + 1e-9 &gt;= baseline_score</code>, so a tie keeps the compiled prompts. Two cases override it. If any compiled validation record shows an infrastructure error, the baseline prompts are kept. ToolHop uses a stricter rule that also rejects ties without row-level gains and prompts that memorize examples. The decision lands in <code>meta.json</code> as <code>accept_compiled_prompt</code>, <code>selected_prompt_source</code> and <code>selection_reason</code>. See <a href="../evaluation/results/#acceptance-and-selection_reason">Read the Results</a>.</p>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Link to this section">#</a></h2>
+<div class="cards">
+<ul>
+<li><a href="gepa/">GEPA</a>
+  The reflective loop, every flag and its default, and a worked command.</li>
+<li><a href="mipro/">MIPRO</a>
+  Instruction proposal, demo search, every flag and its default.</li>
+<li><a href="running/">Run an Optimizer</a>
+  Endpoints, topology names, sweeps and compute tips, end to end.</li>
+</ul>
+</div>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/optimizers/index.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../mas/team-sizes/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Team Sizes</b></a>
+      <a class="pager-link next" href="gepa/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>GEPA</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#what-gets-optimized">What gets optimized</a>
+      </li>
+      <li><a href="#the-real-runner-bridge">The real-runner bridge</a>
+      </li>
+      <li><a href="#gepa-and-mipro-compared">GEPA and MIPRO compared</a>
+      </li>
+      <li><a href="#trainval-split-and-acceptance">Train/val split and acceptance</a>
+      </li>
+      <li><a href="#next-steps">Next steps</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js" defer></script>
+<script src="../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

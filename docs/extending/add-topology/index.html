@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="Add a Topology · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/extending/add-topology/">
+  <title>Add a Topology · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url="../.." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="../..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="../..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
+  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link is-active" href="./" aria-current="page">Add a Topology</a></li>
+  <li><a class="nav-link" href="../add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../reference/cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../../reference/environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../../reference/repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Extending</span>
+    </p>
+    <article class="prose">
+      <h1 id="add-a-topology">Add a Topology<a class="headerlink" href="#add-a-topology" title="Link to this section">#</a></h1>
+<p class="lede">A topology is a way of wiring agents together, implemented once per dataset. This page covers adding a new topology, or a new framework implementation of an existing one, from the runners to the optimizer adapters.</p>
+<h2 id="choose-what-you-are-adding">Choose what you are adding<a class="headerlink" href="#choose-what-you-are-adding" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Adding</th>
+<th>Runner path</th>
+<th>Seed prompts</th>
+<th>Optimizer topology name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A framework variant of an existing topology</td>
+<td><code>topologies/sequential/&lt;fw&gt;/&lt;ds&gt;/&lt;fw&gt;_&lt;ds&gt;.py</code></td>
+<td>reuse <code>configs/prompts/sequential/&lt;ds&gt;/</code></td>
+<td><code>sequential_&lt;fw&gt;</code></td>
+</tr>
+<tr>
+<td>A new topology</td>
+<td><code>topologies/&lt;topo&gt;/[&lt;fw&gt;/]&lt;ds&gt;/&lt;fw&gt;_&lt;ds&gt;.py</code></td>
+<td>new <code>configs/prompts/&lt;topo&gt;/&lt;ds&gt;/</code></td>
+<td><code>&lt;topo&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>The existing variants follow the first row: the CrewAI runners read the same prompts as the LangGraph sequential runners, and the optimizers call them <code>sequential_crewai</code>. The same holds for <code>centralized_autogen</code> and for <code>decentralized_openai</code>, except that its MATH runner reads <code>configs/prompts/decentralized_openai/math/</code>. See <a href="../../mas/topologies/">Workflow Topologies</a> for the five shapes that exist today.</p>
+<h2 id="1-write-a-base-implementation">1. Write a base implementation<a class="headerlink" href="#1-write-a-base-implementation" title="Link to this section">#</a></h2>
+<p>A base file is a small framework demo of the coordination pattern, kept next to the runners:</p>
+<table>
+<thead>
+<tr>
+<th>Base</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>topologies/single/langgraph_base.py</code></td>
+<td>LangGraph <code>create_react_agent</code></td>
+</tr>
+<tr>
+<td><code>topologies/independent/langgraph_base.py</code></td>
+<td>LangGraph <code>Send</code> fan-out and fan-in</td>
+</tr>
+<tr>
+<td><code>topologies/sequential/crewai/crewai_base/</code></td>
+<td>CrewAI <code>Process.sequential</code> crew with <code>config/agents.yaml</code> and <code>config/tasks.yaml</code></td>
+</tr>
+<tr>
+<td><code>topologies/centralized/autogen/autogen_base.py</code></td>
+<td>AutoGen <code>SelectorGroupChat</code></td>
+</tr>
+<tr>
+<td><code>topologies/decentralized/openai/debate_base.py</code></td>
+<td>Multi-round debate after Du et al. 2023, on the OpenAI SDK</td>
+</tr>
+</tbody>
+</table>
+<p>The Python bases are standalone demos that call <code>gpt-4o-mini</code> and assert that <code>OPENAI_API_KEY</code> is set; the CrewAI base is a four-agent research crew. No runner imports a base file, and the LangGraph variants of sequential, centralized and decentralized have none. Write one if it helps you settle the agent wiring.</p>
+<h2 id="2-write-one-runner-per-dataset">2. Write one runner per dataset<a class="headerlink" href="#2-write-one-runner-per-dataset" title="Link to this section">#</a></h2>
+<p>Add nine runners, one per dataset folder. Copy each from an existing runner for the same dataset and replace only the agent wiring, so the loader, scorer and CLI (see <a href="../../reference/cli/">Command-Line Flags</a>) stay identical across topologies. Each runner exposes these module-level names:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VLLM_BASE_URL</code>, <code>MODEL_ID</code></td>
+<td>endpoint and model, read from the environment</td>
+</tr>
+<tr>
+<td><code>_load_prompt(role)</code> or <code>SYSTEM_PROMPT</code></td>
+<td>role prompt from <code>configs/prompts/</code>, wrapped by <code>append_output_contract_from_path(text, __file__, role)</code></td>
+</tr>
+<tr>
+<td><code>_build_llm()</code> or <code>_build_client()</code></td>
+<td>model client factory</td>
+</tr>
+<tr>
+<td><code>N_AGENTS</code>, <code>N_ROUNDS</code></td>
+<td>team shape, when it is configurable</td>
+</tr>
+<tr>
+<td><code>solve(...)</code></td>
+<td>runs one instance, returns a dict with <code>answer</code> and <code>raw</code></td>
+</tr>
+<tr>
+<td><code>load_instances(...)</code>, <code>run_batch(...)</code></td>
+<td>dataset slice and batch scoring</td>
+</tr>
+</tbody>
+</table>
+<p>The optimizer adapters patch these names at run time (<code>patched_module</code> in <code>optimizers/gepa/real_runner_gepa/adapters/module_common.py</code>). They replace <code>_load_prompt</code>, <code>SYSTEM_PROMPT</code>, <code>_build_llm</code>, <code>_build_client</code>, <code>VLLM_BASE_URL</code>, <code>MODEL_ID</code>, <code>N_AGENTS</code>, <code>N_ROUNDS</code> and <code>_RECURSION_LIMIT</code> when present, and append <code>_OUTPUT_FORMAT_NUDGE</code> and <code>_OUTPUT_FORMAT_APPENDIX</code> to prompts. Keep the names and the adapters work without edits to your runner.</p>
+<p>For token and call counts, pass your framework's output through the matching extractor in <code>topologies/telemetry.py</code> (<code>langchain_telemetry</code>, <code>crewai_telemetry</code>, <code>autogen_telemetry</code>, <code>openai_sdk_telemetry</code> and others), then <code>normalize</code>.</p>
+<h2 id="3-define-the-prompt-roles">3. Define the prompt roles<a class="headerlink" href="#3-define-the-prompt-roles" title="Link to this section">#</a></h2>
+<p>A framework variant reuses the existing prompt folder, so skip to step 4. For a new topology:</p>
+<ol>
+<li>Add a block to <code>configs/prompts/roles.yaml</code> with a <code>description</code> of the topology and, under <code>benchmarks</code>, one entry per dataset listing <code>&lt;role&gt;: "&lt;job description&gt;"</code>.</li>
+<li>Add <code>&lt;topo&gt;:</code> to <code>configs/prompts/tools.yaml</code> with a tool list per dataset.</li>
+<li>Run <code>python configs/generate_role_prompts.py --only &lt;topo&gt;</code> to write <code>configs/prompts/&lt;topo&gt;/&lt;ds&gt;/&lt;role&gt;.txt</code>. <a href="../add-dataset/#4-generate-the-seed-prompts">Add a Dataset</a> describes how the generator works.</li>
+<li>Teach <code>output_contract()</code> in <code>topologies/output_contracts.py</code> which roles produce the final answer. It only recognizes the topology names <code>single</code>, <code>independent</code>, <code>sequential</code>, <code>sequential_crewai</code>, <code>centralized</code>, <code>centralized_autogen</code>, <code>decentralized</code> and <code>decentralized_openai</code>; any other name gets no contract. Make the same change in <code>teamsizes/output_contracts.py</code> and in both optimizer copies.</li>
+</ol>
+<p><code>append_output_contract_from_path</code> takes the topology from the folder right after <code>topologies/</code>, so a framework variant under an existing topology folder inherits its contract rules.</p>
+<h2 id="4-register-the-optimizer-adapters">4. Register the optimizer adapters<a class="headerlink" href="#4-register-the-optimizer-adapters" title="Link to this section">#</a></h2>
+<p>Both optimizers document this in <code>ADDING_PAIR.md</code> (<a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/gepa/docs/ADDING_PAIR.md">GEPA</a>, <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/mipro/docs/ADDING_PAIR.md">MIPRO</a>). A pair is <code>dataset + topology + execution framework</code>, and adding one takes:</p>
+<ol>
+<li>A dataset loader in <code>real_runner_*/datasets/</code>. All nine datasets have one.</li>
+<li>Adapters in <code>real_runner_*/adapters/</code> implementing <code>RealRunnerAdapter</code>: <code>roles()</code>, <code>get_prompt(role)</code>, <code>set_prompt(role, text)</code>, <code>reset()</code>, <code>run_example(example)</code> and <code>format_role_trace(role, output)</code>. <code>run_example</code> returns a dict with <code>model_output</code> (what the metric reads) and optional <code>winner</code> and <code>buckets</code>.</li>
+<li>An entry in <code>DATASET_ADAPTERS</code> in <code>real_runner_*/registry.py</code>. Values are import strings, so framework dependencies load only for the requested pair.</li>
+<li>A pilot. The generic <code>run_gepa_dataset.py</code> and <code>run_mipro_dataset.py</code> handle any registered pair.</li>
+<li>A smoke command and expected artifacts, recorded in <code>ADDING_PAIR.md</code>.</li>
+</ol>
+<p>For a framework variant, subclass the existing adapter for each dataset and change three attributes. This is how the CrewAI MATH adapter is defined:</p>
+<pre class="highlight"><code class="language-python">class SequentialCrewAIMATHAdapter(SequentialMATHAdapter):
+    topology = "sequential_crewai"
+    framework = "crewai"
+    module_name = "topologies.sequential.crewai.math.crewai_math"</code></pre>
+<pre class="highlight"><code class="language-python">"sequential_crewai": "real_runner_gepa.adapters.module_math:SequentialCrewAIMATHAdapter",</code></pre>
+<p>For a new topology, also set <code>prompt_topology</code> (the prompt folder name) and <code>roles_</code> (the role files to load). Two places key on names:</p>
+<ul>
+<li>The <code>framework</code> attribute picks the client the adapter injects: <code>crewai</code> gets a CrewAI <code>LLM</code>, <code>openai</code> an OpenAI client, and anything else a LangChain model for <code>_build_llm</code> or an AutoGen client for <code>_build_client</code>. A new framework needs its own branch in <code>patched_module</code> and in the per-dataset copies such as <code>_patched_module</code> in <code>module_math.py</code>.</li>
+<li><code>build_program</code> in each pilot passes <code>--n-agents</code> only to <code>independent</code>, <code>decentralized</code> and <code>decentralized_openai</code>, and <code>--n-rounds</code> only to the decentralized ones. Add your topology there if its team size is configurable.</li>
+</ul>
+<p>Repeat everything under <code>optimizers/mipro/real_runner_mipro/</code>. MIPRO has no <code>templates/</code> folder; its guide suggests copying <code>adapters/single_bfcl.py</code>. MIPRO renders its chosen instructions and few-shot demos into the role prompts through <code>set_prompt()</code> before each <code>run_example()</code>, so the adapter needs no MIPRO-specific code.</p>
+<h3 id="smoke-test-the-pair">Smoke-test the pair<a class="headerlink" href="#smoke-test-the-pair" title="Link to this section">#</a></h3>
+<p>Before a long run, follow the <code>ADDING_PAIR.md</code> checklist: <code>python3 -m py_compile</code> the new files, instantiate the adapter and call <code>describe_runtime()</code> or run <code>run_example()</code> on one example, then run a minimal optimization and check the artifacts under <code>--out</code>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">GEPA</label><label for="__tabbed_1_2">MIPRO</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<pre class="highlight"><code class="language-bash">cd optimizers/gepa
+python -m real_runner_gepa.pilots.run_gepa_dataset --dataset math \
+  --topology sequential_&lt;fw&gt; --train-size 1 --val-size 1 --max-full-evals 1 \
+  --out results/gepa/sequential_&lt;fw&gt;_math_smoke</code></pre>
+<p>Expect <code>meta.json</code>, <code>baseline_val.jsonl</code>, <code>compiled_val.jsonl</code>, <code>compiled/&lt;role&gt;.txt</code> and <code>compiled_raw/&lt;role&gt;.txt</code>.</p>
+</div>
+<div class="tabbed-block">
+<pre class="highlight"><code class="language-bash">cd optimizers/mipro
+python -m real_runner_mipro.pilots.run_mipro_dataset --dataset math \
+  --topology sequential_&lt;fw&gt; --train-size 1 --val-size 1 --num-candidates 1 \
+  --num-trials 1 --out results/mipro/sequential_&lt;fw&gt;_math_smoke</code></pre>
+<p>Also expect <code>status.json</code>, <code>optimized_val.jsonl</code> and <code>compiled_demos/</code>.</p>
+</div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Skip the GEPA adapter smoke script</p>
+<p>The GEPA README points to <code>optimizers/gepa/scripts/smoke_new_adapters.py</code>, but that script imports a <code>travel</code> dataset module that is not in the repository, so it fails on import. Use the one-row run above instead.</p>
+</div>
+<h2 id="5-add-it-to-the-launchers">5. Add it to the launchers<a class="headerlink" href="#5-add-it-to-the-launchers" title="Link to this section">#</a></h2>
+<p><code>scripts/run_topologies.sh</code> lists topology variants as <code>path:framework</code> pairs and skips any module that does not exist:</p>
+<pre class="highlight"><code class="language-bash">TOPOS="single:langgraph independent:langgraph \
+sequential/langgraph:langgraph sequential/crewai:crewai \
+centralized/langgraph:langgraph centralized/autogen:autogen \
+decentralized/langgraph:langgraph decentralized/openai:openai"</code></pre>
+<p>Append your variant, for example <code>sequential/&lt;fw&gt;:&lt;fw&gt;</code>. For optimizer sweeps, add the topology name to the <code>TOPOLOGIES</code> default in <code>optimizers/gepa/run_gepa.sh</code> and <code>optimizers/mipro/run_mipro.sh</code>, or pass <code>TOPOLOGIES=...</code> when you launch.</p>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Link to this section">#</a></h2>
+<ol>
+<li>Optional base file under <code>topologies/&lt;topo&gt;/[&lt;fw&gt;/]</code>.</li>
+<li>Nine runners exposing the shared names, each reusing its dataset's loader, scorer and CLI.</li>
+<li>New topology only: YAML entries, generated prompts, and final roles in all four <code>output_contracts.py</code> copies.</li>
+<li>Adapters and <code>DATASET_ADAPTERS</code> entries for GEPA and MIPRO, plus <code>build_program</code> and <code>patched_module</code> changes if needed.</li>
+<li>A smoke demo and a <code>--batch --limit</code> slice per runner, and a one-row GEPA and MIPRO run.</li>
+<li><code>TOPOS</code> in <code>scripts/run_topologies.sh</code> and <code>TOPOLOGIES</code> in the optimizer launchers.</li>
+</ol>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/extending/add-topology.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../add-dataset/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Add a Dataset</b></a>
+      <a class="pager-link next" href="../add-optimizer/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Add an Optimizer</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#choose-what-you-are-adding">Choose what you are adding</a>
+      </li>
+      <li><a href="#1-write-a-base-implementation">1. Write a base implementation</a>
+      </li>
+      <li><a href="#2-write-one-runner-per-dataset">2. Write one runner per dataset</a>
+      </li>
+      <li><a href="#3-define-the-prompt-roles">3. Define the prompt roles</a>
+      </li>
+      <li><a href="#4-register-the-optimizer-adapters">4. Register the optimizer adapters</a>
+        <ul><li><a href="#smoke-test-the-pair">Smoke-test the pair</a></li>
+        </ul>
+      </li>
+      <li><a href="#5-add-it-to-the-launchers">5. Add it to the launchers</a>
+      </li>
+      <li><a href="#checklist">Checklist</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="../../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="Evaluation Protocol · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/evaluation/protocol/">
+  <title>Evaluation Protocol · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url="../.." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="../..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="../..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
+  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link is-active" href="./" aria-current="page">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../extending/add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../../extending/add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../../extending/add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../reference/cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../../reference/environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../../reference/repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Evaluation</span>
+    </p>
+    <article class="prose">
+      <h1 id="evaluation-protocol">Evaluation Protocol<a class="headerlink" href="#evaluation-protocol" title="Link to this section">#</a></h1>
+<p class="lede">This page fixes what a score means: which instances are reported, how optimization data is kept apart from them, how a before/after pair is measured, and which settings stay constant across runs.</p>
+<h2 id="frozen-eval-id-manifests">Frozen eval-ID manifests<a class="headerlink" href="#frozen-eval-id-manifests" title="Link to this section">#</a></h2>
+<p>Every dataset has a manifest at <code>benchmarks/&lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json</code> with the fields <code>dataset</code>, <code>sample</code>, <code>n</code>, <code>source</code> and <code>ids</code>. The IDs are the instances behind reported scores, so every topology, team size and communication format is scored on the same set.</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th style="text-align: right;">Eval IDs</th>
+<th>Sample</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpqa</code></td>
+<td style="text-align: right;">100</td>
+<td>report 100</td>
+</tr>
+<tr>
+<td><code>hotpotqa</code></td>
+<td style="text-align: right;">100</td>
+<td>report 100</td>
+</tr>
+<tr>
+<td><code>math</code></td>
+<td style="text-align: right;">100</td>
+<td>report 100</td>
+</tr>
+<tr>
+<td><code>lcb</code></td>
+<td style="text-align: right;">50</td>
+<td>report 50</td>
+</tr>
+<tr>
+<td><code>apps</code></td>
+<td style="text-align: right;">50</td>
+<td>ids 0..49</td>
+</tr>
+<tr>
+<td><code>swe</code></td>
+<td style="text-align: right;">30</td>
+<td>balanced_30: 15 <code>&lt;15 min fix</code>, 15 <code>15 min - 1 hour</code></td>
+</tr>
+<tr>
+<td><code>bfcl</code></td>
+<td style="text-align: right;">25</td>
+<td>10 simple, 5 multiple, 5 parallel, 5 parallel_multiple</td>
+</tr>
+<tr>
+<td><code>apibank</code></td>
+<td style="text-align: right;">100</td>
+<td>33 Level 1, 33 Level 2, 34 Level 3</td>
+</tr>
+<tr>
+<td><code>toolhop</code></td>
+<td style="text-align: right;">100</td>
+<td>dataset ids 0..99</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td style="text-align: right;"><strong>655</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Restrict a baseline run to the manifest with <code>--only</code>:</p>
+<pre class="highlight"><code class="language-bash">IDS=$(python -c "import json; \
+print(' '.join(json.load(open('benchmarks/hotpotqa/hotpotqa_eval_ids.json'))['ids']))")
+python -m topologies.single.hotpotqa.langgraph_hotpotqa --batch --only $IDS \
+  --out results/topologies_baseline/single_hotpotqa/predictions.jsonl</code></pre>
+<p>The GPQA, HotpotQA, MATH, LCB and APPS runners take <code>--only</code> as one list. The BFCL, SWE-bench, ToolHop, API-Bank and communication runners take it once per ID (<code>--only a --only b</code>). The API-Bank runners also load their manifest by default.</p>
+<h2 id="trainval-splits-for-optimization">Train/val splits for optimization<a class="headerlink" href="#trainval-splits-for-optimization" title="Link to this section">#</a></h2>
+<p>The optimizers draw train and validation rows from each dataset's loader in <code>datasets/&lt;dataset&gt;.py</code>. The generic split in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/gepa/real_runner_gepa/datasets/split_utils.py"><code>split_utils.py</code></a> does this:</p>
+<ol>
+<li>Drop every ID in the eval manifest, when exclusion is on.</li>
+<li>Drop the first <code>--offset</code> rows.</li>
+<li>Shuffle with <code>random.Random(--split-seed)</code>.</li>
+<li>Take the first <code>--train-size</code> rows as train and the next <code>--val-size</code> rows as validation.</li>
+</ol>
+<p>If the pool is too small the pilot stops with an error. Three datasets use their own rules. API-Bank balances train and validation across Levels 1 to 3. ToolHop picks rows whose profile matches the eval set. SWE-bench interleaves rows round robin by repository. API-Bank and ToolHop always exclude their eval IDs, whatever the variable says. For those two, GEPA also looks for a frozen <code>benchmarks/&lt;dataset&gt;/&lt;dataset&gt;_gepa25_signal_split.json</code> when you ask for 25/25 with seed 0 and offset 0; none ship, so the seeded split is used.</p>
+<p>Exclusion is controlled by <code>GEPA_EXCLUDE_REAL_EVAL_IDS</code>, and by <code>MIPRO_EXCLUDE_REAL_EVAL_IDS</code> (which falls back to the GEPA variable) for MIPRO. In the code it is <strong>on when the variable is unset</strong>; only <code>0</code>, <code>false</code>, <code>no</code> or <code>off</code> turn it off. The optimizer READMEs tell you to add <code>=1</code> to enable it; in the code that only restates the default. Set it to <code>1</code> explicitly in your scripts, never to <code>0</code> for a reported run, and check <code>meta.json</code>: <code>exclude_real_eval_ids</code> should be <code>true</code> and <code>train_real_eval_overlap</code> and <code>val_real_eval_overlap</code> should be empty lists.</p>
+<h2 id="the-paired-measurement">The paired measurement<a class="headerlink" href="#the-paired-measurement" title="Link to this section">#</a></h2>
+<p>The pilot measures the seed prompts and the optimized prompts on the same validation rows, with the same model, endpoints, sampling, topology and scorer. Only the role prompts differ.</p>
+<ol>
+<li>Score the seed prompts on validation and write <code>baseline_val.jsonl</code>.</li>
+<li>Run the optimizer with <code>trainset=train, valset=val</code>.</li>
+<li>Score the compiled prompts on the same validation rows and write <code>compiled_val.jsonl</code>.</li>
+<li>Apply the acceptance rule and write the chosen side to <code>optimized_val.jsonl</code>.</li>
+</ol>
+<p><code>delta = compiled_score - baseline_score</code> is the mean of the per-row differences, a direct estimate of the gain <span class="arithmatex">\( \Delta \)</span> defined on the <a href="../../optimizers/#what-gets-optimized">Optimizers</a> page.</p>
+<div class="admonition warning">
+<p class="admonition-title">Validation is also the selection set</p>
+<p>GEPA and MIPRO choose their best candidate by its validation score, and the pilot reports the delta on those same rows. With 25 rows, one row is 4 percentage points. The pilots stop at this validation measurement; a held-out number needs the selected prompts scored on the frozen eval IDs.</p>
+</div>
+<h2 id="sampling-settings">Sampling settings<a class="headerlink" href="#sampling-settings" title="Link to this section">#</a></h2>
+<p>The optimizer workspaces define their sampling in <code>lm.py</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Agents</th>
+<th>Reflection / proposal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>temperature</code></td>
+<td>0.2</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td><code>top_p</code></td>
+<td>0.9</td>
+<td>not set</td>
+</tr>
+<tr>
+<td><code>seed</code></td>
+<td>0</td>
+<td>not set</td>
+</tr>
+<tr>
+<td><code>max_tokens</code></td>
+<td>1024 in <code>task_sampling()</code>; 4096 for agent clients built by the module adapters (<code>REAL_RUNNER_TASK_MAX_TOKENS</code>)</td>
+<td>48000</td>
+</tr>
+<tr>
+<td>Extra body</td>
+<td><code>repetition_penalty</code> 1.05, thinking disabled through <code>chat_template_kwargs</code></td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<p>The agent clients built by the adapters reuse temperature, top_p, seed and the extra body. The topology runners use the same values and set their own <code>max_tokens</code> (2048 in the Single HotpotQA runner, for example).</p>
+<h2 id="scorers">Scorers<a class="headerlink" href="#scorers" title="Link to this section">#</a></h2>
+<p>Each task family uses its official or community-standard scorer in the runners. During optimization the metric comes from the optimizer's <code>datasets/&lt;dataset&gt;.py</code>, which calls the runner's scoring code where it can and uses a cheaper check for code execution and patches.</p>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Dataset</th>
+<th>Runner scorer</th>
+<th>Optimization metric</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reasoning</td>
+<td><code>gpqa</code></td>
+<td>Letter match</td>
+<td>Same</td>
+</tr>
+<tr>
+<td></td>
+<td><code>hotpotqa</code></td>
+<td>Official EM and token F1</td>
+<td>EM (F1 appears in feedback)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>math</code></td>
+<td>Hendrycks <code>is_equiv</code> on <code>\boxed{}</code></td>
+<td>Same, via the Single MATH runner</td>
+</tr>
+<tr>
+<td>Coding</td>
+<td><code>lcb</code></td>
+<td>pass@1, stdin and functional tests</td>
+<td>1 if the first 3 tests all pass</td>
+</tr>
+<tr>
+<td></td>
+<td><code>apps</code></td>
+<td>pass@1, stdin and call-based tests</td>
+<td>1 if the first 3 tests all pass</td>
+</tr>
+<tr>
+<td></td>
+<td><code>swe</code></td>
+<td><code>FAIL_TO_PASS</code> and <code>PASS_TO_PASS</code> tests</td>
+<td>1 if the output holds a non-trivial unified diff</td>
+</tr>
+<tr>
+<td>Tool-calling</td>
+<td><code>bfcl</code></td>
+<td>Official <code>bfcl_eval</code> AST checker</td>
+<td>Same checker</td>
+</tr>
+<tr>
+<td></td>
+<td><code>apibank</code></td>
+<td>Official API-Bank harness</td>
+<td>The runner's <code>score_prediction</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>toolhop</code></td>
+<td>Exact or normalized answer match</td>
+<td>The runner's <code>score_answer</code></td>
+</tr>
+</tbody>
+</table>
+<p>Every metric also returns feedback text, which GEPA reads and MIPRO ignores. Task details are on the <a href="../../tasks/">task pages</a>.</p>
+<h2 id="output-contracts">Output contracts<a class="headerlink" href="#output-contracts" title="Link to this section">#</a></h2>
+<p><a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/output_contracts.py"><code>topologies/output_contracts.py</code></a> fixes the final answer format per dataset. The role that emits the answer gets a <code>PROTECTED FINAL OUTPUT CONTRACT</code> block before its prompt and a reminder after it. That role is the solver-type role in Single and Independent, the <code>debater</code> in Decentralized, the last stage in Sequential (for example <code>writer</code> for HotpotQA) and the manager plus answer-producing workers in Centralized.</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Required ending</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpqa</code></td>
+<td><code>Answer: A</code> to <code>Answer: D</code></td>
+</tr>
+<tr>
+<td><code>hotpotqa</code></td>
+<td><code>Answer: &lt;short-form&gt;</code></td>
+</tr>
+<tr>
+<td><code>math</code></td>
+<td>A <code>\boxed{...}</code> line first and last</td>
+</tr>
+<tr>
+<td><code>apps</code>, <code>lcb</code></td>
+<td>One fenced <code>python</code> block</td>
+</tr>
+<tr>
+<td><code>swe</code></td>
+<td>One fenced <code>diff</code> block</td>
+</tr>
+<tr>
+<td><code>bfcl</code></td>
+<td>One fenced <code>json</code> list of function calls</td>
+</tr>
+<tr>
+<td><code>apibank</code></td>
+<td>One bracketed call, <code>[ApiName(arg='value')]</code></td>
+</tr>
+<tr>
+<td><code>toolhop</code></td>
+<td><code>&lt;answer&gt;...&lt;/answer&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>The contract is not an optimization target. The adapters attach it at execution time, outside the text the optimizer edits, so compiled prompts never contain it and cannot remove it. The bridges carry their own copy with fuller wording (<code>real_runner_*/output_contracts.py</code>, version 2, recorded as <code>output_contract_version</code> in <code>meta.json</code>); the runners use version 1.</p>
+<h2 id="telemetry">Telemetry<a class="headerlink" href="#telemetry" title="Link to this section">#</a></h2>
+<p><a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/telemetry.py"><code>topologies/telemetry.py</code></a> gives every runner record the same five counters: <code>prompt_tokens</code>, <code>completion_tokens</code>, <code>total_tokens</code>, <code>n_llm_calls</code> and <code>n_tool_calls</code>. One extractor exists per framework:</p>
+<ul>
+<li><strong>LangGraph</strong>: sums usage over the AI messages; Independent sums across all replicas.</li>
+<li><strong>CrewAI</strong>: reads the crew's <code>usage_metrics</code>; it does not track tool calls, so <code>n_tool_calls</code> stays 0.</li>
+<li><strong>AutoGen</strong>: sums <code>models_usage</code> per message and counts tool-call request events.</li>
+<li><strong>OpenAI SDK</strong>: accumulates usage per call; the fallback path counts calls only and leaves tokens at 0.</li>
+</ul>
+<p>Counts are totals for the row across every agent and every round, so they grow with team size and debate rounds. <code>normalize()</code> forces the five-key shape. The optimizer's <code>*_val.jsonl</code> records do not carry these counters, so compare cost with baseline runs.</p>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/evaluation/protocol.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../../optimizers/running/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Run an Optimizer</b></a>
+      <a class="pager-link next" href="../results/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Read the Results</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#frozen-eval-id-manifests">Frozen eval-ID manifests</a>
+      </li>
+      <li><a href="#trainval-splits-for-optimization">Train/val splits for optimization</a>
+      </li>
+      <li><a href="#the-paired-measurement">The paired measurement</a>
+      </li>
+      <li><a href="#sampling-settings">Sampling settings</a>
+      </li>
+      <li><a href="#scorers">Scorers</a>
+      </li>
+      <li><a href="#output-contracts">Output contracts</a>
+      </li>
+      <li><a href="#telemetry">Telemetry</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js" defer></script>
+<script src="../../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

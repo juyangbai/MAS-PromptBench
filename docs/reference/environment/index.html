@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="Environment Variables · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/reference/environment/">
+  <title>Environment Variables · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url="../.." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="../..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="../..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
+  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../extending/add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../../extending/add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../../extending/add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link is-active" href="./" aria-current="page">Environment Variables</a></li>
+  <li><a class="nav-link" href="../repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Reference</span>
+    </p>
+    <article class="prose">
+      <h1 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this section">#</a></h1>
+<p class="lede">Every environment variable the benchmark reads, grouped by area, with its default in the code and the component that reads it. Variables used only inside the vendored frameworks are left out.</p>
+<p>Most runs need only the three model-connection variables. The rest tune one dataset, an optimizer or a serving script.</p>
+<h2 id="model-connection">Model connection<a class="headerlink" href="#model-connection" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Read by</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VLLM_BASE_URL</code></td>
+<td><code>http://localhost:8001/v1</code> or <code>http://localhost:8000/v1</code>, depending on the runner</td>
+<td>every topology and team-size runner; communication runners inherit it from the runner they wrap</td>
+<td>OpenAI-compatible base URL for every agent. The defaults differ between runners, so always set it. The sweep scripts default it to <code>http://localhost:8000/v1</code>.</td>
+</tr>
+<tr>
+<td><code>MODEL_ID</code></td>
+<td><code>Qwen/Qwen3.5-9B</code></td>
+<td>every runner; optimizer adapters; <code>models/*.sh</code></td>
+<td>Model name sent with each request. Optimizer adapters set the runner's model from <code>MODEL_ID</code>, falling back to <code>TASK_MODEL</code>. The serve scripts read it as the model to serve.</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td><code>EMPTY</code></td>
+<td>every runner, optimizer LM and adapter</td>
+<td>API key for the endpoint. Most <code>*_base.py</code> demo files assert that it is set.</td>
+</tr>
+</tbody>
+</table>
+<p>The optimizers do not send task calls to <code>VLLM_BASE_URL</code>; they use the endpoint lists under <a href="#optimizers">Optimizers</a>.</p>
+<h3 id="seed-prompt-generator">Seed-prompt generator<a class="headerlink" href="#seed-prompt-generator" title="Link to this section">#</a></h3>
+<p><code>configs/generate_role_prompts.py</code> reads only these, so a runtime <code>VLLM_BASE_URL</code> or <code>MODEL_ID</code> never changes which model writes the prompts.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Same as flag</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PROMPT_GEN_BASE_URL</code></td>
+<td><code>http://localhost:8000/v1</code></td>
+<td><code>--base-url</code></td>
+<td>Endpoint serving the generator model.</td>
+</tr>
+<tr>
+<td><code>PROMPT_GEN_MODEL</code></td>
+<td><code>Qwen/Qwen3.5-122B-A10B-FP8</code></td>
+<td><code>--model</code></td>
+<td>Generator model.</td>
+</tr>
+<tr>
+<td><code>PROMPT_GEN_API_KEY</code></td>
+<td><code>EMPTY</code></td>
+<td><code>--api-key</code></td>
+<td>API key.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="team-shape">Team shape<a class="headerlink" href="#team-shape" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Read by</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INDEPENDENT_N_AGENTS</code></td>
+<td><code>4</code></td>
+<td>independent topology runners</td>
+<td>Parallel replicas.</td>
+</tr>
+<tr>
+<td><code>DECENTRALIZED_N_AGENTS</code></td>
+<td><code>4</code></td>
+<td>decentralized topology runners</td>
+<td>Debating peers.</td>
+</tr>
+<tr>
+<td><code>DECENTRALIZED_N_ROUNDS</code></td>
+<td><code>2</code></td>
+<td>decentralized topology and team-size runners</td>
+<td>Debate rounds.</td>
+</tr>
+</tbody>
+</table>
+<p>Independent and decentralized team-size runners read <code>INDEPENDENT_N_AGENTS</code> and <code>DECENTRALIZED_N_AGENTS</code> too, with the team size <code>r</code> as the default (the ToolHop and API-Bank team-size runners take <code>r</code> from the file only). Leave them unset there, or the run no longer matches its file name. ToolHop and API-Bank topology runners check a dataset-prefixed variable first (below).</p>
+<h2 id="datasets">Datasets<a class="headerlink" href="#datasets" title="Link to this section">#</a></h2>
+<h3 id="toolhop">ToolHop<a class="headerlink" href="#toolhop" title="Link to this section">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Read by</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TOOLHOP_ALLOW_DATASET_EXEC</code></td>
+<td>unset</td>
+<td>ToolHop runners</td>
+<td>Must be <code>1</code>; otherwise solving stops with an error, because ToolHop executes dataset-provided Python tools. The sweep scripts set it to <code>1</code>.</td>
+</tr>
+<tr>
+<td><code>TOOLHOP_MAX_TOKENS</code></td>
+<td><code>512</code></td>
+<td>ToolHop runners</td>
+<td>Max tokens per model call.</td>
+</tr>
+<tr>
+<td><code>TOOLHOP_FINAL_MAX_TOKENS</code></td>
+<td><code>64</code></td>
+<td>ToolHop runners</td>
+<td>Max tokens for the forced final answer once the tool budget is spent.</td>
+</tr>
+<tr>
+<td><code>TOOLHOP_MAX_TURNS</code></td>
+<td><code>9</code></td>
+<td>ToolHop runners</td>
+<td>Tool-calling turns before the final answer is forced.</td>
+</tr>
+<tr>
+<td><code>TOOLHOP_TOOL_RESULT_CHAR_BUDGET</code></td>
+<td><code>6000</code></td>
+<td>ToolHop runners</td>
+<td>Characters kept from each tool result.</td>
+</tr>
+<tr>
+<td><code>TOOLHOP_INDEPENDENT_N_AGENTS</code></td>
+<td><code>INDEPENDENT_N_AGENTS</code>, else <code>4</code></td>
+<td>ToolHop runners</td>
+<td>Replicas for independent ToolHop.</td>
+</tr>
+<tr>
+<td><code>TOOLHOP_DECENTRALIZED_N_AGENTS</code>, <code>TOOLHOP_DECENTRALIZED_N_ROUNDS</code></td>
+<td><code>DECENTRALIZED_N_AGENTS</code> / <code>_N_ROUNDS</code>, else <code>4</code> / <code>2</code></td>
+<td>ToolHop runners</td>
+<td>Peers and rounds for decentralized ToolHop.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-bank">API-Bank<a class="headerlink" href="#api-bank" title="Link to this section">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Read by</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APIBANK_ROOT</code></td>
+<td><code>benchmarks/apibank/apibank_upstream/api-bank</code>, then <code>.cache/apibank_smoke_damo/api-bank</code></td>
+<td>API-Bank runners</td>
+<td>API-Bank source checkout (must contain <code>apis/</code> and <code>init_database/</code>).</td>
+</tr>
+<tr>
+<td><code>APIBANK_LEVEL</code></td>
+<td><code>all</code></td>
+<td>API-Bank runners</td>
+<td>Level slice when <code>--level</code> is not given: <code>all</code>, <code>1</code>, <code>2</code> or <code>3</code>.</td>
+</tr>
+<tr>
+<td><code>APIBANK_CURATED_PATH</code></td>
+<td>per level: <code>benchmarks/apibank/apibank_eval_ids.json</code> for <code>all</code>, <code>benchmarks/apibank/apibank_level&lt;N&gt;_curated.json</code> otherwise</td>
+<td>API-Bank runners and team-size runners</td>
+<td>Curated task manifest. Set by <code>--curated-path</code>. If the file does not exist, the manifest is built from the API-Bank source.</td>
+</tr>
+<tr>
+<td><code>APIBANK_CURATED_LIMIT</code></td>
+<td>unset</td>
+<td>API-Bank runners</td>
+<td>Row cap when a curated manifest has to be rebuilt.</td>
+</tr>
+<tr>
+<td><code>APIBANK_LEVEL3_JSON</code></td>
+<td>unset</td>
+<td>API-Bank runners</td>
+<td>Path to a local <code>level-3.json</code> when the vendored copy is missing.</td>
+</tr>
+<tr>
+<td><code>APIBANK_MAX_TOKENS</code></td>
+<td><code>1024</code></td>
+<td>API-Bank runners</td>
+<td>Max tokens per model call.</td>
+</tr>
+<tr>
+<td><code>APIBANK_REQUEST_TIMEOUT</code></td>
+<td><code>60</code></td>
+<td>API-Bank runners</td>
+<td>Seconds per request.</td>
+</tr>
+<tr>
+<td><code>APIBANK_OPENAI_MAX_RETRIES</code></td>
+<td><code>0</code></td>
+<td>API-Bank runners</td>
+<td>OpenAI SDK retries per request.</td>
+</tr>
+<tr>
+<td><code>APIBANK_TOOLSEARCHER_SCORER</code></td>
+<td><code>official</code> for levels <code>all</code>, 2, 3; <code>keyword</code> for level 1</td>
+<td>API-Bank runners and team-size runners</td>
+<td>ToolSearcher scorer: <code>official</code>, <code>upstream</code> or <code>keyword</code>. Set by <code>--toolsearcher-scorer</code>.</td>
+</tr>
+<tr>
+<td><code>APIBANK_TOOLSEARCHER_DEVICE</code></td>
+<td><code>cpu</code></td>
+<td>API-Bank runners</td>
+<td>Device for the ToolSearcher sentence-embedding model.</td>
+</tr>
+<tr>
+<td><code>APIBANK_TOOLSEARCHER_SKLEARN_SHIM</code>, <code>_GOOGLETRANS_SHIM</code>, <code>_NLTK_SHIM</code>, <code>_BM25_SHIM</code></td>
+<td><code>1</code></td>
+<td>API-Bank runners</td>
+<td>Install a stub for that package when it is missing; <code>0</code> disables.</td>
+</tr>
+<tr>
+<td><code>APIBANK_INDEPENDENT_N_AGENTS</code></td>
+<td><code>INDEPENDENT_N_AGENTS</code>, else <code>4</code></td>
+<td>API-Bank runners</td>
+<td>Replicas for independent API-Bank.</td>
+</tr>
+<tr>
+<td><code>APIBANK_DECENTRALIZED_N_AGENTS</code>, <code>APIBANK_DECENTRALIZED_N_ROUNDS</code></td>
+<td><code>DECENTRALIZED_N_AGENTS</code> / <code>_N_ROUNDS</code>, else <code>4</code> / <code>2</code></td>
+<td>API-Bank runners</td>
+<td>Peers and rounds for decentralized API-Bank.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="swe-bench-verified">SWE-bench Verified<a class="headerlink" href="#swe-bench-verified" title="Link to this section">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Read by</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SWE_SIF_DIR</code></td>
+<td><code>~/containers/swe</code></td>
+<td>SWE runners</td>
+<td>Cache of per-instance Singularity images pulled from <code>docker://swebench/sweb.eval.x86_64.*</code>.</td>
+</tr>
+<tr>
+<td><code>SWE_EVAL_LOG_DIR</code></td>
+<td><code>/tmp</code></td>
+<td>SWE runners</td>
+<td>Where raw pytest output is saved as <code>eval_&lt;instance&gt;.log</code>.</td>
+</tr>
+<tr>
+<td><code>SWE_PROBLEM_CHAR_BUDGET</code></td>
+<td><code>16000</code></td>
+<td>SWE runners</td>
+<td>Characters of the issue text kept in the prompt.</td>
+</tr>
+<tr>
+<td><code>SWE_HINTS_CHAR_BUDGET</code></td>
+<td><code>4000</code></td>
+<td>SWE runners</td>
+<td>Characters of the hints kept in the prompt.</td>
+</tr>
+<tr>
+<td><code>SWE_REPO_DIR</code></td>
+<td><code>.</code></td>
+<td>single, sequential (both frameworks) and centralized LangGraph SWE runners</td>
+<td>Initial repository folder for the file tools; a batch sets a per-instance clone.</td>
+</tr>
+<tr>
+<td><code>SWE_WORKDIR_ROOT</code></td>
+<td><code>~/swe_work_independent</code></td>
+<td>independent SWE runners</td>
+<td>Root for per-replica clones; <code>--workdir-root</code> replaces it for a batch.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="livecodebench-apps-hotpotqa">LiveCodeBench, APPS, HotpotQA<a class="headerlink" href="#livecodebench-apps-hotpotqa" title="Link to this section">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Read by</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LCB_FUNCTIONAL_MEMORY_BYTES</code></td>
+<td>4 GiB</td>
+<td>LCB runners</td>
+<td>Memory cap per functional test; <code>0</code> disables.</td>
+</tr>
+<tr>
+<td><code>APPS_CALL_BASED_MEMORY_BYTES</code></td>
+<td>4 GiB</td>
+<td>APPS runners</td>
+<td>Memory cap per call-based test.</td>
+</tr>
+<tr>
+<td><code>APPS_TEST_TIMEOUT_S</code></td>
+<td><code>4</code></td>
+<td>independent APPS runners</td>
+<td>Seconds per test.</td>
+</tr>
+<tr>
+<td><code>LCB_TOOL_TIMEOUT_S</code>, <code>APPS_TOOL_TIMEOUT_S</code></td>
+<td><code>10</code></td>
+<td>independent LCB and APPS runners</td>
+<td>Seconds per <code>python_exec</code> tool call.</td>
+</tr>
+<tr>
+<td><code>LCB_TOOL_OUTPUT_CHAR_BUDGET</code>, <code>APPS_TOOL_OUTPUT_CHAR_BUDGET</code></td>
+<td><code>4000</code></td>
+<td>independent LCB and APPS runners</td>
+<td>Characters kept from tool output.</td>
+</tr>
+<tr>
+<td><code>LCB_INDEPENDENT_RECURSION_LIMIT</code>, <code>APPS_INDEPENDENT_RECURSION_LIMIT</code></td>
+<td><code>20</code></td>
+<td>independent LCB and APPS runners</td>
+<td>LangGraph recursion limit per replica.</td>
+</tr>
+<tr>
+<td><code>LCB_INDEPENDENT_ROW_TIMEOUT_S</code>, <code>APPS_INDEPENDENT_ROW_TIMEOUT_S</code></td>
+<td><code>180</code></td>
+<td>independent LCB and APPS runners</td>
+<td>Seconds per row.</td>
+</tr>
+<tr>
+<td><code>HOTPOTQA_INDEPENDENT_RECURSION_LIMIT</code></td>
+<td><code>20</code> (<code>35</code> in the r=2 team-size runner)</td>
+<td>independent HotpotQA runners</td>
+<td>LangGraph recursion limit per replica.</td>
+</tr>
+<tr>
+<td><code>HOTPOTQA_INDEPENDENT_ROW_TIMEOUT_S</code></td>
+<td><code>120</code></td>
+<td>independent HotpotQA topology runner</td>
+<td>Seconds per row.</td>
+</tr>
+<tr>
+<td><code>GPQA_INDEPENDENT_RECURSION_LIMIT</code></td>
+<td><code>35</code></td>
+<td>independent GPQA r=2 team-size runner</td>
+<td>LangGraph recursion limit per replica.</td>
+</tr>
+</tbody>
+</table>
+<p>The independent team-size runners for LCB and APPS read the same <code>*_INDEPENDENT_*</code> and <code>*_TOOL_*</code> variables.</p>
+<h2 id="optimizers">Optimizers<a class="headerlink" href="#optimizers" title="Link to this section">#</a></h2>
+<p>GEPA reads <code>GEPA_*</code>; MIPRO reads <code>MIPRO_*</code> first and falls back to the GEPA name. Both pilots set <code>DSPY_CACHEDIR</code> and <code>DSP_CACHEDIR</code> to <code>cache/&lt;topology&gt;_&lt;dataset&gt;</code> inside their workspace; you do not set those.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Read by</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GEPA_TASK_ENDPOINTS</code></td>
+<td><code>localhost:10000</code>, <code>localhost:15000</code>–<code>15007</code>, <code>20000</code>–<code>20007</code>, <code>30000</code>–<code>30007</code> and <code>9000</code>–<code>9003</code> (all <code>http://localhost:…/v1</code>)</td>
+<td>GEPA; MIPRO fallback</td>
+<td>Comma-separated task endpoints. The DSPy task LM and the runner clients rotate through them.</td>
+</tr>
+<tr>
+<td><code>MIPRO_TASK_ENDPOINTS</code></td>
+<td><code>http://localhost:15000/v1</code> to <code>15007</code></td>
+<td>MIPRO</td>
+<td>Comma-separated task endpoints.</td>
+</tr>
+<tr>
+<td><code>GEPA_REFL_ENDPOINT</code></td>
+<td><code>http://localhost:8000/v1</code></td>
+<td>GEPA; MIPRO fallback</td>
+<td>Reflection-model endpoint.</td>
+</tr>
+<tr>
+<td><code>MIPRO_REFL_ENDPOINT</code></td>
+<td><code>http://localhost:15000/v1</code></td>
+<td>MIPRO</td>
+<td>Proposal-model endpoint.</td>
+</tr>
+<tr>
+<td><code>TASK_MODEL</code></td>
+<td><code>Qwen/Qwen3.5-9B</code></td>
+<td>both</td>
+<td>Task model name.</td>
+</tr>
+<tr>
+<td><code>REFL_MODEL</code></td>
+<td><code>Qwen/Qwen3.5-122B-A10B-FP8</code></td>
+<td>both</td>
+<td>Reflection or proposal model name.</td>
+</tr>
+<tr>
+<td><code>MIPRO_TASK_MODEL</code>, <code>MIPRO_REFL_MODEL</code></td>
+<td><code>TASK_MODEL</code>, <code>REFL_MODEL</code></td>
+<td>MIPRO</td>
+<td>MIPRO-only overrides.</td>
+</tr>
+<tr>
+<td><code>GEPA_EXCLUDE_REAL_EVAL_IDS</code></td>
+<td>on when unset</td>
+<td>GEPA; MIPRO fallback</td>
+<td>Keep the IDs in <code>benchmarks/&lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json</code> out of train and validation. <code>0</code>, <code>false</code>, <code>no</code> or <code>off</code> disables it. API-Bank and ToolHop always exclude them.</td>
+</tr>
+<tr>
+<td><code>MIPRO_EXCLUDE_REAL_EVAL_IDS</code></td>
+<td><code>GEPA_EXCLUDE_REAL_EVAL_IDS</code>, on when both unset</td>
+<td>MIPRO</td>
+<td>Same, for MIPRO.</td>
+</tr>
+<tr>
+<td><code>GEPA_USE_SIGNAL_25_SPLITS</code></td>
+<td>on when unset</td>
+<td>GEPA API-Bank and ToolHop loaders</td>
+<td>For a 25/25 split with seed 0 and offset 0, use <code>benchmarks/&lt;dataset&gt;/&lt;dataset&gt;_gepa25_signal_split.json</code> if it exists. None ship, so the normal split is used.</td>
+</tr>
+<tr>
+<td><code>GEPA_REFLECTION_COMPACT_DATASETS</code></td>
+<td><code>lcb</code></td>
+<td>GEPA; MIPRO fallback</td>
+<td>Comma-separated datasets (or <code>*</code>) whose traces are shortened before reflection. Scoring still uses the full data.</td>
+</tr>
+<tr>
+<td><code>MIPRO_REFLECTION_COMPACT_DATASETS</code>, <code>MIPRO_DATA_SUMMARY_COMPACT_DATASETS</code></td>
+<td>GEPA value, then <code>lcb</code></td>
+<td>MIPRO</td>
+<td>Same, for MIPRO's traces and its dataset summary.</td>
+</tr>
+<tr>
+<td><code>GEPA_EARLY_STOP_PATIENCE</code></td>
+<td><code>8</code></td>
+<td>GEPA <code>early_stop.py</code></td>
+<td>Used only when no patience is passed; the pilot always passes <code>--early-stop-patience</code>, so it has no effect there.</td>
+</tr>
+<tr>
+<td><code>REAL_RUNNER_FAIL_ON_ADAPTER_ERROR</code></td>
+<td><code>1</code></td>
+<td>both</td>
+<td>Abort on an adapter error that is not an endpoint or timeout error. <code>0</code> scores that row 0 instead.</td>
+</tr>
+<tr>
+<td><code>REAL_RUNNER_TASK_MAX_TOKENS</code></td>
+<td><code>4096</code></td>
+<td>both, shared module adapters</td>
+<td>Max tokens for runner models built by the adapters.</td>
+</tr>
+<tr>
+<td><code>MATH_TASK_MAX_TOKENS</code></td>
+<td><code>4096</code></td>
+<td>both, MATH adapters</td>
+<td>Same, for MATH.</td>
+</tr>
+<tr>
+<td><code>REAL_RUNNER_RECURSION_LIMIT</code></td>
+<td>unset</td>
+<td>both, BFCL adapters</td>
+<td>Fallback LangGraph recursion limit.</td>
+</tr>
+<tr>
+<td><code>GPQA_SINGLE_RECURSION_LIMIT</code>, <code>GPQA_INDEPENDENT_RECURSION_LIMIT</code></td>
+<td><code>25</code>, <code>15</code></td>
+<td>both, GPQA adapters</td>
+<td>LangGraph recursion limits.</td>
+</tr>
+<tr>
+<td><code>REAL_RUNNER_KEEP_MESSAGES</code></td>
+<td><code>0</code></td>
+<td>both, single and independent BFCL and GPQA adapters</td>
+<td><code>1</code> keeps full message lists in the output.</td>
+</tr>
+<tr>
+<td><code>LCB_COMPILED_PROMPT_CHAR_LIMIT</code>, <code>LCB_COMPILED_PROMPT_HEAD_CHARS</code></td>
+<td><code>24000</code>, <code>6000</code></td>
+<td>both pilots</td>
+<td>Cap on compiled LCB prompts, and how much of the head is kept when truncating.</td>
+</tr>
+<tr>
+<td><code>BFCL_CATEGORY</code></td>
+<td><code>simple</code></td>
+<td>both, BFCL loader</td>
+<td>BFCL subset to optimize on.</td>
+</tr>
+<tr>
+<td><code>SWE_GEPA_EVAL_SAMPLE</code>, <code>SWE_SAMPLE</code></td>
+<td><code>balanced_30</code></td>
+<td>both</td>
+<td>Name of the protected SWE-bench sample recorded in <code>meta.json</code>. MIPRO checks <code>SWE_MIPRO_EVAL_SAMPLE</code> first.</td>
+</tr>
+<tr>
+<td><code>SWE_WORK_ROOT</code></td>
+<td>unset</td>
+<td>both, SWE adapters</td>
+<td>Folder searched for existing SWE clones.</td>
+</tr>
+<tr>
+<td><code>REQUIRE_REAL_SWE_WORKDIR</code></td>
+<td><code>0</code></td>
+<td>both, SWE adapters</td>
+<td><code>1</code> fails when no clone is found; otherwise a tiny temporary git repository stands in.</td>
+</tr>
+<tr>
+<td><code>N_AGENTS</code>, <code>N_ROUNDS</code></td>
+<td><code>4</code>, <code>2</code></td>
+<td>both, team-size and protocol adapters</td>
+<td>Fallback team shape when the pilot passes none.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title"><code>run_gepa.sh</code> leaves the task endpoints at their defaults</p>
+<p><code>optimizers/mipro/run_mipro.sh</code> exports <code>MIPRO_TASK_ENDPOINTS=http://localhost:8000/v1</code>, but <code>optimizers/gepa/run_gepa.sh</code> sets only <code>GEPA_REFL_ENDPOINT</code>. Export <code>GEPA_TASK_ENDPOINTS</code> before a GEPA run, or task calls go to the built-in list above.</p>
+</div>
+<h2 id="sweeps">Sweeps<a class="headerlink" href="#sweeps" title="Link to this section">#</a></h2>
+<p>The baseline sweeps in <code>scripts/</code> read these (see <a href="../cli/#sweep-scripts">Command-Line Flags</a> for what each script passes):</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Read by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VLLM_BASE_URL</code></td>
+<td><code>http://localhost:8000/v1</code></td>
+<td>all three</td>
+</tr>
+<tr>
+<td><code>MODEL_ID</code></td>
+<td><code>Qwen/Qwen3.5-9B</code></td>
+<td>all three</td>
+</tr>
+<tr>
+<td><code>TOOLHOP_ALLOW_DATASET_EXEC</code></td>
+<td><code>1</code></td>
+<td>all three</td>
+</tr>
+<tr>
+<td><code>DATASETS</code></td>
+<td>all nine datasets; <code>hotpotqa lcb toolhop apibank swe</code> for protocols</td>
+<td>all three</td>
+</tr>
+<tr>
+<td><code>TOPOLOGIES</code></td>
+<td><code>independent sequential centralized decentralized</code></td>
+<td><code>run_communications.sh</code>, <code>run_teamsizes.sh</code></td>
+</tr>
+<tr>
+<td><code>FORMATS</code></td>
+<td><code>freeform semi_structured structured_soft</code></td>
+<td><code>run_communications.sh</code></td>
+</tr>
+<tr>
+<td><code>RVALUES</code></td>
+<td><code>2 4 8 10</code></td>
+<td><code>run_teamsizes.sh</code></td>
+</tr>
+<tr>
+<td><code>OUT_ROOT</code></td>
+<td><code>results/topologies_baseline</code></td>
+<td><code>run_topologies.sh</code></td>
+</tr>
+</tbody>
+</table>
+<p>The optimizer launchers change into their workspace, so a relative <code>OUT_ROOT</code> lands under <code>optimizers/gepa/</code> or <code>optimizers/mipro/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th><code>run_gepa.sh</code></th>
+<th><code>run_mipro.sh</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GEPA_REFL_ENDPOINT</code></td>
+<td><code>http://localhost:8000/v1</code></td>
+<td>not set</td>
+</tr>
+<tr>
+<td><code>MIPRO_REFL_ENDPOINT</code>, <code>MIPRO_TASK_ENDPOINTS</code></td>
+<td>not set</td>
+<td><code>http://localhost:8000/v1</code> each</td>
+</tr>
+<tr>
+<td><code>DATASETS</code></td>
+<td><code>bfcl gpqa hotpotqa math apps lcb swe apibank toolhop</code></td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>TOPOLOGIES</code></td>
+<td><code>single independent sequential sequential_crewai centralized centralized_autogen decentralized decentralized_openai</code></td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>TRAIN_SIZE</code>, <code>VAL_SIZE</code></td>
+<td><code>25</code>, <code>25</code></td>
+<td><code>25</code>, <code>25</code></td>
+</tr>
+<tr>
+<td><code>NUM_THREADS</code></td>
+<td><code>4</code></td>
+<td><code>4</code></td>
+</tr>
+<tr>
+<td><code>OUT_ROOT</code></td>
+<td><code>results/gepa</code></td>
+<td><code>results/mipro</code></td>
+</tr>
+<tr>
+<td><code>MAX_FULL_EVALS</code>, <code>REFLECTION_MINIBATCH_SIZE</code></td>
+<td><code>5</code>, <code>3</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>N_AGENTS</code>, <code>N_ROUNDS</code></td>
+<td><code>4</code>, <code>2</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>COMPONENT_SELECTOR</code>, <code>EARLY_STOP_PATIENCE</code></td>
+<td><code>round_robin</code>, <code>3</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>NUM_CANDIDATES</code>, <code>NUM_TRIALS</code></td>
+<td>—</td>
+<td><code>3</code>, <code>3</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="local-serving">Local serving<a class="headerlink" href="#local-serving" title="Link to this section">#</a></h2>
+<p>The scripts in <code>models/</code> read these. Raw <code>HOST</code> and <code>PORT</code> are avoided because conda's compiler activation sets <code>HOST</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th><code>serve_qwen3_5_9b.sh</code></th>
+<th><code>serve_qwen3_5_122b.sh</code></th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MODEL_ID</code></td>
+<td><code>Qwen/Qwen3.5-9B</code></td>
+<td><code>Qwen/Qwen3.5-122B-A10B-FP8</code></td>
+<td>Model to serve.</td>
+</tr>
+<tr>
+<td><code>CONDA_ENV</code></td>
+<td><code>mas-promptbench</code></td>
+<td><code>mas-promptbench</code></td>
+<td>Environment activated if not already active.</td>
+</tr>
+<tr>
+<td><code>HF_HOME</code></td>
+<td><code>$HOME/models</code></td>
+<td><code>$HOME/models</code></td>
+<td>Model cache; <code>MODEL_PATH</code> and <code>TRANSFORMERS_CACHE</code> default to it.</td>
+</tr>
+<tr>
+<td><code>MODEL_PATH</code></td>
+<td><code>$HF_HOME</code></td>
+<td><code>$HF_HOME</code></td>
+<td>vLLM <code>--download-dir</code>.</td>
+</tr>
+<tr>
+<td><code>VLLM_HOST</code></td>
+<td><code>0.0.0.0</code></td>
+<td><code>0.0.0.0</code></td>
+<td>Bind address.</td>
+</tr>
+<tr>
+<td><code>VLLM_BASE_PORT</code> (then <code>BASE_PORT</code>)</td>
+<td><code>8000</code></td>
+<td>—</td>
+<td>First port; replica <code>i</code> listens on base + <code>i</code>.</td>
+</tr>
+<tr>
+<td><code>VLLM_PORT</code></td>
+<td>—</td>
+<td><code>8000</code></td>
+<td>Server port.</td>
+</tr>
+<tr>
+<td><code>VLLM_GPU_LIST</code> (then <code>GPU_LIST</code>)</td>
+<td>every visible GPU</td>
+<td>—</td>
+<td>Comma-separated GPU indices, one replica each.</td>
+</tr>
+<tr>
+<td><code>NUM_REPLICAS</code></td>
+<td>GPUs in the list</td>
+<td>—</td>
+<td>Replicas to start.</td>
+</tr>
+<tr>
+<td><code>TENSOR_PARALLEL_SIZE</code></td>
+<td>—</td>
+<td><code>4</code></td>
+<td>Tensor-parallel degree.</td>
+</tr>
+<tr>
+<td><code>CUDA_VISIBLE_DEVICES</code></td>
+<td>set per replica</td>
+<td><code>0</code> to <code>TENSOR_PARALLEL_SIZE - 1</code></td>
+<td>GPUs used.</td>
+</tr>
+<tr>
+<td><code>MAX_MODEL_LEN</code></td>
+<td><code>131072</code></td>
+<td><code>262144</code></td>
+<td>Context length.</td>
+</tr>
+<tr>
+<td><code>GPU_MEMORY_UTIL</code></td>
+<td><code>0.90</code></td>
+<td><code>0.95</code></td>
+<td>vLLM GPU memory fraction.</td>
+</tr>
+<tr>
+<td><code>KV_CACHE_DTYPE</code></td>
+<td><code>auto</code></td>
+<td><code>fp8</code></td>
+<td>KV-cache dtype; <code>fp8</code> needs Hopper or Blackwell GPUs.</td>
+</tr>
+<tr>
+<td><code>LOG_DIR</code></td>
+<td><code>results/vllm_qwen3_5_9b</code></td>
+<td><code>results/vllm_qwen3_5_122b</code></td>
+<td>Log folder, relative to the repository root.</td>
+</tr>
+</tbody>
+</table>
+<p>Both scripts also append <code>$CONDA_PREFIX/targets/x86_64-linux/lib/stubs</code> to <code>LIBRARY_PATH</code> for flashinfer's JIT build.</p>
+<div class="admonition tip">
+<p class="admonition-title">Unset <code>MODEL_ID</code> before serving the 122B model</p>
+<p>The serve scripts and the runners share <code>MODEL_ID</code>. If your shell still exports <code>MODEL_ID=Qwen/Qwen3.5-9B</code> for runners, <code>serve_qwen3_5_122b.sh</code> serves the 9B model. Start it in a clean shell or pass <code>MODEL_ID=Qwen/Qwen3.5-122B-A10B-FP8</code>.</p>
+</div>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/reference/environment.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../cli/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Command-Line Flags</b></a>
+      <a class="pager-link next" href="../repository/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Repository Map</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#model-connection">Model connection</a>
+        <ul><li><a href="#seed-prompt-generator">Seed-prompt generator</a></li>
+        </ul>
+      </li>
+      <li><a href="#team-shape">Team shape</a>
+      </li>
+      <li><a href="#datasets">Datasets</a>
+        <ul><li><a href="#toolhop">ToolHop</a></li><li><a href="#api-bank">API-Bank</a></li><li><a href="#swe-bench-verified">SWE-bench Verified</a></li><li><a href="#livecodebench-apps-hotpotqa">LiveCodeBench, APPS, HotpotQA</a></li>
+        </ul>
+      </li>
+      <li><a href="#optimizers">Optimizers</a>
+      </li>
+      <li><a href="#sweeps">Sweeps</a>
+      </li>
+      <li><a href="#local-serving">Local serving</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="../../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

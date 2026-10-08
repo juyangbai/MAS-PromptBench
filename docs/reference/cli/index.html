@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="Command-Line Flags · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/reference/cli/">
+  <title>Command-Line Flags · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url="../.." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="../..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="../..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
+  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../extending/add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../../extending/add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../../extending/add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link is-active" href="./" aria-current="page">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Reference</span>
+    </p>
+    <article class="prose">
+      <h1 id="command-line-flags">Command-Line Flags<a class="headerlink" href="#command-line-flags" title="Link to this section">#</a></h1>
+<p class="lede">Every flag accepted by the benchmark's runners, optimizer pilots and sweep scripts, with its type and default as defined in the code. Runner flags differ by dataset family, so find your dataset first.</p>
+<h2 id="invoke-a-runner">Invoke a runner<a class="headerlink" href="#invoke-a-runner" title="Link to this section">#</a></h2>
+<p>Run runners as modules from the repository root, the way the sweep scripts do:</p>
+<pre class="highlight"><code class="language-bash">python -m topologies.single.hotpotqa.langgraph_hotpotqa --batch --limit 100 \
+  --out results/topologies_baseline/single_hotpotqa/predictions.jsonl</code></pre>
+<p>The file-path form needs the repository root on <code>PYTHONPATH</code>, because most runners import <code>topologies.*</code> (or <code>teamsizes.*</code>) before they add the root to <code>sys.path</code>:</p>
+<pre class="highlight"><code class="language-bash">PYTHONPATH=. python topologies/single/hotpotqa/langgraph_hotpotqa.py --batch --limit 100</code></pre>
+<p>Module paths follow the file layout: <code>topologies.&lt;topology&gt;[.&lt;framework&gt;].&lt;dataset&gt;.&lt;framework&gt;_&lt;dataset&gt;</code>, <code>teamsizes.&lt;topology&gt;.&lt;dataset&gt;.&lt;dataset&gt;_r&lt;N&gt;</code> and <code>communications.&lt;topology&gt;.&lt;dataset&gt;.&lt;dataset&gt;_&lt;format&gt;</code>. Every runner also accepts <code>--help</code>.</p>
+<h2 id="flag-families-at-a-glance">Flag families at a glance<a class="headerlink" href="#flag-families-at-a-glance" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Batch switch</th>
+<th>Output flag</th>
+<th><code>--only</code> style</th>
+<th>Run with no flags</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpqa</code>, <code>hotpotqa</code>, <code>math</code>, <code>lcb</code>, <code>apps</code></td>
+<td><code>--batch</code></td>
+<td><code>--out FILE</code> (no default)</td>
+<td><code>--only a b c</code></td>
+<td>canned demo</td>
+</tr>
+<tr>
+<td><code>bfcl</code></td>
+<td>none; <code>--batch</code> is an error</td>
+<td><code>--out-dir DIR</code></td>
+<td><code>--only a --only b</code></td>
+<td>batch of 5</td>
+</tr>
+<tr>
+<td><code>swe</code></td>
+<td>none; <code>--batch</code> is an error</td>
+<td><code>--out-dir DIR</code></td>
+<td><code>--only a --only b</code></td>
+<td>batch of 2</td>
+</tr>
+<tr>
+<td><code>toolhop</code></td>
+<td><code>--batch</code> accepted and ignored</td>
+<td><code>--out-dir DIR</code></td>
+<td><code>--only a --only b</code></td>
+<td>batch of 5</td>
+</tr>
+<tr>
+<td><code>apibank</code></td>
+<td><code>--batch</code> accepted and ignored</td>
+<td><code>--out-dir DIR</code></td>
+<td><code>--only a --only b</code></td>
+<td>batch of 2</td>
+</tr>
+<tr>
+<td>communication protocols</td>
+<td><code>--batch</code> accepted and ignored</td>
+<td><code>--out FILE</code></td>
+<td><code>--only a --only b</code></td>
+<td>full batch</td>
+</tr>
+</tbody>
+</table>
+<p><code>--only</code> comes in two styles. In the first family it is declared with <code>nargs="*"</code>, so you list IDs after one flag. Everywhere else it uses <code>action="append"</code>, so you repeat the flag once per ID.</p>
+<h2 id="gpqa-hotpotqa-math-lcb-apps">gpqa, hotpotqa, math, lcb, apps<a class="headerlink" href="#gpqa-hotpotqa-math-lcb-apps" title="Link to this section">#</a></h2>
+<p>All eight topology variants of these datasets share these flags.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--batch</code></td>
+<td>switch</td>
+<td>off</td>
+<td>Run the dataset. Without it the runner solves one built-in example and prints the trace.</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>int</td>
+<td>none (all rows)</td>
+<td>Maximum rows, applied after <code>--only</code> and <code>--offset</code>.</td>
+</tr>
+<tr>
+<td><code>--offset</code></td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Skip this many rows.</td>
+</tr>
+<tr>
+<td><code>--only</code></td>
+<td>list of IDs</td>
+<td>none</td>
+<td>Keep only these instance IDs. Space-separated after one <code>--only</code>.</td>
+</tr>
+<tr>
+<td><code>--out</code></td>
+<td>path</td>
+<td>none</td>
+<td>Per-instance JSONL file, overwritten on each run. Without it, a batch only prints scores.</td>
+</tr>
+</tbody>
+</table>
+<p>Dataset-specific flags:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Datasets</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--shuffle-seed</code></td>
+<td>gpqa</td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Seed for the per-row shuffling of answer choices.</td>
+</tr>
+<tr>
+<td><code>--difficulty</code></td>
+<td>lcb</td>
+<td><code>easy</code>, <code>medium</code>, <code>hard</code></td>
+<td>none</td>
+<td>Keep one LiveCodeBench difficulty tier.</td>
+</tr>
+<tr>
+<td><code>--platform</code></td>
+<td>lcb (LangGraph sequential, centralized and decentralized only)</td>
+<td><code>codeforces</code>, <code>leetcode</code>, <code>atcoder</code></td>
+<td>none</td>
+<td>Keep one source platform.</td>
+</tr>
+<tr>
+<td><code>--difficulty</code></td>
+<td>apps</td>
+<td><code>introductory</code>, <code>interview</code>, <code>competition</code></td>
+<td>none</td>
+<td>Keep one APPS difficulty tier.</td>
+</tr>
+<tr>
+<td><code>--max-tests-per-row</code></td>
+<td>apps</td>
+<td>int</td>
+<td><code>20</code></td>
+<td>Cap the tests run per problem; <code>-1</code> runs all.</td>
+</tr>
+</tbody>
+</table>
+<pre class="highlight"><code class="language-bash">python -m topologies.centralized.langgraph.lcb.langgraph_lcb --batch --limit 50 \
+  --out results/topologies_baseline/centralized_langgraph_lcb/predictions.jsonl</code></pre>
+<h2 id="bfcl">bfcl<a class="headerlink" href="#bfcl" title="Link to this section">#</a></h2>
+<p>BFCL runners always run a batch and have no <code>--batch</code> flag.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--category</code></td>
+<td><code>simple</code>, <code>multiple</code>, <code>parallel</code>, <code>parallel_multiple</code></td>
+<td><code>simple</code></td>
+<td>BFCL AST subset to evaluate.</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>int</td>
+<td><code>5</code></td>
+<td>Maximum rows. Ignored when <code>--only</code> is given.</td>
+</tr>
+<tr>
+<td><code>--offset</code></td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Skip this many rows.</td>
+</tr>
+<tr>
+<td><code>--only</code></td>
+<td>ID, repeatable</td>
+<td>none</td>
+<td>Keep only these instance IDs, such as <code>simple_0</code>.</td>
+</tr>
+<tr>
+<td><code>--out-dir</code></td>
+<td>path</td>
+<td>per variant, see <a href="#default-output-folders">Default output folders</a></td>
+<td>Folder for <code>predictions.jsonl</code>, <code>results.jsonl</code> and <code>traces/</code>.</td>
+</tr>
+</tbody>
+</table>
+<pre class="highlight"><code class="language-bash">python -m topologies.single.bfcl.langgraph_bfcl --only simple_0 --only simple_1 \
+  --out-dir results/bfcl_single_check</code></pre>
+<h2 id="swe">swe<a class="headerlink" href="#swe" title="Link to this section">#</a></h2>
+<p>SWE-bench runners always run a batch and have no <code>--batch</code> flag.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--subset</code></td>
+<td>str</td>
+<td><code>test</code></td>
+<td>Hugging Face split of SWE-bench Verified.</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>int</td>
+<td><code>2</code></td>
+<td>Maximum instances. Ignored when <code>--only</code> is given.</td>
+</tr>
+<tr>
+<td><code>--offset</code></td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Skip this many instances.</td>
+</tr>
+<tr>
+<td><code>--only</code></td>
+<td>ID, repeatable</td>
+<td>none</td>
+<td>Keep only these instance IDs, such as <code>astropy__astropy-12907</code>.</td>
+</tr>
+<tr>
+<td><code>--workdir-root</code></td>
+<td>path</td>
+<td>per variant, under <code>~</code></td>
+<td>Root for per-instance repository clones.</td>
+</tr>
+<tr>
+<td><code>--out-dir</code></td>
+<td>path</td>
+<td>per variant</td>
+<td>Folder for <code>predictions.jsonl</code> and <code>results.jsonl</code>.</td>
+</tr>
+<tr>
+<td><code>--eval</code></td>
+<td><code>local</code>, <code>singularity</code>, <code>none</code></td>
+<td><code>local</code> (single); <code>singularity</code> (all others)</td>
+<td>Test backend: pytest on the host, pytest inside the per-instance Singularity image, or skip and keep only the patches. Only the single runner offers <code>local</code>.</td>
+</tr>
+<tr>
+<td><code>--skip-eval</code></td>
+<td>switch</td>
+<td>off</td>
+<td>Same as <code>--eval none</code>. Centralized and decentralized LangGraph runners only.</td>
+</tr>
+<tr>
+<td><code>--keep-workdirs</code></td>
+<td>switch</td>
+<td>off</td>
+<td>Keep the per-instance clones after solving.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="toolhop">toolhop<a class="headerlink" href="#toolhop" title="Link to this section">#</a></h2>
+<p>ToolHop runners always run a batch. They execute dataset-provided Python tools, so they refuse to solve unless <code>TOOLHOP_ALLOW_DATASET_EXEC=1</code> is set.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--batch</code></td>
+<td>switch</td>
+<td>off</td>
+<td>Accepted for uniformity; has no effect.</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>int</td>
+<td><code>5</code></td>
+<td>Maximum rows. Ignored when <code>--only</code> is given.</td>
+</tr>
+<tr>
+<td><code>--offset</code></td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Skip this many rows.</td>
+</tr>
+<tr>
+<td><code>--only</code></td>
+<td>ID, repeatable</td>
+<td>none</td>
+<td>Keep only these dataset IDs.</td>
+</tr>
+<tr>
+<td><code>--out-dir</code></td>
+<td>path</td>
+<td><code>results/toolhop/&lt;style&gt;</code></td>
+<td>Folder for <code>predictions.jsonl</code>, <code>results.jsonl</code> and <code>traces/</code>.</td>
+</tr>
+<tr>
+<td><code>--smoke-dataset</code></td>
+<td>switch</td>
+<td>off</td>
+<td>Load and validate ToolHop, print a summary and exit, without model calls or tool execution.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="apibank">apibank<a class="headerlink" href="#apibank" title="Link to this section">#</a></h2>
+<p>API-Bank runners always run a batch. At the default level <code>all</code> they read the task list from <code>benchmarks/apibank/apibank_eval_ids.json</code>; other levels are built from the vendored API-Bank source.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--batch</code></td>
+<td>switch</td>
+<td>off</td>
+<td>Accepted for uniformity; has no effect.</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>int</td>
+<td><code>2</code></td>
+<td>Maximum rows. Applied after <code>--only</code>, so raise it when you pass more than two IDs.</td>
+</tr>
+<tr>
+<td><code>--offset</code></td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Skip this many rows.</td>
+</tr>
+<tr>
+<td><code>--only</code></td>
+<td>ID, repeatable</td>
+<td>none</td>
+<td>Keep only these task IDs.</td>
+</tr>
+<tr>
+<td><code>--out-dir</code></td>
+<td>path</td>
+<td><code>results/apibank/&lt;style&gt;</code></td>
+<td>Folder for <code>predictions.jsonl</code>, <code>results.jsonl</code> and traces.</td>
+</tr>
+<tr>
+<td><code>--summary</code></td>
+<td>switch</td>
+<td>off</td>
+<td>Print a dataset summary and exit without calling the model.</td>
+</tr>
+<tr>
+<td><code>--level</code></td>
+<td><code>all</code>, <code>1</code>, <code>2</code>, <code>3</code></td>
+<td>none, which falls back to <code>APIBANK_LEVEL</code> (<code>all</code>)</td>
+<td>API-Bank level slice.</td>
+</tr>
+<tr>
+<td><code>--curated-path</code></td>
+<td>path</td>
+<td>none</td>
+<td>Use this curated manifest; sets <code>APIBANK_CURATED_PATH</code>.</td>
+</tr>
+<tr>
+<td><code>--toolsearcher-scorer</code></td>
+<td><code>official</code>, <code>upstream</code>, <code>keyword</code></td>
+<td>none: <code>official</code> for levels <code>all</code>, 2 and 3, <code>keyword</code> for level 1</td>
+<td>ToolSearcher scorer; sets <code>APIBANK_TOOLSEARCHER_SCORER</code>.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Some runners append</p>
+<p>BFCL, ToolHop and API-Bank runners open <code>predictions.jsonl</code> and <code>results.jsonl</code> in append mode, so a second run into the same <code>--out-dir</code> adds rows to the first. Use a fresh folder per run. SWE-bench runners empty both files when a batch starts, and the <code>--out</code> file of the first family is overwritten.</p>
+</div>
+<h2 id="default-output-folders">Default output folders<a class="headerlink" href="#default-output-folders" title="Link to this section">#</a></h2>
+<p>Paths are relative to the repository root. <code>&lt;style&gt;</code> is the value used by ToolHop and API-Bank.</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th><code>bfcl --out-dir</code></th>
+<th><code>swe --out-dir</code></th>
+<th><code>swe --workdir-root</code></th>
+<th><code>&lt;style&gt;</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>single</td>
+<td><code>results/bfcl</code></td>
+<td><code>results/swe_bench</code></td>
+<td><code>~/swe_work</code></td>
+<td><code>single_langgraph</code></td>
+</tr>
+<tr>
+<td>independent</td>
+<td><code>results/bfcl_independent</code></td>
+<td><code>results/swe_bench_independent</code></td>
+<td><code>~/swe_work_independent</code></td>
+<td><code>independent_langgraph</code></td>
+</tr>
+<tr>
+<td>sequential, LangGraph</td>
+<td><code>results/bfcl_sequential_langgraph</code></td>
+<td><code>results/swe_bench_sequential_langgraph</code></td>
+<td><code>~/swe_work_sequential_langgraph</code></td>
+<td><code>sequential_langgraph</code></td>
+</tr>
+<tr>
+<td>sequential, CrewAI</td>
+<td><code>results/bfcl_sequential</code></td>
+<td><code>results/swe_bench_sequential</code></td>
+<td><code>~/swe_work_sequential</code></td>
+<td><code>sequential_crewai</code></td>
+</tr>
+<tr>
+<td>centralized, LangGraph</td>
+<td><code>results/bfcl_centralized_langgraph</code></td>
+<td><code>results/swe_bench_centralized_langgraph</code></td>
+<td><code>~/swe_work_centralized_langgraph</code></td>
+<td><code>centralized_langgraph</code></td>
+</tr>
+<tr>
+<td>centralized, AutoGen</td>
+<td><code>results/bfcl_centralized</code></td>
+<td><code>results/swe_bench_centralized</code></td>
+<td><code>~/swe_work_centralized</code></td>
+<td><code>centralized_autogen</code></td>
+</tr>
+<tr>
+<td>decentralized, LangGraph</td>
+<td><code>results/bfcl_decentralized_langgraph</code></td>
+<td><code>results/swe_bench_decentralized_langgraph</code></td>
+<td><code>~/swe_work_decentralized_langgraph</code></td>
+<td><code>decentralized_langgraph</code></td>
+</tr>
+<tr>
+<td>decentralized, OpenAI SDK</td>
+<td><code>results/bfcl_decentralized</code></td>
+<td><code>results/swe_bench_decentralized</code></td>
+<td><code>~/swe_work_decentralized</code></td>
+<td><code>decentralized_openai</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="communication-protocol-runners">Communication-protocol runners<a class="headerlink" href="#communication-protocol-runners" title="Link to this section">#</a></h2>
+<p>The 60 runners under <code>communications/</code> share one CLI, <code>cli_main</code> in <code>communications/communication_formats.py</code>. Topologies are <code>independent</code>, <code>sequential</code>, <code>centralized</code> and <code>decentralized</code>; datasets <code>hotpotqa</code>, <code>lcb</code>, <code>toolhop</code>, <code>apibank</code> and <code>swe</code>; formats <code>freeform</code>, <code>semi_structured</code> and <code>structured_soft</code>. Each wraps the LangGraph runner of its topology and dataset.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Type</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--batch</code></td>
+<td>switch</td>
+<td>off</td>
+<td>Accepted; the runner always runs a batch.</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>int</td>
+<td>none (all rows)</td>
+<td>Maximum rows.</td>
+</tr>
+<tr>
+<td><code>--offset</code></td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Skip this many rows.</td>
+</tr>
+<tr>
+<td><code>--only</code></td>
+<td>ID, repeatable</td>
+<td>none</td>
+<td>Keep only these instance IDs.</td>
+</tr>
+<tr>
+<td><code>--out</code></td>
+<td>path</td>
+<td><code>results/communications_baseline/&lt;topology&gt;_&lt;dataset&gt;_&lt;format&gt;/results.jsonl</code></td>
+<td>Output JSONL file.</td>
+</tr>
+</tbody>
+</table>
+<pre class="highlight"><code class="language-bash">python -m communications.centralized.hotpotqa.hotpotqa_structured_soft --batch --limit 100</code></pre>
+<p>ToolHop cells still need <code>TOOLHOP_ALLOW_DATASET_EXEC=1</code>. See <a href="../../mas/communication-protocols/">Communication Protocols</a>.</p>
+<h2 id="team-size-runners">Team-size runners<a class="headerlink" href="#team-size-runners" title="Link to this section">#</a></h2>
+<p>The 144 runners under <code>teamsizes/&lt;topology&gt;/&lt;dataset&gt;/&lt;dataset&gt;_r&lt;N&gt;.py</code> (N is 2, 4, 8 or 10) take the same flags, types and defaults as the topology runners for their dataset, including <code>--skip-eval</code> on the centralized and decentralized SWE-bench runners and <code>--platform</code> on the non-independent LCB runners. Only the default folders differ:</p>
+<table>
+<thead>
+<tr>
+<th>Dataset family</th>
+<th>Default folders</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpqa</code>, <code>hotpotqa</code>, <code>math</code>, <code>lcb</code>, <code>apps</code></td>
+<td>no output file; pass <code>--out</code></td>
+</tr>
+<tr>
+<td><code>bfcl</code></td>
+<td><code>results/bfcl_&lt;topology&gt;_r&lt;N&gt;</code> for N = 2, 8, 10; at N = 4 the LangGraph topology runner's folder</td>
+</tr>
+<tr>
+<td><code>swe</code></td>
+<td><code>results/swe_bench_&lt;topology&gt;_r&lt;N&gt;</code> and <code>~/swe_work_&lt;topology&gt;_r&lt;N&gt;</code> for N = 2, 8, 10; at N = 4 the LangGraph topology runner's folders</td>
+</tr>
+<tr>
+<td><code>toolhop</code>, <code>apibank</code></td>
+<td><code>results/&lt;dataset&gt;/&lt;topology&gt;_&lt;dataset&gt;_r&lt;N&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Pass an explicit <code>--out</code> or <code>--out-dir</code> that names the team size, such as <code>results/teamsizes_r4/hotpotqa/centralized_r4/</code>, so runs at different sizes never share a file. See <a href="../../mas/team-sizes/">Team Sizes</a>.</p>
+<h2 id="optimizer-pilots">Optimizer pilots<a class="headerlink" href="#optimizer-pilots" title="Link to this section">#</a></h2>
+<p>Run the pilots from their workspace folder (<code>optimizers/gepa</code> or <code>optimizers/mipro</code>). The default <code>--out</code> sits under that workspace's <code>results/</code> folder; a relative <code>--out</code> is resolved against your current folder. The defaults are smoke-test sized. <a href="../../optimizers/gepa/">GEPA</a> and <a href="../../optimizers/mipro/">MIPRO</a> explain each setting.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>GEPA default</th>
+<th>MIPRO default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--dataset</code></td>
+<td>required</td>
+<td>required</td>
+<td>Registered dataset name.</td>
+</tr>
+<tr>
+<td><code>--topology</code></td>
+<td>required</td>
+<td>required</td>
+<td>Optimizer topology name for that dataset.</td>
+</tr>
+<tr>
+<td><code>--train-size</code>, <code>--val-size</code></td>
+<td><code>1</code>, <code>1</code></td>
+<td><code>1</code>, <code>1</code></td>
+<td>Split sizes.</td>
+</tr>
+<tr>
+<td><code>--offset</code>, <code>--split-seed</code></td>
+<td><code>0</code>, <code>0</code></td>
+<td><code>0</code>, <code>0</code></td>
+<td>Split offset and shuffle seed.</td>
+</tr>
+<tr>
+<td><code>--n-agents</code>, <code>--n-rounds</code></td>
+<td><code>2</code>, <code>1</code></td>
+<td><code>2</code>, <code>1</code></td>
+<td>Agents for independent and decentralized pairs; debate rounds for decentralized pairs.</td>
+</tr>
+<tr>
+<td><code>--auto</code></td>
+<td>none</td>
+<td>none</td>
+<td><code>light</code>, <code>medium</code> or <code>heavy</code> budget preset.</td>
+</tr>
+<tr>
+<td><code>--num-threads</code></td>
+<td><code>1</code></td>
+<td><code>1</code></td>
+<td>Parallel evaluation threads.</td>
+</tr>
+<tr>
+<td><code>--out</code></td>
+<td><code>results/&lt;topology&gt;_&lt;dataset&gt;_real_gepa</code></td>
+<td><code>results/&lt;topology&gt;_&lt;dataset&gt;_real_mipro</code></td>
+<td>Output folder.</td>
+</tr>
+<tr>
+<td><code>--max-full-evals</code></td>
+<td><code>1</code></td>
+<td>—</td>
+<td>GEPA budget; replaced by <code>--auto</code> when set.</td>
+</tr>
+<tr>
+<td><code>--reflection-minibatch-size</code></td>
+<td><code>1</code></td>
+<td>—</td>
+<td>Rows per reflection step.</td>
+</tr>
+<tr>
+<td><code>--component-selector</code></td>
+<td><code>all</code></td>
+<td>—</td>
+<td><code>all</code> or <code>round_robin</code>: which role prompts to mutate per step.</td>
+</tr>
+<tr>
+<td><code>--early-stop-patience</code></td>
+<td><code>0</code> (off)</td>
+<td>—</td>
+<td>Stop after this many full evaluations without improvement.</td>
+</tr>
+<tr>
+<td><code>--skip-perfect-score</code></td>
+<td>off</td>
+<td>—</td>
+<td>Passed to DSPy's GEPA as <code>skip_perfect_score</code>.</td>
+</tr>
+<tr>
+<td><code>--baseline-only</code></td>
+<td>off</td>
+<td>—</td>
+<td>Score the seed prompts and stop.</td>
+</tr>
+<tr>
+<td><code>--num-candidates</code>, <code>--num-trials</code></td>
+<td>—</td>
+<td><code>3</code>, <code>3</code></td>
+<td>MIPRO search size; must be omitted when <code>--auto</code> is set.</td>
+</tr>
+<tr>
+<td><code>--max-bootstrapped-demos</code>, <code>--max-labeled-demos</code></td>
+<td>—</td>
+<td><code>4</code>, <code>0</code></td>
+<td>Few-shot demo limits.</td>
+</tr>
+<tr>
+<td><code>--minibatch</code>, <code>--minibatch-size</code>, <code>--minibatch-full-eval-steps</code></td>
+<td>—</td>
+<td>off, <code>35</code>, <code>5</code></td>
+<td>Minibatch evaluation.</td>
+</tr>
+<tr>
+<td><code>--seed</code>, <code>--init-temperature</code></td>
+<td>—</td>
+<td><code>9</code>, <code>1.0</code></td>
+<td>Passed to MIPROv2.</td>
+</tr>
+<tr>
+<td><code>--metric-threshold</code>, <code>--max-errors</code></td>
+<td>—</td>
+<td>none, none</td>
+<td>Passed to MIPROv2.</td>
+</tr>
+<tr>
+<td><code>--view-data-batch-size</code></td>
+<td>—</td>
+<td><code>10</code></td>
+<td>Passed to MIPROv2's <code>compile</code>.</td>
+</tr>
+<tr>
+<td><code>--program-aware-proposer</code>, <code>--data-aware-proposer</code>, <code>--tip-aware-proposer</code>, <code>--fewshot-aware-proposer</code></td>
+<td>—</td>
+<td>on (each has a <code>--no-</code> form)</td>
+<td>Which inputs MIPROv2's instruction proposer uses.</td>
+</tr>
+<tr>
+<td><code>--provide-traceback</code>, <code>--verbose</code></td>
+<td>—</td>
+<td>off, off</td>
+<td>Passed to MIPROv2.</td>
+</tr>
+</tbody>
+</table>
+<p>The sweep launchers pass larger values. <code>optimizers/gepa/run_gepa.sh</code> uses 25/25 splits, <code>--max-full-evals 5</code>, <code>--reflection-minibatch-size 3</code>, <code>--num-threads 4</code>, <code>--n-agents 4</code>, <code>--n-rounds 2</code>, <code>--component-selector round_robin</code>, <code>--early-stop-patience 3</code> and <code>--skip-perfect-score</code>. <code>optimizers/mipro/run_mipro.sh</code> uses 25/25 splits, 3 candidates, 3 trials and 4 threads. Their environment knobs are listed in <a href="../environment/">Environment Variables</a>.</p>
+<h2 id="sweep-scripts">Sweep scripts<a class="headerlink" href="#sweep-scripts" title="Link to this section">#</a></h2>
+<p>The three baseline sweeps in <code>scripts/</code> run one process per cell against one endpoint. Each changes into the repository root first.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th><code>run_topologies.sh</code></th>
+<th><code>run_communications.sh</code></th>
+<th><code>run_teamsizes.sh</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VLLM_BASE_URL</code></td>
+<td><code>http://localhost:8000/v1</code></td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>MODEL_ID</code></td>
+<td><code>Qwen/Qwen3.5-9B</code></td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>TOOLHOP_ALLOW_DATASET_EXEC</code></td>
+<td><code>1</code></td>
+<td><code>1</code></td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td><code>DATASETS</code></td>
+<td>all nine</td>
+<td><code>hotpotqa lcb toolhop apibank swe</code></td>
+<td>all nine</td>
+</tr>
+<tr>
+<td><code>TOPOLOGIES</code></td>
+<td>not read; the eight variants are fixed in <code>TOPOS</code></td>
+<td><code>independent sequential centralized decentralized</code></td>
+<td><code>independent sequential centralized decentralized</code></td>
+</tr>
+<tr>
+<td><code>FORMATS</code></td>
+<td>not read</td>
+<td><code>freeform semi_structured structured_soft</code></td>
+<td>not read</td>
+</tr>
+<tr>
+<td><code>RVALUES</code></td>
+<td>not read</td>
+<td>not read</td>
+<td><code>2 4 8 10</code></td>
+</tr>
+<tr>
+<td><code>OUT_ROOT</code></td>
+<td><code>results/topologies_baseline</code></td>
+<td>not read</td>
+<td>not read</td>
+</tr>
+</tbody>
+</table>
+<p>Row limits are fixed in each script's <code>LIMIT</code> table: gpqa 100, hotpotqa 100, math 100, lcb 50, apps 50, bfcl 100, swe 30, apibank 100, toolhop 100, and 50 for any dataset not listed. The header comments mention a <code>&lt;DATASET&gt;_LIMIT</code> override, but no script reads one; edit the table instead.</p>
+<p>What each script passes:</p>
+<ul>
+<li><code>run_topologies.sh</code> runs <code>--batch --limit N --out $OUT_ROOT/&lt;variant&gt;_&lt;dataset&gt;/predictions.jsonl</code>, except for apibank and toolhop, which get <code>--batch --limit N</code> and write to their default folders.</li>
+<li><code>run_communications.sh</code> runs <code>--batch --limit N</code> and relies on the default <code>--out</code>.</li>
+<li><code>run_teamsizes.sh</code> runs <code>--batch --limit N</code> with no output flag.</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Known launcher gaps</p>
+<p>BFCL and SWE-bench runners reject <code>--batch</code> (and <code>--out</code>), so those cells fail in <code>run_topologies.sh</code> and <code>run_teamsizes.sh</code>; run them by hand with <code>--out-dir</code>. Because <code>run_teamsizes.sh</code> passes no <code>--out</code>, its gpqa, hotpotqa, math, lcb and apps cells print scores but save no predictions.</p>
+</div>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/reference/cli.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../../extending/add-optimizer/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Add an Optimizer</b></a>
+      <a class="pager-link next" href="../environment/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Environment Variables</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#invoke-a-runner">Invoke a runner</a>
+      </li>
+      <li><a href="#flag-families-at-a-glance">Flag families at a glance</a>
+      </li>
+      <li><a href="#gpqa-hotpotqa-math-lcb-apps">gpqa, hotpotqa, math, lcb, apps</a>
+      </li>
+      <li><a href="#bfcl">bfcl</a>
+      </li>
+      <li><a href="#swe">swe</a>
+      </li>
+      <li><a href="#toolhop">toolhop</a>
+      </li>
+      <li><a href="#apibank">apibank</a>
+      </li>
+      <li><a href="#default-output-folders">Default output folders</a>
+      </li>
+      <li><a href="#communication-protocol-runners">Communication-protocol runners</a>
+      </li>
+      <li><a href="#team-size-runners">Team-size runners</a>
+      </li>
+      <li><a href="#optimizer-pilots">Optimizer pilots</a>
+      </li>
+      <li><a href="#sweep-scripts">Sweep scripts</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="../../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

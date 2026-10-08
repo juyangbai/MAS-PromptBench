@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="All Tasks · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/tasks/">
+  <title>All Tasks · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url=".." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link is-active" href="./" aria-current="page">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="apps/">APPS</a></li>
+  <li><a class="nav-link" href="swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../optimizers/">Overview</a></li>
+  <li><a class="nav-link" href="../optimizers/gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="../optimizers/mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="../optimizers/running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../evaluation/protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../evaluation/results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../extending/add-dataset/">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../extending/add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../extending/add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../reference/cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../reference/environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../reference/repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Tasks</span>
+    </p>
+    <article class="prose">
+      <h1 id="all-tasks">All Tasks<a class="headerlink" href="#all-tasks" title="Link to this section">#</a></h1>
+<p class="lede">MAS-PromptBench runs every topology and optimizer on nine existing benchmarks, three each for reasoning, coding and tool calling. This page lists what each task asks for, how it is scored and what it needs before you run it.</p>
+<h2 id="three-domains">Three domains<a class="headerlink" href="#three-domains" title="Link to this section">#</a></h2>
+<p>The tasks are grouped by what the final agent has to produce and how that output is checked:</p>
+<ul>
+<li><strong>Reasoning</strong>: GPQA-Diamond, HotpotQA and MATH. The agents end with a short answer (a letter, a short phrase, a boxed expression), and the scorer compares it with a gold answer after normalization.</li>
+<li><strong>Coding</strong>: LiveCodeBench, APPS and SWE-bench Verified. The agents produce a program or a repository patch, and the scorer runs tests against it.</li>
+<li><strong>Tool calling</strong>: BFCL, ToolHop and API-Bank. The agents emit function or API calls against schemas given with each task, and the scorer checks the calls themselves or the answer the call chain produces.</li>
+</ul>
+<p>Each task fixes the form of the final answer with an output contract, defined in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/output_contracts.py"><code>topologies/output_contracts.py</code></a>. The runner adds it to the final role's system prompt at load time, so an optimizer can rewrite role prompts without removing the format the scorer expects. The paper also reports its results per domain.</p>
+<h2 id="at-a-glance">At a glance<a class="headerlink" href="#at-a-glance" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>CLI name</th>
+<th>Domain</th>
+<th>Metric (scorer)</th>
+<th style="text-align: right;">Launcher limit</th>
+<th style="text-align: right;">Frozen IDs</th>
+<th>Special setup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="gpqa/">GPQA-Diamond</a></td>
+<td><code>gpqa</code></td>
+<td>Reasoning</td>
+<td>Accuracy (letter match)</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">100</td>
+<td>Gated Hugging Face dataset</td>
+</tr>
+<tr>
+<td><a href="hotpotqa/">HotpotQA</a></td>
+<td><code>hotpotqa</code></td>
+<td>Reasoning</td>
+<td>Exact match and F1 (official)</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">100</td>
+<td>Network access to Wikipedia</td>
+</tr>
+<tr>
+<td><a href="math/">MATH</a></td>
+<td><code>math</code></td>
+<td>Reasoning</td>
+<td>Accuracy (Hendrycks <code>is_equiv</code>)</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">100</td>
+<td>None</td>
+</tr>
+<tr>
+<td><a href="livecodebench/">LiveCodeBench</a></td>
+<td><code>lcb</code></td>
+<td>Coding</td>
+<td>pass@1</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">50</td>
+<td>Runs generated code on the host</td>
+</tr>
+<tr>
+<td><a href="apps/">APPS</a></td>
+<td><code>apps</code></td>
+<td>Coding</td>
+<td>Strict accuracy (pass@1)</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">50</td>
+<td>Runs generated code on the host</td>
+</tr>
+<tr>
+<td><a href="swe-bench/">SWE-bench Verified</a></td>
+<td><code>swe</code></td>
+<td>Coding</td>
+<td>Resolved rate</td>
+<td style="text-align: right;">30</td>
+<td style="text-align: right;">30</td>
+<td>git, Singularity, per-instance images</td>
+</tr>
+<tr>
+<td><a href="bfcl/">BFCL</a></td>
+<td><code>bfcl</code></td>
+<td>Tool calling</td>
+<td>AST match (<code>bfcl-eval</code>)</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">25</td>
+<td>None</td>
+</tr>
+<tr>
+<td><a href="toolhop/">ToolHop</a></td>
+<td><code>toolhop</code></td>
+<td>Tool calling</td>
+<td>Answer accuracy</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">100</td>
+<td><code>TOOLHOP_ALLOW_DATASET_EXEC=1</code></td>
+</tr>
+<tr>
+<td><a href="api-bank/">API-Bank</a></td>
+<td><code>apibank</code></td>
+<td>Tool calling</td>
+<td>API-call accuracy (API-Bank checkers)</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">100</td>
+<td>None (source ships in the repo)</td>
+</tr>
+</tbody>
+</table>
+<p>The CLI name is the task's folder name and the optimizers' <code>--dataset</code> value. The launcher limit is the <code>--limit</code> that <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/scripts/run_topologies.sh"><code>scripts/run_topologies.sh</code></a> passes. The frozen IDs, 655 in total, are the instances behind the reported scores, listed in <code>benchmarks/&lt;task&gt;/&lt;task&gt;_eval_ids.json</code>.</p>
+<div class="cards">
+<ul>
+<li><a href="gpqa/">GPQA-Diamond</a>
+  Graduate-level science questions with four options.</li>
+<li><a href="hotpotqa/">HotpotQA</a>
+  Multi-hop questions answered from live Wikipedia.</li>
+<li><a href="math/">MATH</a>
+  Level 5 precalculus problems with a boxed final answer.</li>
+<li><a href="livecodebench/">LiveCodeBench</a>
+  Contest programming problems judged on hidden tests.</li>
+<li><a href="apps/">APPS</a>
+  Python programming problems judged on capped test sets.</li>
+<li><a href="swe-bench/">SWE-bench Verified</a>
+  Real GitHub issues fixed by editing the repository.</li>
+<li><a href="bfcl/">BFCL</a>
+  Function calls checked by the official AST checker.</li>
+<li><a href="toolhop/">ToolHop</a>
+  Chains of tool calls that end in one exact answer.</li>
+<li><a href="api-bank/">API-Bank</a>
+  The next API call in a dialogue, executed and checked.</li>
+</ul>
+</div>
+<h2 id="running-a-task">Running a task<a class="headerlink" href="#running-a-task" title="Link to this section">#</a></h2>
+<p>Every task has one runner per topology variant, at <code>topologies/&lt;topology&gt;/[&lt;framework&gt;/]&lt;task&gt;/&lt;framework&gt;_&lt;task&gt;.py</code>. Run them from the repository root as modules, the way the sweep launcher does:</p>
+<pre class="highlight"><code class="language-bash">python -m topologies.single.gpqa.langgraph_gpqa --batch --limit 100 \
+  --out results/topologies_baseline/single_gpqa/predictions.jsonl</code></pre>
+<div class="admonition warning">
+<p class="admonition-title">Run runners as modules</p>
+<p>Most runners import the <code>topologies</code> package before they add the repository root to <code>sys.path</code>. Started as <code>python topologies/.../&lt;file&gt;.py</code> without <code>PYTHONPATH</code> set to the repository root, they stop with <code>ModuleNotFoundError: No module named 'topologies'</code>.</p>
+</div>
+<p>The runners come in three flag families:</p>
+<table>
+<thead>
+<tr>
+<th>Tasks</th>
+<th>Batch mode</th>
+<th>Output</th>
+<th>No-argument run</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpqa</code>, <code>hotpotqa</code>, <code>math</code>, <code>lcb</code>, <code>apps</code></td>
+<td>needs <code>--batch</code></td>
+<td><code>--out &lt;file.jsonl&gt;</code>; without it, scores are only printed</td>
+<td>a built-in smoke demo</td>
+</tr>
+<tr>
+<td><code>bfcl</code>, <code>swe</code></td>
+<td>always; <code>--batch</code> is rejected</td>
+<td><code>--out-dir &lt;dir&gt;</code></td>
+<td>a small batch (5 BFCL <code>simple</code> instances, 2 SWE instances)</td>
+</tr>
+<tr>
+<td><code>toolhop</code>, <code>apibank</code></td>
+<td>always; <code>--batch</code> is accepted and ignored</td>
+<td><code>--out-dir &lt;dir&gt;</code></td>
+<td>a small batch (5 or 2 instances)</td>
+</tr>
+</tbody>
+</table>
+<p>All runners take <code>--limit</code>, <code>--offset</code> and <code>--only</code>. The launcher selects instances with <code>--limit</code> alone, which takes the first rows. To score exactly the frozen IDs, pass them to <code>--only</code>; each task page shows how.</p>
+<div class="admonition note">
+<p class="admonition-title">Launcher and BFCL or SWE</p>
+<p><code>scripts/run_topologies.sh</code> passes <code>--batch</code> to every runner and <code>--out</code> to all but ToolHop and API-Bank. The BFCL and SWE runners reject both flags, so run those two tasks directly as shown on their pages.</p>
+</div>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Link to this section">#</a></h2>
+<p>See <a href="../evaluation/protocol/">Evaluation Protocol</a> for how runs are scored and <a href="../evaluation/results/">Read the Results</a> for the files they write. For the multi-agent side of each run, start at <a href="../mas/topologies/">Workflow Topologies</a>; for the optimizer, see <a href="../optimizers/gepa/">GEPA</a>.</p>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/tasks/index.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../getting-started/quick-start/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Quick Start</b></a>
+      <a class="pager-link next" href="gpqa/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>GPQA-Diamond</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#three-domains">Three domains</a>
+      </li>
+      <li><a href="#at-a-glance">At a glance</a>
+      </li>
+      <li><a href="#running-a-task">Running a task</a>
+      </li>
+      <li><a href="#next-steps">Next steps</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <meta property="og:title" content="Add a Dataset · MAS-PromptBench Docs">
+  <meta property="og:description" content="Tutorial and reference for MAS-PromptBench, a benchmark for system-prompt optimization in multi-agent LLM systems.">
+  <link rel="canonical" href="https://juyangbai.github.io/MAS-PromptBench/docs/extending/add-dataset/">
+  <title>Add a Dataset · MAS-PromptBench Docs</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <!-- page transition to and from the project page ("Short glide, ordered") -->
+  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script>
+    /* Apply a stored theme before first paint. "system" stores nothing. */
+    (function () {
+      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    })();
+  </script>
+  <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
+  <link rel="expect" href="#mpb-title" blocking="render">
+</head>
+<body>
+<div class="site" data-base-url="../.." data-version="20261008091509">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <a class="brand" href="../..">
+      <span class="brand-name mpb-title" id="mpb-title">MAS-PromptBench</span><span class="brand-docs">Docs</span>
+    </a>
+    <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
+    </button>
+    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-head">
+      <span class="nav-label">Navigation</span>
+      <button class="icon-btn nav-close" type="button" aria-label="Close navigation"><svg class="i" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list nav-l0">
+  <li><a class="nav-link" href="../..">Home</a></li>
+  <li class="nav-section">
+    <span class="nav-label">Getting Started</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../getting-started/overview/">Overview</a></li>
+  <li><a class="nav-link" href="../../getting-started/installation/">Installation</a></li>
+  <li><a class="nav-link" href="../../getting-started/connect-a-model/">Connect a Model</a></li>
+  <li><a class="nav-link" href="../../getting-started/quick-start/">Quick Start</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Tasks</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../tasks/">All Tasks</a></li>
+  <li class="nav-section">
+    <details>
+      <summary>Reasoning<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/gpqa/">GPQA-Diamond</a></li>
+  <li><a class="nav-link" href="../../tasks/hotpotqa/">HotpotQA</a></li>
+  <li><a class="nav-link" href="../../tasks/math/">MATH</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Coding<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/livecodebench/">LiveCodeBench</a></li>
+  <li><a class="nav-link" href="../../tasks/apps/">APPS</a></li>
+  <li><a class="nav-link" href="../../tasks/swe-bench/">SWE-Bench Verified</a></li>
+</ul>
+    </details>
+  </li>
+  <li class="nav-section">
+    <details>
+      <summary>Tool-Calling<svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg></summary>
+      <ul class="nav-list nav-l2">
+  <li><a class="nav-link" href="../../tasks/bfcl/">BFCL</a></li>
+  <li><a class="nav-link" href="../../tasks/toolhop/">ToolHop</a></li>
+  <li><a class="nav-link" href="../../tasks/api-bank/">API-Bank</a></li>
+</ul>
+    </details>
+  </li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Multi-Agent Systems</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../mas/topologies/">Workflow Topologies</a></li>
+  <li><a class="nav-link" href="../../mas/single/">Single</a></li>
+  <li><a class="nav-link" href="../../mas/independent/">Independent</a></li>
+  <li><a class="nav-link" href="../../mas/sequential/">Sequential</a></li>
+  <li><a class="nav-link" href="../../mas/centralized/">Centralized</a></li>
+  <li><a class="nav-link" href="../../mas/decentralized/">Decentralized</a></li>
+  <li><a class="nav-link" href="../../mas/communication-protocols/">Communication Protocols</a></li>
+  <li><a class="nav-link" href="../../mas/team-sizes/">Team Sizes</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Optimizers</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
+  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
+  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
+  <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Evaluation</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
+  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+</ul>
+  </li>
+  <li class="nav-section is-active">
+    <span class="nav-label">Extending</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link is-active" href="./" aria-current="page">Add a Dataset</a></li>
+  <li><a class="nav-link" href="../add-topology/">Add a Topology</a></li>
+  <li><a class="nav-link" href="../add-optimizer/">Add an Optimizer</a></li>
+</ul>
+  </li>
+  <li class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list nav-l1">
+  <li><a class="nav-link" href="../../reference/cli/">Command-Line Flags</a></li>
+  <li><a class="nav-link" href="../../reference/environment/">Environment Variables</a></li>
+  <li><a class="nav-link" href="../../reference/repository/">Repository Map</a></li>
+</ul>
+  </li>
+</ul>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+
+  <main class="content" id="content">
+    <p class="crumbs"><span>Extending</span>
+    </p>
+    <article class="prose">
+      <h1 id="add-a-dataset">Add a Dataset<a class="headerlink" href="#add-a-dataset" title="Link to this section">#</a></h1>
+<p class="lede">A dataset is more than a loader: it needs a runner per topology, an output contract, frozen eval IDs, seed prompts, optimizer adapters and launcher entries. This page walks through each piece in the order you need it.</p>
+<p>The steps use <code>&lt;ds&gt;</code> for the new dataset's folder name. Use the same short name everywhere, because several components find the dataset by matching that string.</p>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Where</th>
+<th>Read by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runners</td>
+<td><code>topologies/&lt;topology&gt;/[&lt;framework&gt;/]&lt;ds&gt;/&lt;framework&gt;_&lt;ds&gt;.py</code></td>
+<td>you, the sweeps, the optimizer adapters</td>
+</tr>
+<tr>
+<td>Output contract</td>
+<td><code>topologies/output_contracts.py</code> (and three copies)</td>
+<td>every runner and adapter</td>
+</tr>
+<tr>
+<td>Eval IDs</td>
+<td><code>benchmarks/&lt;ds&gt;/&lt;ds&gt;_eval_ids.json</code></td>
+<td>the optimizers' train/val split</td>
+</tr>
+<tr>
+<td>Seed prompts</td>
+<td><code>configs/prompts/&lt;topology&gt;/&lt;ds&gt;/&lt;role&gt;.txt</code></td>
+<td>runners, optimizers</td>
+</tr>
+<tr>
+<td>Optimizer loader + adapters</td>
+<td><code>optimizers/{gepa,mipro}/real_runner_*/</code></td>
+<td>the GEPA and MIPRO pilots</td>
+</tr>
+<tr>
+<td>Launcher entries</td>
+<td><code>scripts/*.sh</code>, <code>optimizers/*/run_*.sh</code></td>
+<td>sweeps</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-write-one-runner-per-topology">1. Write one runner per topology<a class="headerlink" href="#1-write-one-runner-per-topology" title="Link to this section">#</a></h2>
+<p>Each topology variant gets its own self-contained runner, eight files in all:</p>
+<pre class="highlight"><code class="language-text">topologies/single/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
+topologies/independent/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
+topologies/sequential/langgraph/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
+topologies/sequential/crewai/&lt;ds&gt;/crewai_&lt;ds&gt;.py
+topologies/centralized/langgraph/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
+topologies/centralized/autogen/&lt;ds&gt;/autogen_&lt;ds&gt;.py
+topologies/decentralized/langgraph/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
+topologies/decentralized/openai/&lt;ds&gt;/openai_&lt;ds&gt;.py</code></pre>
+<p>Start with the single-agent runner, following the layout of <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/single/math/langgraph_math.py"><code>topologies/single/math/langgraph_math.py</code></a>:</p>
+<ol>
+<li><strong>Config.</strong> Module globals <code>VLLM_BASE_URL</code> and <code>MODEL_ID</code>, read from the environment. The optimizer adapters overwrite them by name.</li>
+<li><strong>System prompt.</strong> Read <code>configs/prompts/single/&lt;ds&gt;/&lt;role&gt;.txt</code> and wrap it with <code>append_output_contract_from_path(text, __file__, role)</code>. Multi-agent runners do this in <code>_load_prompt(role)</code>.</li>
+<li><strong>Agent.</strong> <code>build_agent()</code> (<code>_build_llm()</code> or <code>_build_client()</code> in multi-agent runners) builds the client from those globals.</li>
+<li><strong>Scoring.</strong> Copy the dataset's official scorer verbatim, as the MATH runners do with Hendrycks' <code>is_equiv</code>.</li>
+<li><strong><code>solve(...)</code>.</strong> Runs one instance; returns a dict with at least <code>answer</code> and <code>raw</code>.</li>
+<li><strong><code>load_instances(limit=None, offset=0, only=None)</code>.</strong> Returns dicts with a stable string <code>id</code>. Apply <code>only</code> before <code>offset</code> and <code>limit</code>.</li>
+<li><strong><code>run_batch(instances, out_path=None)</code>.</strong> Writes one JSON line per row (ID, gold, prediction, score, latency, telemetry from <code>topologies/telemetry.py</code>, error) and returns a summary.</li>
+<li><strong><code>_canned_demo()</code> and the CLI.</strong> A no-argument run calls the demo; <code>--batch</code> runs the dataset.</li>
+</ol>
+<p>Pick a CLI shape from an existing family (see <a href="../../reference/cli/">Command-Line Flags</a>). The <code>--batch</code> / <code>--out</code> family is the simplest and is what <code>scripts/run_topologies.sh</code> expects by default:</p>
+<pre class="highlight"><code class="language-python">parser.add_argument("--batch", action="store_true")
+parser.add_argument("--limit", type=int, default=None)
+parser.add_argument("--offset", type=int, default=0)
+parser.add_argument("--out", type=str, default=None)
+parser.add_argument("--only", nargs="*", default=None)
+args = parser.parse_args()
+if not args.batch:
+    _canned_demo()
+    sys.exit(0)
+instances = load_instances(limit=args.limit, offset=args.offset, only=args.only)
+run_batch(instances, out_path=Path(args.out) if args.out else None)</code></pre>
+<p>Then port the agent wiring to the other seven runners, keeping the loader and scorer unchanged so scores stay comparable.</p>
+<h2 id="2-register-the-output-contract">2. Register the output contract<a class="headerlink" href="#2-register-the-output-contract" title="Link to this section">#</a></h2>
+<p>Add one sentence to <code>DATASET_CONTRACTS</code> in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/output_contracts.py"><code>topologies/output_contracts.py</code></a> that names the final artifact your scorer reads, for example "End with exactly one final line: Answer: <short-form>." Then list the roles that emit that artifact:</p>
+<ul>
+<li>single and independent: roles in <code>PRIMARY_FINAL_ROLES</code> (<code>solver</code>, <code>caller</code>, <code>coder</code>, <code>patcher</code>, <code>planner</code>).</li>
+<li>decentralized: <code>debater</code>.</li>
+<li>sequential: add <code>"&lt;ds&gt;"</code> to <code>SEQUENTIAL_FINAL_ROLES</code>.</li>
+<li>centralized: add <code>"&lt;ds&gt;"</code> to <code>CENTRALIZED_FINAL_ROLES_BY_DATASET</code>.</li>
+</ul>
+<p><code>append_output_contract_from_path</code> finds the dataset by matching a folder in the runner's path against the <code>DATASET_CONTRACTS</code> keys, so the key must equal <code>&lt;ds&gt;</code>. Repeat the change in <code>teamsizes/output_contracts.py</code> and in the copies under <code>optimizers/gepa/real_runner_gepa/</code> and <code>optimizers/mipro/real_runner_mipro/</code>, whose entries also carry the <code>PROTECTED FINAL OUTPUT CONTRACT:</code> header. <code>communications/output_contracts.py</code> re-exports the topologies version.</p>
+<h2 id="3-freeze-the-eval-ids">3. Freeze the eval IDs<a class="headerlink" href="#3-freeze-the-eval-ids" title="Link to this section">#</a></h2>
+<p>Write <code>benchmarks/&lt;ds&gt;/&lt;ds&gt;_eval_ids.json</code> in the same shape as the existing manifests:</p>
+<pre class="highlight"><code class="language-json">{
+  "dataset": "&lt;ds&gt;",
+  "sample": "report 100",
+  "n": 100,
+  "source": "how the IDs were chosen",
+  "ids": ["first_id", "second_id"]
+}</code></pre>
+<p>The <code>ids</code> must equal the <code>id</code> values from <code>load_instances</code>. Runners other than API-Bank do not read this file, so pass the IDs with <code>--only</code> to score the reported set. The optimizers read it to keep these IDs out of their train and validation splits.</p>
+<h2 id="4-generate-the-seed-prompts">4. Generate the seed prompts<a class="headerlink" href="#4-generate-the-seed-prompts" title="Link to this section">#</a></h2>
+<p>Seed prompts are written by an LLM. For every <code>(topology, dataset, role)</code> in <code>roles.yaml</code>, <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/configs/generate_role_prompts.py"><code>configs/generate_role_prompts.py</code></a> fills <code>meta_prompt.txt</code> with the dataset line from <code>domains.yaml</code>, the topology and role descriptions from <code>roles.yaml</code> and the tool list from <code>tools.yaml</code>, sends it as one user message, strips any <code>&lt;think&gt;</code> block and writes the reply to <code>configs/prompts/&lt;topology&gt;/&lt;ds&gt;/&lt;role&gt;.txt</code>.</p>
+<p>Add the dataset to the three YAML files in <code>configs/prompts/</code>:</p>
+<ul>
+<li><code>domains.yaml</code>: one line, <code>&lt;ds&gt;: "..."</code>. The generator only visits datasets listed here.</li>
+<li><code>roles.yaml</code>: under <code>topologies.&lt;topology&gt;.benchmarks</code> for each of the five topologies, add <code>&lt;ds&gt;:</code> with <code>&lt;role&gt;: "&lt;job description&gt;"</code>. Role names must match what your runners load.</li>
+<li><code>tools.yaml</code>: under each topology, <code>&lt;ds&gt;:</code> with the tool list (anchors such as <code>*calculator</code> work). A missing entry becomes <code>None.</code>, which tells the prompt to use no tools.</li>
+</ul>
+<p>Then generate. Existing prompt files are skipped unless you pass <code>--force</code>:</p>
+<pre class="highlight"><code class="language-bash">export PROMPT_GEN_BASE_URL=http://localhost:8000/v1   # serves the generator model
+python configs/generate_role_prompts.py --only single/&lt;ds&gt; --only independent/&lt;ds&gt; \
+  --only sequential/&lt;ds&gt; --only centralized/&lt;ds&gt; --only decentralized/&lt;ds&gt;</code></pre>
+<p>The generator defaults to <code>Qwen/Qwen3.5-122B-A10B-FP8</code> with temperature 0 and seed 42. The <code>decentralized_openai</code> block in <code>roles.yaml</code> only covers MATH; the OpenAI-SDK runners for other datasets load <code>configs/prompts/decentralized/&lt;ds&gt;/</code>.</p>
+<h2 id="5-wire-up-the-optimizers">5. Wire up the optimizers<a class="headerlink" href="#5-wire-up-the-optimizers" title="Link to this section">#</a></h2>
+<p>Each optimizer needs a dataset module, adapters and a registry entry. In <code>optimizers/gepa/real_runner_gepa/</code>:</p>
+<ul>
+<li><strong><code>datasets/&lt;ds&gt;.py</code></strong>, from <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/gepa/templates/dataset_template.py"><code>templates/dataset_template.py</code></a>. <code>load_all()</code> returns <code>dspy.Example</code> objects with an <code>id</code> and a <code>task_instance</code> input; <code>train_val_split(...)</code> should call <code>split_utils.train_val_split_excluding_real_eval("&lt;ds&gt;", ...)</code> so eval IDs stay out. Add the <code>metric(example, prediction, ...)</code> the template lacks, returning <code>dspy.Prediction(score=..., feedback=...)</code> as <code>datasets/math.py</code> does. The pilot imports <code>real_runner_gepa.datasets.&lt;dataset&gt;</code>, so the file name must equal the registry key.</li>
+<li><strong><code>adapters/module_&lt;ds&gt;.py</code></strong>, one class per optimizer topology name. Subclass <code>ModuleAdapterBase</code> (<code>adapters/module_common.py</code>) as <code>module_lcb.py</code> does, set <code>topology</code>, <code>framework</code>, <code>prompt_topology</code>, <code>roles_</code> and <code>module_name</code>, and implement <code>run_example</code> to call your runner's <code>solve</code>.</li>
+<li><strong><code>registry.py</code></strong>: add <code>"&lt;ds&gt;": {...}</code> to <code>DATASET_ADAPTERS</code> with all eight topology names mapped to <code>"real_runner_gepa.adapters.module_&lt;ds&gt;:&lt;Class&gt;"</code>.</li>
+</ul>
+<p>Repeat under <code>optimizers/mipro/real_runner_mipro/</code>, which has no <code>templates/</code> folder. <a href="../add-topology/">Add a Topology</a> covers the adapter contract and smoke test in detail. A minimal run checks the wiring:</p>
+<pre class="highlight"><code class="language-bash">cd optimizers/gepa
+python -m real_runner_gepa.pilots.run_gepa_dataset --dataset &lt;ds&gt; --topology single \
+  --train-size 1 --val-size 1 --max-full-evals 1 --out results/gepa/single_&lt;ds&gt;_smoke</code></pre>
+<h2 id="6-add-it-to-the-launchers">6. Add it to the launchers<a class="headerlink" href="#6-add-it-to-the-launchers" title="Link to this section">#</a></h2>
+<p>The sweep scripts hard-code their dataset list and per-dataset row limits:</p>
+<pre class="highlight"><code class="language-bash">DATASETS="${DATASETS:-gpqa hotpotqa math lcb apps bfcl swe apibank toolhop}"
+declare -A LIMIT=([gpqa]=100 [hotpotqa]=100 [math]=100 [lcb]=50 [apps]=50
+                  [bfcl]=100 [swe]=30 [apibank]=100 [toolhop]=100)</code></pre>
+<p>Add <code>&lt;ds&gt;</code> to both; a dataset missing from <code>LIMIT</code> runs 50 rows. The script passes <code>--batch --limit N --out &lt;file&gt;</code> to every dataset except <code>apibank</code> and <code>toolhop</code>, so a runner that takes <code>--out-dir</code> needs its own <code>case</code> branch. Make the same edits in <code>scripts/run_teamsizes.sh</code> and <code>scripts/run_communications.sh</code> if you add those variants, and add <code>&lt;ds&gt;</code> to <code>DATASETS</code> in <code>optimizers/gepa/run_gepa.sh</code> and <code>optimizers/mipro/run_mipro.sh</code>.</p>
+<h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Link to this section">#</a></h2>
+<ol>
+<li>Eight runners sharing one loader and scorer.</li>
+<li><code>DATASET_CONTRACTS</code> and final roles in all four <code>output_contracts.py</code> copies.</li>
+<li><code>benchmarks/&lt;ds&gt;/&lt;ds&gt;_eval_ids.json</code> matching the runner IDs.</li>
+<li>YAML entries and generated prompts under <code>configs/prompts/&lt;topology&gt;/&lt;ds&gt;/</code>.</li>
+<li><code>datasets/&lt;ds&gt;.py</code> (<code>load_all</code>, <code>train_val_split</code>, <code>metric</code>) for GEPA and MIPRO.</li>
+<li><code>adapters/module_&lt;ds&gt;.py</code> and <code>DATASET_ADAPTERS["&lt;ds&gt;"]</code> in both registries.</li>
+<li><code>DATASETS</code> and <code>LIMIT</code> entries in the launchers.</li>
+<li>A smoke demo, a short <code>--batch --limit</code> slice per runner and a one-row optimizer run.</li>
+</ol>
+    </article>
+    <div class="page-meta">
+      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/extending/add-dataset.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
+    </div>
+    <nav class="pager" aria-label="Previous and next pages">
+      <a class="pager-link prev" href="../../evaluation/results/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Read the Results</b></a>
+      <a class="pager-link next" href="../add-topology/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Add a Topology</b></a>
+    </nav>
+
+    <footer class="site-foot">
+      <span>MAS-PromptBench is released under the MIT License.</span>
+      <span class="foot-links">
+        <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+      </span>
+    </footer>
+  </main>
+  <aside class="toc" aria-label="On this page">
+    <span class="nav-label">On this page</span>
+    <ul>
+      <li><a href="#1-write-one-runner-per-topology">1. Write one runner per topology</a>
+      </li>
+      <li><a href="#2-register-the-output-contract">2. Register the output contract</a>
+      </li>
+      <li><a href="#3-freeze-the-eval-ids">3. Freeze the eval IDs</a>
+      </li>
+      <li><a href="#4-generate-the-seed-prompts">4. Generate the seed prompts</a>
+      </li>
+      <li><a href="#5-wire-up-the-optimizers">5. Wire up the optimizers</a>
+      </li>
+      <li><a href="#6-add-it-to-the-launchers">6. Add it to the launchers</a>
+      </li>
+      <li><a href="#checklist">Checklist</a>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="search-dialog" role="dialog" aria-modal="true" aria-label="Search the docs" hidden>
+  <div class="search-panel">
+    <div class="search-field">
+      <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg>
+      <input id="search-input" type="search" placeholder="Search tasks, topologies, flags…" autocomplete="off" spellcheck="false" aria-controls="search-results">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="search-hint">Type at least two characters. <kbd>↑</kbd><kbd>↓</kbd> to move, <kbd>Enter</kbd> to open.</p>
+  </div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: true, processEnvironments: true },
+    options: { ignoreHtmlClass: ".*|", processHtmlClass: "arithmatex" },
+    svg: { fontCache: "global" }
+  };
+</script>
+<script src="../../assets/docs.js?v=20261008091509" defer></script>
+</div>
+</body>
+</html>
