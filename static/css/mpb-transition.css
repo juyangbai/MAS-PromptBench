@@ -1,0 +1,58 @@
+/* MAS-PromptBench page transition: "Short glide, ordered"
+   ---------------------------------------------------------
+   Plays only between the project page and the docs (both directions):
+   - the title glides from one site's wordmark to the other's and lands at 480 ms;
+   - the page drifts 48 px while it cross-fades and settles at 520 ms,
+     40 ms after the title.
+   Needs mpb-transition.js in <head>. Browsers without cross-document view
+   transitions simply load the next page. Reduced motion turns it off. */
+
+@view-transition { navigation: auto; }
+
+/* The shared title. Put the class on exactly one element per page. */
+.mpb-title { view-transition-name: mpb-title; }
+
+/* The title lands first: 480 ms. */
+::view-transition-group(mpb-title) {
+  animation-duration: .48s;
+  animation-timing-function: ease;
+}
+/* Scale the title by its height so the text never stretches sideways. */
+::view-transition-old(mpb-title),
+::view-transition-new(mpb-title) {
+  height: 100%;
+  width: auto;
+}
+
+/* The docs home's large heading waits until the title has flown past, then
+   settles with the page (it arrives at 520 ms too); going back, it leaves at once. */
+.mpb-hero { view-transition-name: mpb-hero; }
+html:active-view-transition-type(mpb-forward)::view-transition-new(mpb-hero) { animation: mpb-in-right .3s .22s ease both; }
+html:active-view-transition-type(mpb-back)::view-transition-old(mpb-hero)    { animation: mpb-out-right .15s ease both; }
+
+/* If either title wraps onto two lines, the title fades with the page instead. */
+html:active-view-transition-type(mpb-plain)::view-transition-group(mpb-title) { animation-duration: .29s; }
+
+/* The page settles 40 ms later: out 290 ms, in 420 ms after a 100 ms delay = 520 ms. */
+html:active-view-transition-type(mpb-forward)::view-transition-old(root) { animation: mpb-out-left .29s ease both; }
+html:active-view-transition-type(mpb-forward)::view-transition-new(root) { animation: mpb-in-right .42s .1s ease both; }
+html:active-view-transition-type(mpb-back)::view-transition-old(root)    { animation: mpb-out-right .29s ease both; }
+html:active-view-transition-type(mpb-back)::view-transition-new(root)    { animation: mpb-in-left .42s .1s ease both; }
+
+@keyframes mpb-out-left  { to   { opacity: 0; translate: -24px 0; } }
+@keyframes mpb-in-right  { from { opacity: 0; translate: 48px 0; } }
+@keyframes mpb-out-right { to   { opacity: 0; translate: 24px 0; } }
+@keyframes mpb-in-left   { from { opacity: 0; translate: -48px 0; } }
+
+/* Elements with an entrance effect of their own (like the project page's
+   scroll reveal) are shown at once when the page arrives through the glide,
+   so the two animations don't stack. */
+html.mpb-vt .mpb-still {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+}
