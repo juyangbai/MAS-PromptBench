@@ -58,6 +58,10 @@
     :root {
       --pa-blue: #1f4e8c;
       --pa-blue-2: #3b82c4;
+      --pa-accent: #1f4e8c;
+      --pa-surface: #ffffff;
+      --pa-surface-2: #f3f7fc;
+      --pa-chip: #eef4fb;
       --pa-ink: #1a2330;
       --pa-body: #3f4b5b;
       --pa-muted: #6b7888;
@@ -581,14 +585,103 @@
       .chart-box { height: 300px; }
       .chart-box.tall { height: 360px; }
     }
+    /* ---------- Floating button: page menu (narrow screens) ---------- */
+    .pa-fab {
+      position: fixed; z-index: 31; top: 14px; width: 40px; height: 40px; padding: 0; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      color: var(--pa-muted); background: var(--pa-surface); border: 1px solid var(--pa-line); box-shadow: var(--pa-shadow);
+      transition: color .15s ease, background .15s ease;
+    }
+    .pa-fab:hover { color: var(--pa-accent); background: var(--pa-chip); }
+    .pa-fab svg { width: 18px; height: 18px; display: block; }
+    .pnav-btn { left: 12px; display: none; }
+
+    /* ---------- Page navigation: a left sidebar that stays in view while scrolling ---------- */
+    /* centered in the left margin beside the 960px content, 28-256px from it */
+    .pnav {
+      position: fixed; z-index: 30; top: 50%; transform: translateY(-50%);
+      left: max(16px, 50vw - 680px - clamp(28px, 25vw - 340px, 256px)); width: 200px;
+      max-height: calc(100vh - 2rem); overflow-y: auto; scrollbar-width: none;
+    }
+    .pnav ul { list-style: none; margin: 0; padding: 0; }
+    .pnav li + li { margin-top: .1rem; }
+    .pnav a {
+      display: flex; align-items: center; color: var(--pa-muted); font-size: .88rem; font-weight: 500; line-height: 1.3;
+      padding: .4rem .75rem; border-radius: 10px; text-decoration: none; transition: background .15s ease, color .15s ease;
+    }
+    .pnav a:hover { background: var(--pa-surface-2); color: var(--pa-ink); }
+    .pnav a.is-parent { color: var(--pa-ink); }
+    .pnav a.is-active { background: var(--pa-chip); color: var(--pa-accent); font-weight: 600; }
+    .pnav ul ul { margin: .1rem 0 .15rem .75rem; padding-left: .5rem; border-left: 1px solid var(--pa-line); }
+    .pnav ul ul a { font-size: .84rem; padding-block: .32rem; }
+    .pnav-tick { display: none; }
+    .factor-card { scroll-margin-top: 1.5rem; }
+
+    /* Mid-size screens: a slim rail of ticks that opens on hover or keyboard focus. */
+    @media screen and (min-width: 1024px) and (max-width: 1439.98px) {
+      .pnav {
+        left: 10px; width: auto; padding: .4rem; border: 1px solid transparent; border-radius: 16px;
+        transition: background .2s ease, box-shadow .2s ease, border-color .2s ease;
+      }
+      .pnav a { padding: .45rem .4rem; }
+      .pnav ul ul { margin: 0; padding: 0; border: 0; }
+      .pnav ul ul a { padding-block: .45rem; }
+      .pnav-tick {
+        display: block; flex: none; width: 14px; height: 2px; border-radius: 2px;
+        background: color-mix(in srgb, var(--pa-muted) 45%, transparent); transition: width .2s ease, background .2s ease;
+      }
+      .pnav ul ul .pnav-tick { width: 8px; margin-left: 6px; }
+      .pnav a.is-parent .pnav-tick, .pnav a.is-active .pnav-tick { background: var(--pa-accent); }
+      .pnav a.is-active .pnav-tick { width: 22px; }
+      .pnav ul ul a.is-active .pnav-tick { width: 14px; }
+      .pnav-t { max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; transition: max-width .25s ease, opacity .2s ease, margin .25s ease; }
+      .pnav a.is-active { background: transparent; }
+      .pnav:hover, .pnav:focus-within { background: var(--pa-surface); border-color: var(--pa-line); box-shadow: var(--pa-shadow-hover); }
+      .pnav:hover .pnav-t, .pnav:focus-within .pnav-t { max-width: 15rem; opacity: 1; margin-left: .65rem; }
+      .pnav:hover a.is-active, .pnav:focus-within a.is-active { background: var(--pa-chip); }
+    }
+    /* Narrow screens: the same list opens from the menu button. */
+    @media screen and (max-width: 1023.98px) {
+      .pnav-btn { display: flex; }
+      .pnav {
+        left: 12px; top: 62px; width: min(260px, calc(100vw - 24px)); max-height: calc(100vh - 80px);
+        padding: .45rem; background: var(--pa-surface); border: 1px solid var(--pa-line); border-radius: 16px;
+        box-shadow: var(--pa-shadow-hover); opacity: 0; visibility: hidden; transform: translateY(-6px);
+        transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+      }
+      .pnav.is-open { opacity: 1; visibility: visible; transform: none; transition: opacity .18s ease, transform .18s ease; }
+    }
   </style>
   <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
   <link rel="expect" href="#mpb-title" blocking="render">
 </head>
 <body>
 
+<!-- ============================ PAGE NAVIGATION ============================ -->
+<button class="pa-fab pnav-btn" type="button" aria-label="Sections" aria-controls="pnav" aria-expanded="false">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+</button>
+<nav class="pnav" id="pnav" aria-label="Sections">
+  <ul>
+    <li><a href="#top"><span class="pnav-tick"></span><span class="pnav-t">Overview</span></a></li>
+    <li><a href="#contributions"><span class="pnav-tick"></span><span class="pnav-t">Contributions</span></a></li>
+    <li><a href="#glance"><span class="pnav-tick"></span><span class="pnav-t">Benchmark at a Glance</span></a></li>
+    <li><a href="#mas"><span class="pnav-tick"></span><span class="pnav-t">MAS &amp; Four Factors</span></a></li>
+    <li><a href="#topologies"><span class="pnav-tick"></span><span class="pnav-t">Workflow Topologies</span></a></li>
+    <li><a href="#findings"><span class="pnav-tick"></span><span class="pnav-t">Findings</span></a>
+      <ul>
+        <li><a href="#f-task"><span class="pnav-tick"></span><span class="pnav-t">Task</span></a></li>
+        <li><a href="#f-topology"><span class="pnav-tick"></span><span class="pnav-t">Workflow Topology</span></a></li>
+        <li><a href="#f-communication"><span class="pnav-tick"></span><span class="pnav-t">Communication</span></a></li>
+        <li><a href="#f-team"><span class="pnav-tick"></span><span class="pnav-t">Team Size</span></a></li>
+      </ul>
+    </li>
+    <li><a href="#BibTeX"><span class="pnav-tick"></span><span class="pnav-t">BibTeX</span></a></li>
+  </ul>
+</nav>
+
 <!-- ============================ HERO ============================ -->
-<section class="pa-hero">
+<section class="pa-hero" id="top">
   <div class="container is-max-desktop">
     <div class="columns is-centered">
       <div class="column has-text-centered">
@@ -683,7 +776,7 @@
 </section>
 
 <!-- ============================ CONTRIBUTIONS ============================ -->
-<section class="pa-section">
+<section class="pa-section" id="contributions">
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
       <div class="column is-full reveal">
@@ -735,7 +828,7 @@
 </section>
 
 <!-- ============================ BENCHMARK AT A GLANCE ============================ -->
-<section class="pa-section pa-tint">
+<section class="pa-section pa-tint" id="glance">
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
       <div class="column is-full reveal">
@@ -807,7 +900,7 @@
 </section>
 
 <!-- ============================ MAS FORMULATION + 4 FACTORS ============================ -->
-<section class="pa-section">
+<section class="pa-section" id="mas">
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
       <div class="column is-full reveal">
@@ -946,7 +1039,7 @@
 </section>
 
 <!-- ============================ TOPOLOGIES ============================ -->
-<section class="pa-section pa-tint">
+<section class="pa-section pa-tint" id="topologies">
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
       <div class="column is-full reveal">
@@ -1102,7 +1195,7 @@
 </section>
 
 <!-- ============================ FINDINGS ============================ -->
-<section class="pa-section">
+<section class="pa-section" id="findings">
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
       <div class="column is-full reveal">
@@ -1112,7 +1205,7 @@
     </div>
 
     <!-- Task -->
-    <div class="factor-card reveal">
+    <div class="factor-card reveal" id="f-task">
       <span class="factor-chip">Factor 1 &middot; Task</span>
       <h3 class="title is-4">Explicit, verifiable tasks gain more</h3>
       <p>
@@ -1239,7 +1332,7 @@
     </div>
 
     <!-- Topology -->
-    <div class="factor-card reveal">
+    <div class="factor-card reveal" id="f-topology">
       <span class="factor-chip">Factor 2 &middot; Workflow Topology</span>
       <h3 class="title is-4">Multi-agent systems need topology-awareness</h3>
       <p>
@@ -1359,7 +1452,7 @@
     </div>
 
     <!-- Communication -->
-    <div class="factor-card reveal">
+    <div class="factor-card reveal" id="f-communication">
       <span class="factor-chip">Factor 3 &middot; Communication Protocol</span>
       <h3 class="title is-4">Shared structure gives optimization more room</h3>
       <div class="chart-card" style="margin: 1.2rem 0;">
@@ -1387,7 +1480,7 @@
     </div>
 
     <!-- Team size -->
-    <div class="factor-card reveal">
+    <div class="factor-card reveal" id="f-team">
       <span class="factor-chip">Factor 4 &middot; Team Size</span>
       <h3 class="title is-4">Larger teams make optimization harder</h3>
       <div class="chart-card" style="margin: 1.2rem 0;">
@@ -1448,6 +1541,45 @@ function copyBibTeX() {
     }, 2000);
   });
 }
+
+// ---------------- Section navigation: highlight the section in view ----------------
+(function () {
+  var nav = document.getElementById('pnav'); if (!nav) return;
+  var items = [].slice.call(nav.querySelectorAll('a[href^="#"]')).map(function (a) {
+    var group = a.parentNode.parentNode.closest('li');  // the "Findings" item for its sub-sections
+    return { a: a, el: document.getElementById(a.getAttribute('href').slice(1)), parent: group ? group.querySelector('a') : null };
+  }).filter(function (it) { return it.el; });
+  var current = -1, ticking = false;
+  function update() {
+    ticking = false;
+    var line = window.innerHeight * 0.3, idx = 0;
+    items.forEach(function (it, i) { if (it.el.getBoundingClientRect().top <= line) idx = i; });
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) idx = items.length - 1;
+    if (idx === current) return;
+    current = idx;
+    items.forEach(function (it, i) {
+      it.a.classList.toggle('is-active', i === idx);
+      it.a.classList.remove('is-parent');
+      if (i === idx) it.a.setAttribute('aria-current', 'location'); else it.a.removeAttribute('aria-current');
+    });
+    if (items[idx].parent) items[idx].parent.classList.add('is-parent');
+  }
+  window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+
+  // Narrow screens: the menu button opens the list; a link or a click outside closes it.
+  var btn = document.querySelector('.pnav-btn');
+  function open(v) { nav.classList.toggle('is-open', v); if (btn) btn.setAttribute('aria-expanded', v ? 'true' : 'false'); }
+  if (btn) btn.addEventListener('click', function (e) { e.stopPropagation(); open(!nav.classList.contains('is-open')); });
+  nav.addEventListener('click', function (e) {
+    var a = e.target.closest('a'); if (!a) return;
+    open(false);
+    if (e.detail) a.blur();  // after a mouse click, focus shouldn't keep the rail open
+  });
+  document.addEventListener('click', function (e) { if (!nav.contains(e.target)) open(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') open(false); });
+})();
 
 // Scroll-reveal animation
 (function () {
