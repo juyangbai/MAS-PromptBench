@@ -4,7 +4,8 @@
 
 <p align="center">
   <a href="https://arxiv.org/abs/2606.23664"><img src="https://img.shields.io/badge/arXiv-2606.23664-b31b1b" alt="arXiv"></a>
-  <a href="https://juyangbai.github.io/MAS-PromptBench/"><img src="https://img.shields.io/badge/Project-Page-2f6db3" alt="Project Page"></a>
+  <a href="https://juyangbai.github.io/MAS-PromptBench/"><img src="https://img.shields.io/badge/Project-Page-1f4e8c" alt="Project Page"></a>
+  <a href="https://juyangbai.github.io/MAS-PromptBench/docs/"><img src="https://img.shields.io/badge/Project-Docs-3b82c4" alt="Project Docs"></a>
   <a href="https://deepwiki.com/juyangbai/MAS-PromptBench"><img src="assets/deepwiki-badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
