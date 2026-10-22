@@ -131,7 +131,7 @@ See [optimizers/README.md](optimizers/README.md).
 
 Every piece is written once and reused, so an extension adds only what is new:
 
-| Add a         | What you write                                                                                                      | Guide                                                                                             |
+| Add           | What you write                                                                                                      | Guide                                                                                             |
 | ------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | **Dataset**   | a task module in `core/tasks/`, a team spec, thin runners, seed prompts, evaluation IDs and splits, a bridge loader | [Add a Dataset](https://juyangbai.github.io/MAS-PromptBench/docs/extending/add-dataset/)      |
 | **Topology**  | one thin runner per dataset on top of `core/`, a team spec and prompts, bridge adapters                             | [Add a Topology](https://juyangbai.github.io/MAS-PromptBench/docs/extending/add-topology/)    |
@@ -146,25 +146,22 @@ Then run the [tests](tests/golden/README.md): refactors must leave the golden sn
 MAS-PromptBench builds on the agent frameworks and libraries below, which retain their own upstream licenses, and evaluates on nine existing benchmarks. Please cite and comply with the license of each original dataset when reporting results.
 
 <table>
-  <tr><th>Resource</th><th>Description</th></tr>
-  <tr><th colspan="2" align="center">Agent framework</th></tr>
-  <tr><td><a href="https://github.com/langchain-ai/langgraph">LangGraph</a></td><td>stateful graph-based agent orchestration</td></tr>
+  <tr><th>Category</th><th>Resource</th><th>Description</th></tr>
+  <tr><td rowspan="5"><b>Agent framework</b></td><td><a href="https://github.com/langchain-ai/langgraph">LangGraph</a></td><td>stateful graph-based agent orchestration</td></tr>
   <tr><td><a href="https://github.com/crewAIInc/crewAI">CrewAI</a></td><td>role-based multi-agent framework</td></tr>
   <tr><td><a href="https://github.com/microsoft/autogen">AutoGen</a></td><td>conversational multi-agent framework</td></tr>
   <tr><td><a href="https://github.com/openai/openai-agents-python">OpenAI Agents SDK</a></td><td>agent runtime of the decentralized debate runners</td></tr>
   <tr><td><a href="https://github.com/composable-models/llm_multiagent_debate">LLM Multi-Agent Debate</a></td><td>multi-agent debate reference implementation</td></tr>
-  <tr><th colspan="2" align="center">Benchmark</th></tr>
-  <tr><td><a href="https://github.com/idavidrein/gpqa">GPQA</a></td><td>graduate-level science multiple-choice QA</td></tr>
+  <tr><td rowspan="9"><b>Benchmark</b></td><td><a href="https://github.com/idavidrein/gpqa">GPQA</a></td><td>graduate-level science multiple-choice QA</td></tr>
   <tr><td><a href="https://hotpotqa.github.io/">HotpotQA</a></td><td>multi-hop open-domain QA</td></tr>
   <tr><td><a href="https://github.com/hendrycks/math">MATH</a></td><td>competition mathematics</td></tr>
   <tr><td><a href="https://livecodebench.github.io/">LiveCodeBench</a></td><td>contamination-free code generation</td></tr>
   <tr><td><a href="https://github.com/hendrycks/apps">APPS</a></td><td>programming problems</td></tr>
-  <tr><td><a href="https://gorilla.cs.berkeley.edu/leaderboard.html">Berkeley Function Calling Leaderboard (BFCL)</a></td><td>function / tool calling</td></tr>
+  <tr><td><a href="https://gorilla.cs.berkeley.edu/leaderboard.html">BFCL</a></td><td>function / tool calling (Berkeley Function Calling Leaderboard)</td></tr>
   <tr><td><a href="https://www.swebench.com/">SWE-bench Verified</a></td><td>real-world GitHub issue resolution</td></tr>
   <tr><td><a href="https://github.com/AlibabaResearch/DAMO-ConvAI/tree/main/api-bank">API-Bank</a></td><td>tool-augmented API calling</td></tr>
   <tr><td><a href="https://huggingface.co/datasets/bytedance-research/ToolHop">ToolHop</a></td><td>multi-hop tool use</td></tr>
-  <tr><th colspan="2" align="center">Library</th></tr>
-  <tr><td><a href="https://github.com/vllm-project/vllm">vLLM</a></td><td>model serving (the <code>models/</code> endpoints)</td></tr>
+  <tr><td rowspan="2"><b>Library</b></td><td><a href="https://github.com/vllm-project/vllm">vLLM</a></td><td>model serving (the <code>models/</code> endpoints)</td></tr>
   <tr><td><a href="https://github.com/stanfordnlp/dspy">DSPy</a></td><td>the optimization backend of GEPA and MIPRO</td></tr>
 </table>
 
