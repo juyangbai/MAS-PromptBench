@@ -199,7 +199,7 @@ kbd {
    and its pages indented on a guide line so they read as that section's children */
 .nav-l0 > .nav-section { margin-top: 1rem !important; padding-top: 1rem; border-top: 1px solid var(--line); }
 .nav-l0 > .nav-section > .nav-label {
-  color: var(--ink); font-size: .92rem; font-weight: 500; line-height: 1.35;
+  color: var(--ink); font-size: .92rem; font-weight: 700; line-height: 1.35;
   letter-spacing: inherit; text-transform: none; padding-bottom: .4rem;
 }
 .nav-l0 > .nav-section > .nav-l1 { margin-left: .75rem; padding-left: .5rem; border-left: 1px solid var(--line); }
