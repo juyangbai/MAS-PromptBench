@@ -12,21 +12,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261022204625">
   <!-- page transition to and from the project page ("Short glide, ordered") -->
-  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
-  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script src="../../assets/mpb-transition.js?v=20261022204625"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261022204625">
   <script>
-    /* Apply a stored theme before first paint. "system" stores nothing. */
+    /* Apply a stored theme before first paint. "system" stores nothing. Hosts that
+       sandbox each page block storage, so the tab's
+       window.name carries the choice there. */
     (function () {
-      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+      var t = null;
+      try { t = localStorage.getItem('mpb-theme'); } catch (e) {}
+      if (!t) { var m = /^mpb-theme=(dark|light)$/.exec(window.name || ''); if (m) t = m[1]; }
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
   <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
   <link rel="expect" href="#mpb-title" blocking="render">
 </head>
 <body>
-<div class="site" data-base-url="../.." data-version="20261008091509">
+<div class="site" data-base-url="../.." data-version="20261022204625">
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
@@ -36,11 +41,11 @@
   <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
-  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5M13.5 4.5l-3 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-wiki" viewBox="110 110 460 500"><path fill="#21c19a" d="M418.73,332.37c9.84-5.68,22.07-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.58,1.06.19.06.37.11.55.16.87.21,1.76.34,2.65.35.04,0,.08.02.13.02.1,0,.19-.03.29-.04.83-.02,1.64-.13,2.45-.32.14-.03.28-.05.42-.09.87-.24,1.7-.59,2.5-1.03.08-.04.17-.06.25-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.06,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.57-1.06-.19-.06-.37-.11-.56-.16-.88-.21-1.76-.34-2.65-.34-.13,0-.26.02-.4.02-.84.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.24.1.8.44,1.64.79,2.5,1.03.14.04.28.06.42.09.81.19,1.62.3,2.45.32.1,0,.19.04.29.04.04,0,.08-.02.13-.02.89,0,1.77-.13,2.65-.35.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.58-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-.08-.04-.16-.06-.24-.1-.8-.44-1.64-.8-2.51-1.04-.13-.04-.26-.05-.39-.09-.82-.2-1.65-.31-2.49-.33-.13,0-.25-.02-.38-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.75.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.07,5.68-31.9,0-9.84-5.68-15.95-16.27-15.95-27.63s6.11-21.95,15.95-27.63Z"/><path fill="#3969ca" d="M141.09,317.65l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c.08-.04.13-.11.2-.16.78-.48,1.51-1.02,2.15-1.66.1-.1.18-.21.28-.31.57-.6,1.08-1.26,1.51-1.97.07-.12.15-.22.22-.34.44-.77.77-1.6,1.03-2.47.05-.19.1-.37.14-.56.22-.89.37-1.81.37-2.76v-29.43c0-11.36,6.11-21.95,15.96-27.63s22.06-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.57,1.06.19.06.37.11.56.16.87.21,1.76.34,2.64.35.04,0,.09.02.13.02.1,0,.19-.04.29-.04.83-.02,1.65-.13,2.45-.32.14-.03.28-.05.41-.09.87-.24,1.71-.6,2.51-1.04.08-.04.16-.06.24-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.07,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.58-1.06-.19-.06-.37-.11-.55-.16-.88-.21-1.76-.34-2.65-.35-.13,0-.26.02-.4.02-.83.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22Z"/><path fill="#0294de" d="M396.88,484.35l-50.97-29.43c-.08-.04-.17-.06-.24-.1-.8-.44-1.64-.79-2.51-1.03-.14-.04-.27-.06-.41-.09-.81-.19-1.64-.3-2.47-.32-.13,0-.26-.02-.39-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.76.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.06,5.68-31.9,0-9.84-5.68-15.96-16.27-15.96-27.63v-29.43c0-.95-.15-1.87-.37-2.76-.05-.19-.09-.37-.14-.56-.25-.86-.59-1.69-1.03-2.47-.07-.12-.15-.22-.22-.34-.43-.71-.94-1.37-1.51-1.97-.1-.1-.18-.21-.28-.31-.65-.63-1.37-1.18-2.15-1.66-.07-.04-.13-.11-.2-.16l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.25.1.8.44,1.63.79,2.5,1.03.14.04.29.06.43.09.8.19,1.61.3,2.43.32.1,0,.2.04.3.04.04,0,.09-.02.13-.02.88,0,1.77-.13,2.64-.34.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.57-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22Z"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -55,8 +60,9 @@
     <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
       <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
     </button>
-    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
-    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <a class="deepwiki-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="deepwiki-btn" href="https://deepwiki.com/juyangbai/MAS-PromptBench" title="Ask questions about the code on DeepWiki"><svg class="i" aria-hidden="true"><use href="#i-wiki"></use></svg><span>Ask DeepWiki</span></a>
+    <a class="icon-btn code-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="Code (GitHub repository)" title="Code"><svg class="i" aria-hidden="true"><use href="#i-code"></use></svg></a>
     <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
   </div>
 </header>
@@ -132,8 +138,6 @@
     <span class="nav-label">Optimizers</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
-  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
-  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
   <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
 </ul>
   </li>
@@ -141,7 +145,7 @@
     <span class="nav-label">Evaluation</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
-  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+  <li><a class="nav-link" href="../../evaluation/outputs/">Read Run Outputs</a></li>
 </ul>
   </li>
   <li class="nav-section is-active">
@@ -170,149 +174,202 @@
     </p>
     <article class="prose">
       <h1 id="add-a-dataset">Add a Dataset<a class="headerlink" href="#add-a-dataset" title="Link to this section">#</a></h1>
-<p class="lede">A dataset is more than a loader: it needs a runner per topology, an output contract, frozen eval IDs, seed prompts, optimizer adapters and launcher entries. This page walks through each piece in the order you need it.</p>
-<p>The steps use <code>&lt;ds&gt;</code> for the new dataset's folder name. Use the same short name everywhere, because several components find the dataset by matching that string.</p>
+<p class="lede">A run is one dataset solved by one topology runner with one team and one communication format. Each piece is written once and parameters choose the run, so a new dataset is a task module, a team spec, a set of thin runners, seed prompts, its evaluation IDs and splits, and a bridge loader for the optimizers.</p>
+<p>The steps use <code>&lt;ds&gt;</code> for the dataset's short name. Use the same name everywhere: several components find the dataset by that string.</p>
 <table>
 <thead>
 <tr>
 <th>Piece</th>
-<th>Where</th>
-<th>Read by</th>
+<th>Lives in</th>
+<th>Provides</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Runners</td>
-<td><code>topologies/&lt;topology&gt;/[&lt;framework&gt;/]&lt;ds&gt;/&lt;framework&gt;_&lt;ds&gt;.py</code></td>
-<td>you, the sweeps, the optimizer adapters</td>
-</tr>
-<tr>
-<td>Output contract</td>
-<td><code>topologies/output_contracts.py</code> (and three copies)</td>
-<td>every runner and adapter</td>
-</tr>
-<tr>
-<td>Eval IDs</td>
-<td><code>benchmarks/&lt;ds&gt;/&lt;ds&gt;_eval_ids.json</code></td>
-<td>the optimizers' train/val split</td>
+<td>Task module</td>
+<td><code>core/tasks/&lt;ds&gt;.py</code></td>
+<td>Loading, prompt text, tools, answer extraction, scoring, records.</td>
 </tr>
 <tr>
 <td>Seed prompts</td>
 <td><code>configs/prompts/&lt;topology&gt;/&lt;ds&gt;/&lt;role&gt;.txt</code></td>
-<td>runners, optimizers</td>
+<td>Each agent's seed system prompt, generated from YAML.</td>
 </tr>
 <tr>
-<td>Optimizer loader + adapters</td>
-<td><code>optimizers/{gepa,mipro}/real_runner_*/</code></td>
-<td>the GEPA and MIPRO pilots</td>
+<td>Output contract</td>
+<td><code>core/output_contracts.py</code></td>
+<td>The protected final-output instruction of the answering roles.</td>
 </tr>
 <tr>
-<td>Launcher entries</td>
-<td><code>scripts/*.sh</code>, <code>optimizers/*/run_*.sh</code></td>
-<td>sweeps</td>
+<td>Team</td>
+<td><code>configs/teams/&lt;ds&gt;.yaml</code>, read by <code>core/teams.py</code> (<code>TeamSpec</code>)</td>
+<td>The agents at team size r ∈ {2, 4, 8, 10}.</td>
+</tr>
+<tr>
+<td>Topology runners</td>
+<td><code>topologies/&lt;topology&gt;/[&lt;framework&gt;/]&lt;ds&gt;/&lt;framework&gt;_&lt;ds&gt;.py</code></td>
+<td>The framework wiring: graph, crew, group chat or debate.</td>
+</tr>
+<tr>
+<td>Team sizes</td>
+<td><code>teamsizes/&lt;topology&gt;/&lt;ds&gt;/&lt;ds&gt;_r&lt;r&gt;.py</code>, via <code>core/variant.py</code></td>
+<td>The LangGraph runner with another r.</td>
+</tr>
+<tr>
+<td>Communication formats</td>
+<td><code>core/communication.py</code> (<code>CommPolicy</code>), <code>communications/&lt;topology&gt;/&lt;ds&gt;/&lt;ds&gt;_&lt;format&gt;.py</code></td>
+<td>How agents report to each other, and the parse metrics.</td>
+</tr>
+<tr>
+<td>Evaluation IDs and splits</td>
+<td><code>benchmarks/&lt;ds&gt;/&lt;ds&gt;_eval_ids.json</code>, <code>&lt;ds&gt;_splits.json</code></td>
+<td>The reported instances and the optimizers' fixed splits.</td>
+</tr>
+<tr>
+<td>Bridge</td>
+<td><code>optimizers/bridge/datasets/&lt;ds&gt;.py</code>, <code>adapters/</code>, <code>registry.py</code></td>
+<td>The optimizers' loader, metric and adapters.</td>
 </tr>
 </tbody>
 </table>
-<h2 id="1-write-one-runner-per-topology">1. Write one runner per topology<a class="headerlink" href="#1-write-one-runner-per-topology" title="Link to this section">#</a></h2>
-<p>Each topology variant gets its own self-contained runner, eight files in all:</p>
-<pre class="highlight"><code class="language-text">topologies/single/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
-topologies/independent/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
-topologies/sequential/langgraph/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
-topologies/sequential/crewai/&lt;ds&gt;/crewai_&lt;ds&gt;.py
-topologies/centralized/langgraph/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
-topologies/centralized/autogen/&lt;ds&gt;/autogen_&lt;ds&gt;.py
-topologies/decentralized/langgraph/&lt;ds&gt;/langgraph_&lt;ds&gt;.py
-topologies/decentralized/openai/&lt;ds&gt;/openai_&lt;ds&gt;.py</code></pre>
-<p>Start with the single-agent runner, following the layout of <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/single/math/langgraph_math.py"><code>topologies/single/math/langgraph_math.py</code></a>:</p>
-<ol>
-<li><strong>Config.</strong> Module globals <code>VLLM_BASE_URL</code> and <code>MODEL_ID</code>, read from the environment. The optimizer adapters overwrite them by name.</li>
-<li><strong>System prompt.</strong> Read <code>configs/prompts/single/&lt;ds&gt;/&lt;role&gt;.txt</code> and wrap it with <code>append_output_contract_from_path(text, __file__, role)</code>. Multi-agent runners do this in <code>_load_prompt(role)</code>.</li>
-<li><strong>Agent.</strong> <code>build_agent()</code> (<code>_build_llm()</code> or <code>_build_client()</code> in multi-agent runners) builds the client from those globals.</li>
-<li><strong>Scoring.</strong> Copy the dataset's official scorer verbatim, as the MATH runners do with Hendrycks' <code>is_equiv</code>.</li>
-<li><strong><code>solve(...)</code>.</strong> Runs one instance; returns a dict with at least <code>answer</code> and <code>raw</code>.</li>
-<li><strong><code>load_instances(limit=None, offset=0, only=None)</code>.</strong> Returns dicts with a stable string <code>id</code>. Apply <code>only</code> before <code>offset</code> and <code>limit</code>.</li>
-<li><strong><code>run_batch(instances, out_path=None)</code>.</strong> Writes one JSON line per row (ID, gold, prediction, score, latency, telemetry from <code>topologies/telemetry.py</code>, error) and returns a summary.</li>
-<li><strong><code>_canned_demo()</code> and the CLI.</strong> A no-argument run calls the demo; <code>--batch</code> runs the dataset.</li>
-</ol>
-<p>Pick a CLI shape from an existing family (see <a href="../../reference/cli/">Command-Line Flags</a>). The <code>--batch</code> / <code>--out</code> family is the simplest and is what <code>scripts/run_topologies.sh</code> expects by default:</p>
-<pre class="highlight"><code class="language-python">parser.add_argument("--batch", action="store_true")
-parser.add_argument("--limit", type=int, default=None)
-parser.add_argument("--offset", type=int, default=0)
-parser.add_argument("--out", type=str, default=None)
-parser.add_argument("--only", nargs="*", default=None)
-args = parser.parse_args()
-if not args.batch:
-    _canned_demo()
-    sys.exit(0)
-instances = load_instances(limit=args.limit, offset=args.offset, only=args.only)
-run_batch(instances, out_path=Path(args.out) if args.out else None)</code></pre>
-<p>Then port the agent wiring to the other seven runners, keeping the loader and scorer unchanged so scores stay comparable.</p>
-<h2 id="2-register-the-output-contract">2. Register the output contract<a class="headerlink" href="#2-register-the-output-contract" title="Link to this section">#</a></h2>
-<p>Add one sentence to <code>DATASET_CONTRACTS</code> in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/output_contracts.py"><code>topologies/output_contracts.py</code></a> that names the final artifact your scorer reads, for example "End with exactly one final line: Answer: <short-form>." Then list the roles that emit that artifact:</p>
+<p>All three runner families run the same runner module:</p>
+<div class="language-bash highlight"><span class="filename">Entry points</span><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.&lt;topology&gt;.<span class="o">[</span>&lt;framework&gt;.<span class="o">]</span>&lt;ds&gt;.&lt;framework&gt;_&lt;ds&gt;<span class="w">   </span><span class="c1"># team r=4, freeform reports</span>
+python<span class="w"> </span>-m<span class="w"> </span>teamsizes.&lt;topology&gt;.&lt;ds&gt;.&lt;ds&gt;_r8<span class="w">                           </span><span class="c1"># the runner with TEAM_SIZE=8</span>
+python<span class="w"> </span>-m<span class="w"> </span>communications.&lt;topology&gt;.&lt;ds&gt;.&lt;ds&gt;_structured_soft<span class="w">         </span><span class="c1"># with COMMUNICATION_FORMAT preset</span>
+</code></pre></div>
+<h2 id="1-task-module">1. Task module<a class="headerlink" href="#1-task-module" title="Link to this section">#</a></h2>
+<p><code>core/tasks/&lt;ds&gt;.py</code> holds what every topology shares, with no framework imports at module level.</p>
 <ul>
-<li>single and independent: roles in <code>PRIMARY_FINAL_ROLES</code> (<code>solver</code>, <code>caller</code>, <code>coder</code>, <code>patcher</code>, <code>planner</code>).</li>
-<li>decentralized: <code>debater</code>.</li>
-<li>sequential: add <code>"&lt;ds&gt;"</code> to <code>SEQUENTIAL_FINAL_ROLES</code>.</li>
-<li>centralized: add <code>"&lt;ds&gt;"</code> to <code>CENTRALIZED_FINAL_ROLES_BY_DATASET</code>.</li>
+<li><strong>Constants.</strong> <code>DATASET</code>, the source constants and <code>SOURCE</code> (the "loading ..." line).</li>
+<li><strong>Loader.</strong> <code>load_instances(limit=None, offset=0, only=None, ...)</code>: <code>only</code> selects IDs, then <code>offset</code> and <code>limit</code> apply. Dataset options are explicit parameters, declared by <code>add_arguments(parser)</code>.</li>
+<li><strong>Prompt text.</strong> The user message (<code>format_prompt</code>) and prompt nudges, as constants.</li>
+<li><strong>Tools.</strong> Plain functions plus a factory taking the docstring (<code>make_x(doc)</code>). A tool's docstring is its description as the model sees it, so every wording is a constant, indentation included; runners add their framework's wrapper.</li>
+<li><strong>Scoring.</strong> Answer extraction and the reference scorer, as published.</li>
+<li><strong>Records.</strong> <code>record(inst, pred, **fields)</code>, <code>summarize(records)</code>, progress lines and <code>run_batch(instances, row, *, out_path, verbose, label)</code> over <code>core.batch.run_batch</code>.</li>
+<li><strong>Reuse</strong> the shared <a href="../../reference/repository/#core">core modules</a> instead of copying them.</li>
+<li><strong>Tests</strong> go to <code>core/tasks/tests/test_&lt;ds&gt;.py</code>; tests of shared modules go to <code>tests/core/</code>.</li>
 </ul>
-<p><code>append_output_contract_from_path</code> finds the dataset by matching a folder in the runner's path against the <code>DATASET_CONTRACTS</code> keys, so the key must equal <code>&lt;ds&gt;</code>. Repeat the change in <code>teamsizes/output_contracts.py</code> and in the copies under <code>optimizers/gepa/real_runner_gepa/</code> and <code>optimizers/mipro/real_runner_mipro/</code>, whose entries also carry the <code>PROTECTED FINAL OUTPUT CONTRACT:</code> header. <code>communications/output_contracts.py</code> re-exports the topologies version.</p>
-<h2 id="3-freeze-the-eval-ids">3. Freeze the eval IDs<a class="headerlink" href="#3-freeze-the-eval-ids" title="Link to this section">#</a></h2>
-<p>Write <code>benchmarks/&lt;ds&gt;/&lt;ds&gt;_eval_ids.json</code> in the same shape as the existing manifests:</p>
-<pre class="highlight"><code class="language-json">{
-  "dataset": "&lt;ds&gt;",
-  "sample": "report 100",
-  "n": 100,
-  "source": "how the IDs were chosen",
-  "ids": ["first_id", "second_id"]
-}</code></pre>
-<p>The <code>ids</code> must equal the <code>id</code> values from <code>load_instances</code>. Runners other than API-Bank do not read this file, so pass the IDs with <code>--only</code> to score the reported set. The optimizers read it to keep these IDs out of their train and validation splits.</p>
-<h2 id="4-generate-the-seed-prompts">4. Generate the seed prompts<a class="headerlink" href="#4-generate-the-seed-prompts" title="Link to this section">#</a></h2>
-<p>Seed prompts are written by an LLM. For every <code>(topology, dataset, role)</code> in <code>roles.yaml</code>, <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/configs/generate_role_prompts.py"><code>configs/generate_role_prompts.py</code></a> fills <code>meta_prompt.txt</code> with the dataset line from <code>domains.yaml</code>, the topology and role descriptions from <code>roles.yaml</code> and the tool list from <code>tools.yaml</code>, sends it as one user message, strips any <code>&lt;think&gt;</code> block and writes the reply to <code>configs/prompts/&lt;topology&gt;/&lt;ds&gt;/&lt;role&gt;.txt</code>.</p>
+<h2 id="2-team-spec">2. Team spec<a class="headerlink" href="#2-team-spec" title="Link to this section">#</a></h2>
+<p><code>configs/teams/&lt;ds&gt;.yaml</code> has one entry per multi-agent topology, following the <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/configs/teams/README.md">schema</a>: a replicated role (<code>independent</code>, <code>decentralized</code>), the r stages (<code>sequential</code>), or a manager and its r - 1 workers (<code>centralized</code>). <code>recursion_limit</code> is the same at every r and is omitted when the agents make plain model calls. All text is sent to the model verbatim.</p>
+<h2 id="3-topology-runners">3. Topology runners<a class="headerlink" href="#3-topology-runners" title="Link to this section">#</a></h2>
+<p>Write one module per (topology, framework), eight in all. Each has this shape:</p>
+<div class="language-python highlight"><span class="filename">topologies/centralized/langgraph/<ds>/langgraph_<ds>.py (sketch)</span><pre><span></span><code><span class="n">TOPOLOGY</span> <span class="o">=</span> <span class="s2">&quot;centralized&quot;</span>
+<span class="n">TEAM_SIZE</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;TEAM_SIZE&quot;</span><span class="p">)</span>  <span class="c1"># preset by the team-size variants</span>
+<span class="n">TEAM</span> <span class="o">=</span> <span class="n">teams</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="n">TOPOLOGY</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">DATASET</span><span class="p">,</span> <span class="n">TEAM_SIZE</span><span class="p">)</span>
+
+<span class="n">VLLM_BASE_URL</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">base_url</span><span class="p">()</span>     <span class="c1"># repointed per rollout by the optimizers</span>
+<span class="n">MODEL_ID</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">model_id</span><span class="p">()</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_prompt</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">prompts</span><span class="o">.</span><span class="n">role_prompt</span><span class="p">(</span><span class="n">TOPOLOGY</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">DATASET</span><span class="p">,</span> <span class="n">role</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_llm</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">chat_openai</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">MODEL_ID</span><span class="p">,</span> <span class="n">base_url</span><span class="o">=</span><span class="n">VLLM_BASE_URL</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">solve</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>                     <span class="c1"># one instance</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_batch</span><span class="p">(</span><span class="n">instances</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">cli</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">argv</span><span class="p">,</span> <span class="n">description</span><span class="o">=...</span><span class="p">,</span> <span class="n">load_instances</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">load_instances</span><span class="p">,</span> <span class="n">run_batch</span><span class="o">=</span><span class="n">run_batch</span><span class="p">,</span>
+                    <span class="n">demo</span><span class="o">=</span><span class="n">_canned_demo</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">SOURCE</span><span class="p">,</span> <span class="n">add_arguments</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">add_arguments</span><span class="p">)</span>
+</code></pre></div>
+<p><a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/single/math/langgraph_math.py"><code>topologies/single/math/langgraph_math.py</code></a> is a complete single-agent example. The <code>core/llm.py</code> docstring lists the client builders for every runner style.</p>
+<div class="admonition warning">
+<p class="admonition-title">Module attributes are an interface</p>
+<p>Read them at call time, keep their names, and keep when they are called (how many clients a row builds, when a prompt is loaded). The optimizer adapters patch or read <code>_load_prompt</code>, <code>SYSTEM_PROMPT</code>, <code>_build_llm</code>, <code>_build_client</code>, <code>VLLM_BASE_URL</code>, <code>MODEL_ID</code>, <code>N_AGENTS</code>, <code>N_ROUNDS</code>, <code>_RECURSION_LIMIT</code> and <code>_OUTPUT_FORMAT_NUDGE</code>. HiveMind patches <code>DELEGATION_TOOLS</code>, <code>DELEGATION_NAMES</code>, <code>MANAGER_TOOLS</code>, <code>_manager_tool_node</code> and <code>_MANAGER_TERMINATE_NUDGE</code> of the centralized LangGraph runners. The golden harness reads <code>solve</code>, <code>run_one</code>, <code>run_batch</code>, <code>load_instances</code> and the scorers.</p>
+</div>
+<p>The command line comes from <code>core.cli.main</code>, which adds the <a href="../../reference/cli/#runner-options">shared runner options</a> and the dataset's <code>add_arguments</code>:</p>
+<ul>
+<li>A dataset may also pass <code>default_limit</code>, an <code>epilog</code>, an info mode (<code>cli.InfoMode("--summary", dataset_summary)</code>: a JSON report instead of a run) and <code>configure</code>, applied to the parsed options first.</li>
+<li>The loader, <code>run_batch</code>, <code>configure</code> and the info report receive the options they declare as parameters.</li>
+<li>Diagnostics go through <code>logging.getLogger(__name__)</code>; stdout is for results only.</li>
+</ul>
+<h2 id="4-seed-prompts">4. Seed prompts<a class="headerlink" href="#4-seed-prompts" title="Link to this section">#</a></h2>
+<p>Seed prompts are written by an LLM. For every <code>(topology, dataset, role)</code> in <code>roles.yaml</code>, <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/configs/generate_role_prompts.py"><code>configs/generate_role_prompts.py</code></a> fills <code>meta_prompt.txt</code> with the dataset line from <code>domains.yaml</code>, the topology and role descriptions from <code>roles.yaml</code> and the tool list from <code>tools.yaml</code>. It sends the result as one user message, strips any <code>&lt;think&gt;</code> block and writes the reply to <code>configs/prompts/&lt;topology&gt;/&lt;ds&gt;/&lt;role&gt;.txt</code>.</p>
 <p>Add the dataset to the three YAML files in <code>configs/prompts/</code>:</p>
 <ul>
 <li><code>domains.yaml</code>: one line, <code>&lt;ds&gt;: "..."</code>. The generator only visits datasets listed here.</li>
-<li><code>roles.yaml</code>: under <code>topologies.&lt;topology&gt;.benchmarks</code> for each of the five topologies, add <code>&lt;ds&gt;:</code> with <code>&lt;role&gt;: "&lt;job description&gt;"</code>. Role names must match what your runners load.</li>
-<li><code>tools.yaml</code>: under each topology, <code>&lt;ds&gt;:</code> with the tool list (anchors such as <code>*calculator</code> work). A missing entry becomes <code>None.</code>, which tells the prompt to use no tools.</li>
+<li><code>roles.yaml</code>: under <code>topologies.&lt;topology&gt;.benchmarks</code> for each of the five topologies, <code>&lt;ds&gt;:</code> with <code>&lt;role&gt;: "&lt;job description&gt;"</code>. Role names must match what the runners and the team spec load.</li>
+<li><code>tools.yaml</code>: under each topology, <code>&lt;ds&gt;:</code> with the tool list. A missing entry becomes <code>None.</code>, which tells the prompt to use no tools.</li>
 </ul>
-<p>Then generate. Existing prompt files are skipped unless you pass <code>--force</code>:</p>
-<pre class="highlight"><code class="language-bash">export PROMPT_GEN_BASE_URL=http://localhost:8000/v1   # serves the generator model
-python configs/generate_role_prompts.py --only single/&lt;ds&gt; --only independent/&lt;ds&gt; \
-  --only sequential/&lt;ds&gt; --only centralized/&lt;ds&gt; --only decentralized/&lt;ds&gt;</code></pre>
-<p>The generator defaults to <code>Qwen/Qwen3.5-122B-A10B-FP8</code> with temperature 0 and seed 42. The <code>decentralized_openai</code> block in <code>roles.yaml</code> only covers MATH; the OpenAI-SDK runners for other datasets load <code>configs/prompts/decentralized/&lt;ds&gt;/</code>.</p>
-<h2 id="5-wire-up-the-optimizers">5. Wire up the optimizers<a class="headerlink" href="#5-wire-up-the-optimizers" title="Link to this section">#</a></h2>
-<p>Each optimizer needs a dataset module, adapters and a registry entry. In <code>optimizers/gepa/real_runner_gepa/</code>:</p>
+<p>Then generate; existing files are skipped unless you pass <code>--force</code>:</p>
+<div class="language-bash highlight"><span class="filename">Write the new prompt files</span><pre><span></span><code>python<span class="w"> </span>configs/generate_role_prompts.py<span class="w"> </span>--only<span class="w"> </span>single/&lt;ds&gt;<span class="w"> </span>--only<span class="w"> </span>independent/&lt;ds&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--only<span class="w"> </span>sequential/&lt;ds&gt;<span class="w"> </span>--only<span class="w"> </span>centralized/&lt;ds&gt;<span class="w"> </span>--only<span class="w"> </span>decentralized/&lt;ds&gt;
+</code></pre></div>
+<p>The generator defaults to <code>Qwen/Qwen3.5-122B-A10B-FP8</code> at <code>http://localhost:8200/v1</code>, temperature 0 and seed 42 (<a href="../../reference/cli/#prompt-generation">options</a>). The CrewAI, AutoGen and Agents SDK runners read the prompts of their topology folder.</p>
+<h2 id="5-output-contract">5. Output contract<a class="headerlink" href="#5-output-contract" title="Link to this section">#</a></h2>
+<p>Add one sentence to <code>DATASET_CONTRACTS</code> in <code>core/output_contracts.py</code> that names the final artifact your scorer reads, for example "End with exactly one final line: Answer: <short-form>." Then list the roles that emit it:</p>
 <ul>
-<li><strong><code>datasets/&lt;ds&gt;.py</code></strong>, from <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/gepa/templates/dataset_template.py"><code>templates/dataset_template.py</code></a>. <code>load_all()</code> returns <code>dspy.Example</code> objects with an <code>id</code> and a <code>task_instance</code> input; <code>train_val_split(...)</code> should call <code>split_utils.train_val_split_excluding_real_eval("&lt;ds&gt;", ...)</code> so eval IDs stay out. Add the <code>metric(example, prediction, ...)</code> the template lacks, returning <code>dspy.Prediction(score=..., feedback=...)</code> as <code>datasets/math.py</code> does. The pilot imports <code>real_runner_gepa.datasets.&lt;dataset&gt;</code>, so the file name must equal the registry key.</li>
-<li><strong><code>adapters/module_&lt;ds&gt;.py</code></strong>, one class per optimizer topology name. Subclass <code>ModuleAdapterBase</code> (<code>adapters/module_common.py</code>) as <code>module_lcb.py</code> does, set <code>topology</code>, <code>framework</code>, <code>prompt_topology</code>, <code>roles_</code> and <code>module_name</code>, and implement <code>run_example</code> to call your runner's <code>solve</code>.</li>
-<li><strong><code>registry.py</code></strong>: add <code>"&lt;ds&gt;": {...}</code> to <code>DATASET_ADAPTERS</code> with all eight topology names mapped to <code>"real_runner_gepa.adapters.module_&lt;ds&gt;:&lt;Class&gt;"</code>.</li>
+<li><code>single</code> and <code>independent</code>: roles in <code>PRIMARY_FINAL_ROLES</code> (<code>solver</code>, <code>caller</code>, <code>coder</code>, <code>patcher</code>, <code>planner</code>);</li>
+<li><code>decentralized</code>: <code>debater</code>;</li>
+<li><code>sequential</code>: <code>SEQUENTIAL_FINAL_ROLES["&lt;ds&gt;"]</code>;</li>
+<li><code>centralized</code>: <code>CENTRALIZED_FINAL_ROLES_BY_DATASET["&lt;ds&gt;"]</code>.</li>
 </ul>
-<p>Repeat under <code>optimizers/mipro/real_runner_mipro/</code>, which has no <code>templates/</code> folder. <a href="../add-topology/">Add a Topology</a> covers the adapter contract and smoke test in detail. A minimal run checks the wiring:</p>
-<pre class="highlight"><code class="language-bash">cd optimizers/gepa
-python -m real_runner_gepa.pilots.run_gepa_dataset --dataset &lt;ds&gt; --topology single \
-  --train-size 1 --val-size 1 --max-full-evals 1 --out results/gepa/single_&lt;ds&gt;_smoke</code></pre>
-<h2 id="6-add-it-to-the-launchers">6. Add it to the launchers<a class="headerlink" href="#6-add-it-to-the-launchers" title="Link to this section">#</a></h2>
-<p>The sweep scripts hard-code their dataset list and per-dataset row limits:</p>
-<pre class="highlight"><code class="language-bash">DATASETS="${DATASETS:-gpqa hotpotqa math lcb apps bfcl swe apibank toolhop}"
-declare -A LIMIT=([gpqa]=100 [hotpotqa]=100 [math]=100 [lcb]=50 [apps]=50
-                  [bfcl]=100 [swe]=30 [apibank]=100 [toolhop]=100)</code></pre>
-<p>Add <code>&lt;ds&gt;</code> to both; a dataset missing from <code>LIMIT</code> runs 50 rows. The script passes <code>--batch --limit N --out &lt;file&gt;</code> to every dataset except <code>apibank</code> and <code>toolhop</code>, so a runner that takes <code>--out-dir</code> needs its own <code>case</code> branch. Make the same edits in <code>scripts/run_teamsizes.sh</code> and <code>scripts/run_communications.sh</code> if you add those variants, and add <code>&lt;ds&gt;</code> to <code>DATASETS</code> in <code>optimizers/gepa/run_gepa.sh</code> and <code>optimizers/mipro/run_mipro.sh</code>.</p>
+<p>The bridge adapters attach their own copy at execution time, so make the same entries in <code>optimizers/bridge/output_contracts.py</code>, whose contracts also carry the <code>PROTECTED FINAL OUTPUT CONTRACT:</code> header. <a href="../../evaluation/protocol/#output-contracts">Output contracts</a> explains how they are applied.</p>
+<h2 id="6-team-sizes">6. Team sizes<a class="headerlink" href="#6-team-sizes" title="Link to this section">#</a></h2>
+<p>A team-size module runs the topology runner's source in its own namespace with a preset parameter (<code>core.variant</code>), so it owns a full set of hooks:</p>
+<div class="language-python highlight"><span class="filename">teamsizes/centralized/<ds>/<ds>_r8.py</span><pre><span></span><code><span class="sd">&quot;&quot;&quot;Centralized &lt;DATASET&gt; with team size r=8: a manager and 7 workers.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">core</span><span class="w"> </span><span class="kn">import</span> <span class="n">variant</span>
+
+<span class="n">variant</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">globals</span><span class="p">(),</span> <span class="s2">&quot;topologies.centralized.langgraph.&lt;ds&gt;.langgraph_&lt;ds&gt;&quot;</span><span class="p">,</span> <span class="n">TEAM_SIZE</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+</code></pre></div>
+<ul>
+<li>The runner derives everything size-dependent from <code>TEAM</code>: agents, delegate tools, <code>max_turns</code> and the default output folder.</li>
+<li>API-Bank and ToolHop are the exception: their team sizes vote over r replicas of one role (<code>teamsizes/apibank_common.py</code>, <code>teamsizes/toolhop_common.py</code>, loaded with <code>TOPOLOGY</code> and <code>TEAM_SIZE</code>), and their CrewAI and AutoGen runners are the LangGraph runners under another <code>STYLE</code>.</li>
+</ul>
+<h2 id="7-communication-formats">7. Communication formats<a class="headerlink" href="#7-communication-formats" title="Link to this section">#</a></h2>
+<p>A multi-agent runner selects its format once, at load time, and never rebinds it, so runners loaded with different formats never share one:</p>
+<div class="language-python highlight"><span class="filename">Format selection in a runner</span><pre><span></span><code><span class="n">COMMUNICATION_FORMAT</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;COMMUNICATION_FORMAT&quot;</span><span class="p">,</span> <span class="s2">&quot;freeform&quot;</span><span class="p">)</span>  <span class="c1"># preset by communications/</span>
+<span class="n">COMMUNICATION</span> <span class="o">=</span> <span class="n">CommPolicy</span><span class="p">(</span><span class="n">COMMUNICATION_FORMAT</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">DATASET</span><span class="p">,</span> <span class="n">TOPOLOGY</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_prompt</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">COMMUNICATION</span><span class="o">.</span><span class="n">system_prompt</span><span class="p">(</span><span class="n">prompts</span><span class="o">.</span><span class="n">role_prompt</span><span class="p">(</span><span class="n">TOPOLOGY</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">DATASET</span><span class="p">,</span> <span class="n">role</span><span class="p">))</span>
+</code></pre></div>
+<ul>
+<li><code>COMMUNICATION.system_prompt</code> appends the format's contract wherever a system prompt is completed: <code>_load_prompt</code>, a module-level <code>SYSTEM_PROMPT</code>, API-Bank's four-argument <code>_load_prompt</code> and ToolHop's <code>_system_prompt</code>.</li>
+<li><code>COMMUNICATION.handoff(role, text, ...)</code> renders one agent's output before another receives it.</li>
+<li>API-Bank and ToolHop runners default to <code>None</code>, not <code>"freeform"</code>: outside a communications run their agents read each other's outputs as plain text.</li>
+<li>Each <code>communications/&lt;topology&gt;/&lt;ds&gt;/&lt;ds&gt;_&lt;format&gt;.py</code> calls <code>communication_formats.install(globals(), topology=..., dataset=..., fmt=...)</code>. The dataset's <code>Pair</code> subclass in <code>communications/communication_formats.py</code> loads the LangGraph runner with the format preset (<code>core.variant.module</code>) and defines the pair's <code>solve</code> (handoffs recorded, reports scored), <code>run_one</code>, <code>run_batch</code> and <code>main</code>.</li>
+<li>The bridge adapters load the runner the same way: <code>import_isolated_real_module(module_name, COMMUNICATION_FORMAT=fmt)</code>.</li>
+</ul>
+<h2 id="8-evaluation-ids-and-splits">8. Evaluation IDs and splits<a class="headerlink" href="#8-evaluation-ids-and-splits" title="Link to this section">#</a></h2>
+<p>Ship two files in <code>benchmarks/&lt;ds&gt;/</code>, with IDs equal to the <code>id</code> values of <code>load_instances</code>:</p>
+<ul>
+<li><code>&lt;ds&gt;_eval_ids.json</code>: <code>dataset</code>, <code>sample</code>, <code>n</code>, <code>source</code> and <code>ids</code>, the reported instances.</li>
+<li><code>&lt;ds&gt;_splits.json</code>: fixed <code>train</code>, <code>validation</code> and <code>test</code> ID lists. <code>test</code> is the evaluation set in the same order; <code>train</code> and <code>validation</code> are drawn from the remaining pool and never overlap it.</li>
+</ul>
+<p><a href="../../evaluation/protocol/#fixed-splits">Evaluation Protocol</a> describes both files.</p>
+<h2 id="9-optimizer-bridge">9. Optimizer bridge<a class="headerlink" href="#9-optimizer-bridge" title="Link to this section">#</a></h2>
+<ol>
+<li>Add <code>optimizers/bridge/datasets/&lt;ds&gt;.py</code> from <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/bridge/templates/dataset_template.py"><code>templates/dataset_template.py</code></a>: <code>load_all()</code> returns <code>dspy.Example</code>s with an <code>id</code> and a <code>task_instance</code> input, and <code>metric(example, prediction, ...)</code> returns <code>dspy.Prediction(score=..., feedback=...)</code>. The protocol imports the module by the dataset name.</li>
+<li>Add adapters under <code>optimizers/bridge/adapters/</code>, usually a <code>module_&lt;ds&gt;.py</code> whose classes subclass <code>ModuleAdapterBase</code> (<code>module_common.py</code>) as <code>module_lcb.py</code> does, and register them in <code>DATASET_ADAPTERS</code> in <code>optimizers/bridge/registry.py</code>. <a href="../add-topology/#4-bridge-adapters">Add a Topology</a> covers the adapter contract.</li>
+<li>A new dataset is outside the experiment grid, so protocol jobs on it need <code>--allow-any-cell</code> and are non-conformant. Run the adapter's <code>run_example()</code> on one example, then the optimization phase on a <a href="../../optimizers/running/#smoke-runs">smoke budget</a>, and check that <code>job.json</code>, <code>optimization.json</code> and <code>optimization/optimizer_result.json</code> exist under <code>--out</code>:</li>
+</ol>
+<div class="language-bash highlight"><span class="filename">Smoke-test the bridge</span><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>optimizers.protocol.run<span class="w"> </span>--method<span class="w"> </span>gepa<span class="w"> </span>--dataset<span class="w"> </span>&lt;ds&gt;<span class="w"> </span>--topology<span class="w"> </span>single<span class="w"> </span>--model<span class="w"> </span>qwen<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--seed<span class="w"> </span><span class="m">0</span><span class="w"> </span>--budget<span class="w"> </span><span class="m">56</span><span class="w"> </span>--phase<span class="w"> </span>optimize<span class="w"> </span>--allow-any-cell<span class="w"> </span>--out<span class="w"> </span>runs/smoke/&lt;ds&gt;_single
+</code></pre></div>
+<h2 id="10-golden-tests">10. Golden tests<a class="headerlink" href="#10-golden-tests" title="Link to this section">#</a></h2>
+<p>Add the dataset to <code>tests/golden/cells.py</code> and record its cells once with <code>python -m tests.golden.record --only '&lt;glob&gt;'</code>. From then on, change behavior only on purpose:</p>
+<div class="language-bash highlight"><span class="filename">Check, then re-record an intended change</span><pre><span></span><code><span class="nv">GOLDEN_WORKERS</span><span class="o">=</span><span class="m">16</span><span class="w"> </span><span class="nv">HF_DATASETS_OFFLINE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">HF_HUB_OFFLINE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">PYTHONDONTWRITEBYTECODE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="nv">TOOLHOP_ALLOW_DATASET_EXEC</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>tests/golden<span class="w"> </span>tests/core<span class="w"> </span>core/tasks/tests<span class="w"> </span>optimizers
+python<span class="w"> </span>-m<span class="w"> </span>tests.golden.record<span class="w"> </span>--only<span class="w"> </span><span class="s1">&#39;&lt;cells whose change is intended&gt;&#39;</span><span class="w"> </span>--force<span class="w">  </span><span class="c1"># after reading the diff</span>
+ruff<span class="w"> </span>check<span class="w"> </span>&lt;files&gt;<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ruff<span class="w"> </span>format<span class="w"> </span>--check<span class="w"> </span>&lt;files&gt;
+</code></pre></div>
+<h2 id="11-launchers">11. Launchers<a class="headerlink" href="#11-launchers" title="Link to this section">#</a></h2>
+<p>The sweep scripts list their datasets and row limits in code: add <code>&lt;ds&gt;</code> to the <code>DATASETS</code> default and the <code>LIMIT</code> table of <code>scripts/run_topologies.sh</code>, and of <code>run_teamsizes.sh</code> and <code>run_communications.sh</code> if you add those variants. A dataset missing from <code>LIMIT</code> in <code>run_topologies.sh</code> runs 50 rows.</p>
 <h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Link to this section">#</a></h2>
 <ol>
-<li>Eight runners sharing one loader and scorer.</li>
-<li><code>DATASET_CONTRACTS</code> and final roles in all four <code>output_contracts.py</code> copies.</li>
-<li><code>benchmarks/&lt;ds&gt;/&lt;ds&gt;_eval_ids.json</code> matching the runner IDs.</li>
+<li><code>core/tasks/&lt;ds&gt;.py</code> with its tests, and <code>configs/teams/&lt;ds&gt;.yaml</code>.</li>
+<li>Eight topology runners, plus team-size and communication modules if you add those variants.</li>
 <li>YAML entries and generated prompts under <code>configs/prompts/&lt;topology&gt;/&lt;ds&gt;/</code>.</li>
-<li><code>datasets/&lt;ds&gt;.py</code> (<code>load_all</code>, <code>train_val_split</code>, <code>metric</code>) for GEPA and MIPRO.</li>
-<li><code>adapters/module_&lt;ds&gt;.py</code> and <code>DATASET_ADAPTERS["&lt;ds&gt;"]</code> in both registries.</li>
-<li><code>DATASETS</code> and <code>LIMIT</code> entries in the launchers.</li>
-<li>A smoke demo, a short <code>--batch --limit</code> slice per runner and a one-row optimizer run.</li>
+<li>Contract and final roles in <code>core/output_contracts.py</code> and <code>optimizers/bridge/output_contracts.py</code>.</li>
+<li><code>&lt;ds&gt;_eval_ids.json</code> and <code>&lt;ds&gt;_splits.json</code> in <code>benchmarks/&lt;ds&gt;/</code>.</li>
+<li>The bridge loader, adapters and registry entry, and a smoke job.</li>
+<li>Golden cells, and the launchers' <code>DATASETS</code> and <code>LIMIT</code>.</li>
 </ol>
     </article>
-    <div class="page-meta">
-      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/extending/add-dataset.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
-    </div>
     <nav class="pager" aria-label="Previous and next pages">
-      <a class="pager-link prev" href="../../evaluation/results/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Read the Results</b></a>
+      <a class="pager-link prev" href="../../evaluation/outputs/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Read Run Outputs</b></a>
       <a class="pager-link next" href="../add-topology/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Add a Topology</b></a>
     </nav>
 
@@ -320,24 +377,35 @@ declare -A LIMIT=([gpqa]=100 [hotpotqa]=100 [math]=100 [lcb]=50 [apps]=50
       <span>MAS-PromptBench is released under the MIT License.</span>
       <span class="foot-links">
         <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
-        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">Code</a>
+        <a href="https://deepwiki.com/juyangbai/MAS-PromptBench">DeepWiki</a>
       </span>
     </footer>
   </main>
   <aside class="toc" aria-label="On this page">
     <span class="nav-label">On this page</span>
     <ul>
-      <li><a href="#1-write-one-runner-per-topology">1. Write one runner per topology</a>
+      <li><a href="#1-task-module">1. Task module</a>
       </li>
-      <li><a href="#2-register-the-output-contract">2. Register the output contract</a>
+      <li><a href="#2-team-spec">2. Team spec</a>
       </li>
-      <li><a href="#3-freeze-the-eval-ids">3. Freeze the eval IDs</a>
+      <li><a href="#3-topology-runners">3. Topology runners</a>
       </li>
-      <li><a href="#4-generate-the-seed-prompts">4. Generate the seed prompts</a>
+      <li><a href="#4-seed-prompts">4. Seed prompts</a>
       </li>
-      <li><a href="#5-wire-up-the-optimizers">5. Wire up the optimizers</a>
+      <li><a href="#5-output-contract">5. Output contract</a>
       </li>
-      <li><a href="#6-add-it-to-the-launchers">6. Add it to the launchers</a>
+      <li><a href="#6-team-sizes">6. Team sizes</a>
+      </li>
+      <li><a href="#7-communication-formats">7. Communication formats</a>
+      </li>
+      <li><a href="#8-evaluation-ids-and-splits">8. Evaluation IDs and splits</a>
+      </li>
+      <li><a href="#9-optimizer-bridge">9. Optimizer bridge</a>
+      </li>
+      <li><a href="#10-golden-tests">10. Golden tests</a>
+      </li>
+      <li><a href="#11-launchers">11. Launchers</a>
       </li>
       <li><a href="#checklist">Checklist</a>
       </li>
@@ -364,7 +432,7 @@ declare -A LIMIT=([gpqa]=100 [hotpotqa]=100 [math]=100 [lcb]=50 [apps]=50
     svg: { fontCache: "global" }
   };
 </script>
-<script src="../../assets/docs.js?v=20261008091509" defer></script>
+<script src="../../assets/docs.js?v=20261022204625" defer></script>
 </div>
 </body>
 </html>

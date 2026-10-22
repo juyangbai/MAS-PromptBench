@@ -12,21 +12,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="../assets/docs.css?v=20261008091509">
+  <link rel="stylesheet" href="../assets/docs.css?v=20261022204625">
   <!-- page transition to and from the project page ("Short glide, ordered") -->
-  <script src="../assets/mpb-transition.js?v=20261008091509"></script>
-  <link rel="stylesheet" href="../assets/mpb-transition.css?v=20261008091509">
+  <script src="../assets/mpb-transition.js?v=20261022204625"></script>
+  <link rel="stylesheet" href="../assets/mpb-transition.css?v=20261022204625">
   <script>
-    /* Apply a stored theme before first paint. "system" stores nothing. */
+    /* Apply a stored theme before first paint. "system" stores nothing. Hosts that
+       sandbox each page block storage, so the tab's
+       window.name carries the choice there. */
     (function () {
-      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+      var t = null;
+      try { t = localStorage.getItem('mpb-theme'); } catch (e) {}
+      if (!t) { var m = /^mpb-theme=(dark|light)$/.exec(window.name || ''); if (m) t = m[1]; }
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
   <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
   <link rel="expect" href="#mpb-title" blocking="render">
 </head>
 <body>
-<div class="site" data-base-url=".." data-version="20261008091509">
+<div class="site" data-base-url=".." data-version="20261022204625">
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
@@ -36,11 +41,11 @@
   <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
-  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5M13.5 4.5l-3 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-wiki" viewBox="110 110 460 500"><path fill="#21c19a" d="M418.73,332.37c9.84-5.68,22.07-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.58,1.06.19.06.37.11.55.16.87.21,1.76.34,2.65.35.04,0,.08.02.13.02.1,0,.19-.03.29-.04.83-.02,1.64-.13,2.45-.32.14-.03.28-.05.42-.09.87-.24,1.7-.59,2.5-1.03.08-.04.17-.06.25-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.06,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.57-1.06-.19-.06-.37-.11-.56-.16-.88-.21-1.76-.34-2.65-.34-.13,0-.26.02-.4.02-.84.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.24.1.8.44,1.64.79,2.5,1.03.14.04.28.06.42.09.81.19,1.62.3,2.45.32.1,0,.19.04.29.04.04,0,.08-.02.13-.02.89,0,1.77-.13,2.65-.35.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.58-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-.08-.04-.16-.06-.24-.1-.8-.44-1.64-.8-2.51-1.04-.13-.04-.26-.05-.39-.09-.82-.2-1.65-.31-2.49-.33-.13,0-.25-.02-.38-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.75.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.07,5.68-31.9,0-9.84-5.68-15.95-16.27-15.95-27.63s6.11-21.95,15.95-27.63Z"/><path fill="#3969ca" d="M141.09,317.65l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c.08-.04.13-.11.2-.16.78-.48,1.51-1.02,2.15-1.66.1-.1.18-.21.28-.31.57-.6,1.08-1.26,1.51-1.97.07-.12.15-.22.22-.34.44-.77.77-1.6,1.03-2.47.05-.19.1-.37.14-.56.22-.89.37-1.81.37-2.76v-29.43c0-11.36,6.11-21.95,15.96-27.63s22.06-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.57,1.06.19.06.37.11.56.16.87.21,1.76.34,2.64.35.04,0,.09.02.13.02.1,0,.19-.04.29-.04.83-.02,1.65-.13,2.45-.32.14-.03.28-.05.41-.09.87-.24,1.71-.6,2.51-1.04.08-.04.16-.06.24-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.07,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.58-1.06-.19-.06-.37-.11-.55-.16-.88-.21-1.76-.34-2.65-.35-.13,0-.26.02-.4.02-.83.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22Z"/><path fill="#0294de" d="M396.88,484.35l-50.97-29.43c-.08-.04-.17-.06-.24-.1-.8-.44-1.64-.79-2.51-1.03-.14-.04-.27-.06-.41-.09-.81-.19-1.64-.3-2.47-.32-.13,0-.26-.02-.39-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.76.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.06,5.68-31.9,0-9.84-5.68-15.96-16.27-15.96-27.63v-29.43c0-.95-.15-1.87-.37-2.76-.05-.19-.09-.37-.14-.56-.25-.86-.59-1.69-1.03-2.47-.07-.12-.15-.22-.22-.34-.43-.71-.94-1.37-1.51-1.97-.1-.1-.18-.21-.28-.31-.65-.63-1.37-1.18-2.15-1.66-.07-.04-.13-.11-.2-.16l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.25.1.8.44,1.63.79,2.5,1.03.14.04.29.06.43.09.8.19,1.61.3,2.43.32.1,0,.2.04.3.04.04,0,.09-.02.13-.02.88,0,1.77-.13,2.64-.34.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.57-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22Z"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -55,8 +60,9 @@
     <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
       <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
     </button>
-    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
-    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <a class="deepwiki-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="deepwiki-btn" href="https://deepwiki.com/juyangbai/MAS-PromptBench" title="Ask questions about the code on DeepWiki"><svg class="i" aria-hidden="true"><use href="#i-wiki"></use></svg><span>Ask DeepWiki</span></a>
+    <a class="icon-btn code-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="Code (GitHub repository)" title="Code"><svg class="i" aria-hidden="true"><use href="#i-code"></use></svg></a>
     <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
   </div>
 </header>
@@ -132,8 +138,6 @@
     <span class="nav-label">Optimizers</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../optimizers/">Overview</a></li>
-  <li><a class="nav-link" href="../optimizers/gepa/">GEPA</a></li>
-  <li><a class="nav-link" href="../optimizers/mipro/">MIPRO</a></li>
   <li><a class="nav-link" href="../optimizers/running/">Run an Optimizer</a></li>
 </ul>
   </li>
@@ -141,7 +145,7 @@
     <span class="nav-label">Evaluation</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../evaluation/protocol/">Evaluation Protocol</a></li>
-  <li><a class="nav-link" href="../evaluation/results/">Read the Results</a></li>
+  <li><a class="nav-link" href="../evaluation/outputs/">Read Run Outputs</a></li>
 </ul>
   </li>
   <li class="nav-section">
@@ -178,7 +182,7 @@
 <li><strong>Coding</strong>: LiveCodeBench, APPS and SWE-bench Verified. The agents produce a program or a repository patch, and the scorer runs tests against it.</li>
 <li><strong>Tool calling</strong>: BFCL, ToolHop and API-Bank. The agents emit function or API calls against schemas given with each task, and the scorer checks the calls themselves or the answer the call chain produces.</li>
 </ul>
-<p>Each task fixes the form of the final answer with an output contract, defined in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/topologies/output_contracts.py"><code>topologies/output_contracts.py</code></a>. The runner adds it to the final role's system prompt at load time, so an optimizer can rewrite role prompts without removing the format the scorer expects. The paper also reports its results per domain.</p>
+<p>Each task fixes the form of the final answer with an output contract, defined in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/core/output_contracts.py"><code>core/output_contracts.py</code></a>. The runner adds it to the answering role's system prompt at load time, so an optimizer can rewrite role prompts without removing the format the scorer expects. Data loading, scoring and records live in one task module per dataset, <code>core/tasks/&lt;dataset&gt;.py</code>.</p>
 <h2 id="at-a-glance">At a glance<a class="headerlink" href="#at-a-glance" title="Link to this section">#</a></h2>
 <table>
 <thead>
@@ -187,8 +191,8 @@
 <th>CLI name</th>
 <th>Domain</th>
 <th>Metric (scorer)</th>
-<th style="text-align: right;">Launcher limit</th>
-<th style="text-align: right;">Frozen IDs</th>
+<th style="text-align: right;">Eval IDs</th>
+<th style="text-align: right;">Train / val</th>
 <th>Special setup</th>
 </tr>
 </thead>
@@ -199,7 +203,7 @@
 <td>Reasoning</td>
 <td>Accuracy (letter match)</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">100</td>
+<td style="text-align: right;">48 / 50</td>
 <td>Gated Hugging Face dataset</td>
 </tr>
 <tr>
@@ -208,7 +212,7 @@
 <td>Reasoning</td>
 <td>Exact match and F1 (official)</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">100</td>
+<td style="text-align: right;">150 / 50</td>
 <td>Network access to Wikipedia</td>
 </tr>
 <tr>
@@ -217,7 +221,7 @@
 <td>Reasoning</td>
 <td>Accuracy (Hendrycks <code>is_equiv</code>)</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">100</td>
+<td style="text-align: right;">150 / 50</td>
 <td>None</td>
 </tr>
 <tr>
@@ -226,7 +230,7 @@
 <td>Coding</td>
 <td>pass@1</td>
 <td style="text-align: right;">50</td>
-<td style="text-align: right;">50</td>
+<td style="text-align: right;">150 / 50</td>
 <td>Runs generated code on the host</td>
 </tr>
 <tr>
@@ -235,7 +239,7 @@
 <td>Coding</td>
 <td>Strict accuracy (pass@1)</td>
 <td style="text-align: right;">50</td>
-<td style="text-align: right;">50</td>
+<td style="text-align: right;">150 / 50</td>
 <td>Runs generated code on the host</td>
 </tr>
 <tr>
@@ -244,7 +248,7 @@
 <td>Coding</td>
 <td>Resolved rate</td>
 <td style="text-align: right;">30</td>
-<td style="text-align: right;">30</td>
+<td style="text-align: right;">146 / 50</td>
 <td>git, Singularity, per-instance images</td>
 </tr>
 <tr>
@@ -253,7 +257,7 @@
 <td>Tool calling</td>
 <td>AST match (<code>bfcl-eval</code>)</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">25</td>
+<td style="text-align: right;">150 / 50</td>
 <td>None</td>
 </tr>
 <tr>
@@ -262,7 +266,7 @@
 <td>Tool calling</td>
 <td>Answer accuracy</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">100</td>
+<td style="text-align: right;">150 / 50</td>
 <td><code>TOOLHOP_ALLOW_DATASET_EXEC=1</code></td>
 </tr>
 <tr>
@@ -271,12 +275,12 @@
 <td>Tool calling</td>
 <td>API-call accuracy (API-Bank checkers)</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">100</td>
+<td style="text-align: right;">150 / 50</td>
 <td>None (source ships in the repo)</td>
 </tr>
 </tbody>
 </table>
-<p>The CLI name is the task's folder name and the optimizers' <code>--dataset</code> value. The launcher limit is the <code>--limit</code> that <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/scripts/run_topologies.sh"><code>scripts/run_topologies.sh</code></a> passes. The frozen IDs, 655 in total, are the instances behind the reported scores, listed in <code>benchmarks/&lt;task&gt;/&lt;task&gt;_eval_ids.json</code>.</p>
+<p>The CLI name is the task's folder name and the optimizers' <code>--dataset</code> value. The eval IDs, 730 in total, are the instances behind the reported scores, listed in <code>benchmarks/&lt;task&gt;/&lt;task&gt;_eval_ids.json</code>. They are also the <code>test</code> split of <code>benchmarks/&lt;task&gt;/&lt;task&gt;_splits.json</code>; the <code>train</code> and <code>validation</code> splits the optimizers use are drawn from the rest, so optimization never sees a reported instance.</p>
 <div class="cards">
 <ul>
 <li><a href="gpqa/">GPQA-Diamond</a>
@@ -300,55 +304,58 @@
 </ul>
 </div>
 <h2 id="running-a-task">Running a task<a class="headerlink" href="#running-a-task" title="Link to this section">#</a></h2>
-<p>Every task has one runner per topology variant, at <code>topologies/&lt;topology&gt;/[&lt;framework&gt;/]&lt;task&gt;/&lt;framework&gt;_&lt;task&gt;.py</code>. Run them from the repository root as modules, the way the sweep launcher does:</p>
-<pre class="highlight"><code class="language-bash">python -m topologies.single.gpqa.langgraph_gpqa --batch --limit 100 \
-  --out results/topologies_baseline/single_gpqa/predictions.jsonl</code></pre>
-<div class="admonition warning">
-<p class="admonition-title">Run runners as modules</p>
-<p>Most runners import the <code>topologies</code> package before they add the repository root to <code>sys.path</code>. Started as <code>python topologies/.../&lt;file&gt;.py</code> without <code>PYTHONPATH</code> set to the repository root, they stop with <code>ModuleNotFoundError: No module named 'topologies'</code>.</p>
-</div>
-<p>The runners come in three flag families:</p>
+<p>Every task has one runner per topology variant, at <code>topologies/&lt;topology&gt;/[&lt;framework&gt;/]&lt;task&gt;/&lt;framework&gt;_&lt;task&gt;.py</code>. Run them from the repository root as modules:</p>
+<div class="language-bash highlight"><span class="filename">Run a runner as a module</span><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.single.gpqa.langgraph_gpqa<span class="w"> </span>--batch<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out-dir<span class="w"> </span>results/topologies_baseline/single_gpqa
+</code></pre></div>
+<p>All runners share one command line, plus a few options per dataset:</p>
 <table>
 <thead>
 <tr>
-<th>Tasks</th>
-<th>Batch mode</th>
-<th>Output</th>
-<th>No-argument run</th>
+<th>Flag</th>
+<th>Effect</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>gpqa</code>, <code>hotpotqa</code>, <code>math</code>, <code>lcb</code>, <code>apps</code></td>
-<td>needs <code>--batch</code></td>
-<td><code>--out &lt;file.jsonl&gt;</code>; without it, scores are only printed</td>
-<td>a built-in smoke demo</td>
+<td><code>--batch</code></td>
+<td>Run the dataset instead of the canned demo.</td>
 </tr>
 <tr>
-<td><code>bfcl</code>, <code>swe</code></td>
-<td>always; <code>--batch</code> is rejected</td>
-<td><code>--out-dir &lt;dir&gt;</code></td>
-<td>a small batch (5 BFCL <code>simple</code> instances, 2 SWE instances)</td>
+<td><code>--limit N</code></td>
+<td>Evaluate at most N instances, after <code>--offset</code>.</td>
 </tr>
 <tr>
-<td><code>toolhop</code>, <code>apibank</code></td>
-<td>always; <code>--batch</code> is accepted and ignored</td>
-<td><code>--out-dir &lt;dir&gt;</code></td>
-<td>a small batch (5 or 2 instances)</td>
+<td><code>--offset K</code></td>
+<td>Skip the first K instances.</td>
+</tr>
+<tr>
+<td><code>--only ID ...</code></td>
+<td>Evaluate only these IDs, whatever <code>--limit</code> says; repeat the flag or list several IDs after it.</td>
+</tr>
+<tr>
+<td><code>--out-dir DIR</code></td>
+<td>Write <code>DIR/predictions.jsonl</code> and the runner's other files there.</td>
+</tr>
+<tr>
+<td><code>--out PATH</code></td>
+<td>Write the predictions to PATH instead.</td>
 </tr>
 </tbody>
 </table>
-<p>All runners take <code>--limit</code>, <code>--offset</code> and <code>--only</code>. The launcher selects instances with <code>--limit</code> alone, which takes the first rows. To score exactly the frozen IDs, pass them to <code>--only</code>; each task page shows how.</p>
-<div class="admonition note">
-<p class="admonition-title">Launcher and BFCL or SWE</p>
-<p><code>scripts/run_topologies.sh</code> passes <code>--batch</code> to every runner and <code>--out</code> to all but ToolHop and API-Bank. The BFCL and SWE runners reject both flags, so run those two tasks directly as shown on their pages.</p>
+<p>Without <code>--batch</code>, the GPQA, HotpotQA, MATH, LiveCodeBench and APPS runners play a built-in demo; the BFCL, SWE-bench, ToolHop and API-Bank runners have none and run a small batch (5, 2, 5 and 2 instances). Every output file is emptied when a batch starts. Without <code>--out-dir</code> or <code>--out</code>, some runners write to their own folder under <code>results/</code> and others only print their scores, so pass one. Progress goes to stderr; set <code>LOG_LEVEL</code> to change how much. <a href="../reference/cli/">Command-Line Flags</a> lists every option.</p>
+<div class="admonition tip">
+<p class="admonition-title">Score the evaluation IDs</p>
+<p>For seven tasks the first instances are exactly the eval IDs, so <code>--limit</code> with the eval-ID count scores the reported set. BFCL and SWE-bench are samples: pass their IDs to <code>--only</code>, as their pages show. <code>scripts/run_topologies.sh</code> runs every topology on every task this way.</p>
 </div>
-<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Link to this section">#</a></h2>
-<p>See <a href="../evaluation/protocol/">Evaluation Protocol</a> for how runs are scored and <a href="../evaluation/results/">Read the Results</a> for the files they write. For the multi-agent side of each run, start at <a href="../mas/topologies/">Workflow Topologies</a>; for the optimizer, see <a href="../optimizers/gepa/">GEPA</a>.</p>
+<h2 id="optimize-a-task">Optimize a task<a class="headerlink" href="#optimize-a-task" title="Link to this section">#</a></h2>
+<p>Every optimizer runs a task through one command, with the task's CLI name as <code>--dataset</code>:</p>
+<div class="language-bash highlight"><span class="filename">One optimizer job</span><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>optimizers.protocol.run<span class="w"> </span>--method<span class="w"> </span>&lt;key&gt;<span class="w"> </span>--dataset<span class="w"> </span>&lt;task&gt;<span class="w"> </span>--topology<span class="w"> </span>&lt;topology&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model<span class="w"> </span>qwen<span class="w"> </span>--seed<span class="w"> </span><span class="m">0</span><span class="w"> </span>--out<span class="w"> </span>runs/&lt;key&gt;/&lt;task&gt;/&lt;topology&gt;/qwen/0
+</code></pre></div>
+<p><code>&lt;key&gt;</code> is one of <code>gepa</code>, <code>mipro</code>, <code>mapro</code>, <code>maspo</code>, <code>hivemind</code>, <code>mamut_gepa</code>, <code>maspob</code> or <code>tavo</code>. The experiment grid pairs GEPA, MIPRO, MAPRO and MASPO with every task and every topology runner, in each of its frameworks (on Single, GEPA and MIPRO only), and all eight methods with the multi-agent LangGraph teams of HotpotQA, LiveCodeBench and BFCL. Other combinations need <code>--allow-any-cell</code> and are reported as non-conformant.</p>
+<p>During optimization, every rollout is scored 0 or 1 by the task's protocol metric. Most tasks use the runner's own scorer; HotpotQA uses exact match only, LiveCodeBench and APPS run only the first 3 tests, and SWE-bench uses a structural patch check. See <a href="../optimizers/running/">Run an Optimizer</a> and <a href="../evaluation/protocol/">Evaluation Protocol</a>.</p>
     </article>
-    <div class="page-meta">
-      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/tasks/index.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
-    </div>
     <nav class="pager" aria-label="Previous and next pages">
       <a class="pager-link prev" href="../getting-started/quick-start/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Quick Start</b></a>
       <a class="pager-link next" href="gpqa/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>GPQA-Diamond</b></a>
@@ -358,7 +365,8 @@
       <span>MAS-PromptBench is released under the MIT License.</span>
       <span class="foot-links">
         <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
-        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">Code</a>
+        <a href="https://deepwiki.com/juyangbai/MAS-PromptBench">DeepWiki</a>
       </span>
     </footer>
   </main>
@@ -371,7 +379,7 @@
       </li>
       <li><a href="#running-a-task">Running a task</a>
       </li>
-      <li><a href="#next-steps">Next steps</a>
+      <li><a href="#optimize-a-task">Optimize a task</a>
       </li>
     </ul>
   </aside>
@@ -396,7 +404,7 @@
     svg: { fontCache: "global" }
   };
 </script>
-<script src="../assets/docs.js?v=20261008091509" defer></script>
+<script src="../assets/docs.js?v=20261022204625" defer></script>
 </div>
 </body>
 </html>

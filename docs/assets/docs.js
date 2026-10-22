@@ -60,7 +60,7 @@
   });
 
   /* ---------- tables scroll inside their own box ---------- */
-  doc.querySelectorAll('.prose table').forEach(function (t) {
+  doc.querySelectorAll('.prose table:not(.dgrid):not(.dbars)').forEach(function (t) {
     if (t.parentElement.classList.contains('table-wrap')) return;
     var w = el('div', 'table-wrap'); t.parentNode.insertBefore(w, t); w.appendChild(t);
   });
@@ -75,6 +75,35 @@
     if (a.host !== location.host) { a.target = '_blank'; a.rel = 'noopener'; }
   });
 
+  /* ---------- result tooltips (hover only; every value is also printed in the cell) ---------- */
+  var tipEl = null, tipFor = null;
+  function placeTip(x, y) {
+    var w = tipEl.offsetWidth, h = tipEl.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    var left = Math.min(x + 14, vw - w - 8), top = y + 18;
+    if (top + h > vh - 8) top = y - h - 12;
+    tipEl.style.left = Math.max(8, left) + 'px'; tipEl.style.top = Math.max(8, top) + 'px';
+  }
+  doc.addEventListener('pointermove', function (e) {
+    if (e.pointerType && e.pointerType !== 'mouse') return;
+    var t = e.target.closest && e.target.closest('[data-tip]');
+    if (!t) { if (tipEl) { tipEl.classList.remove('on'); tipFor = null; } return; }
+    if (!tipEl) { tipEl = el('div', 'dtip'); tipEl.setAttribute('role', 'tooltip'); doc.body.appendChild(tipEl); }
+    if (tipFor !== t) {
+      tipFor = t; tipEl.textContent = '';
+      var parts = t.getAttribute('data-tip').split(' · ');
+      tipEl.appendChild(el('b', null, parts.shift()));
+      if (parts.length) tipEl.appendChild(el('span', null, parts.join(' · ')));
+      if (t.matches('td')) {
+        var bEl = t.querySelector('b'), sEl = t.querySelector('span');
+        var line = (bEl ? bEl.textContent + ' points' : '') + (sEl ? ' · ' + sEl.textContent : '');
+        if (line) tipEl.appendChild(el('span', null, line));
+      }
+    }
+    placeTip(e.clientX, e.clientY);
+    tipEl.classList.add('on');
+  }, { passive: true });
+  window.addEventListener('scroll', function () { if (tipEl) { tipEl.classList.remove('on'); tipFor = null; } }, { passive: true });
+
   /* ---------- theme toggle ---------- */
   var mq = window.matchMedia('(prefers-color-scheme: dark)');
   function effectiveTheme() {
@@ -88,7 +117,10 @@
     toggle.addEventListener('click', function () {
       var next = effectiveTheme() === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
-      try { localStorage.setItem('mpb-theme', next); } catch (e) {}
+      try { localStorage.setItem('mpb-theme', next); } catch (e) {
+        /* Storage is blocked in a sandboxed page: keep the choice in the tab's window.name. */
+        if (!window.name || /^mpb-theme=/.test(window.name)) window.name = 'mpb-theme=' + next;
+      }
       label();
     });
     if (mq.addEventListener) mq.addEventListener('change', label);

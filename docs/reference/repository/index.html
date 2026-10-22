@@ -12,21 +12,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261022204625">
   <!-- page transition to and from the project page ("Short glide, ordered") -->
-  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
-  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script src="../../assets/mpb-transition.js?v=20261022204625"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261022204625">
   <script>
-    /* Apply a stored theme before first paint. "system" stores nothing. */
+    /* Apply a stored theme before first paint. "system" stores nothing. Hosts that
+       sandbox each page block storage, so the tab's
+       window.name carries the choice there. */
     (function () {
-      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+      var t = null;
+      try { t = localStorage.getItem('mpb-theme'); } catch (e) {}
+      if (!t) { var m = /^mpb-theme=(dark|light)$/.exec(window.name || ''); if (m) t = m[1]; }
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
   <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
   <link rel="expect" href="#mpb-title" blocking="render">
 </head>
 <body>
-<div class="site" data-base-url="../.." data-version="20261008091509">
+<div class="site" data-base-url="../.." data-version="20261022204625">
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
@@ -36,11 +41,11 @@
   <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
-  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5M13.5 4.5l-3 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-wiki" viewBox="110 110 460 500"><path fill="#21c19a" d="M418.73,332.37c9.84-5.68,22.07-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.58,1.06.19.06.37.11.55.16.87.21,1.76.34,2.65.35.04,0,.08.02.13.02.1,0,.19-.03.29-.04.83-.02,1.64-.13,2.45-.32.14-.03.28-.05.42-.09.87-.24,1.7-.59,2.5-1.03.08-.04.17-.06.25-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.06,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.57-1.06-.19-.06-.37-.11-.56-.16-.88-.21-1.76-.34-2.65-.34-.13,0-.26.02-.4.02-.84.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.24.1.8.44,1.64.79,2.5,1.03.14.04.28.06.42.09.81.19,1.62.3,2.45.32.1,0,.19.04.29.04.04,0,.08-.02.13-.02.89,0,1.77-.13,2.65-.35.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.58-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-.08-.04-.16-.06-.24-.1-.8-.44-1.64-.8-2.51-1.04-.13-.04-.26-.05-.39-.09-.82-.2-1.65-.31-2.49-.33-.13,0-.25-.02-.38-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.75.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.07,5.68-31.9,0-9.84-5.68-15.95-16.27-15.95-27.63s6.11-21.95,15.95-27.63Z"/><path fill="#3969ca" d="M141.09,317.65l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c.08-.04.13-.11.2-.16.78-.48,1.51-1.02,2.15-1.66.1-.1.18-.21.28-.31.57-.6,1.08-1.26,1.51-1.97.07-.12.15-.22.22-.34.44-.77.77-1.6,1.03-2.47.05-.19.1-.37.14-.56.22-.89.37-1.81.37-2.76v-29.43c0-11.36,6.11-21.95,15.96-27.63s22.06-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.57,1.06.19.06.37.11.56.16.87.21,1.76.34,2.64.35.04,0,.09.02.13.02.1,0,.19-.04.29-.04.83-.02,1.65-.13,2.45-.32.14-.03.28-.05.41-.09.87-.24,1.71-.6,2.51-1.04.08-.04.16-.06.24-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.07,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.58-1.06-.19-.06-.37-.11-.55-.16-.88-.21-1.76-.34-2.65-.35-.13,0-.26.02-.4.02-.83.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22Z"/><path fill="#0294de" d="M396.88,484.35l-50.97-29.43c-.08-.04-.17-.06-.24-.1-.8-.44-1.64-.79-2.51-1.03-.14-.04-.27-.06-.41-.09-.81-.19-1.64-.3-2.47-.32-.13,0-.26-.02-.39-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.76.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.06,5.68-31.9,0-9.84-5.68-15.96-16.27-15.96-27.63v-29.43c0-.95-.15-1.87-.37-2.76-.05-.19-.09-.37-.14-.56-.25-.86-.59-1.69-1.03-2.47-.07-.12-.15-.22-.22-.34-.43-.71-.94-1.37-1.51-1.97-.1-.1-.18-.21-.28-.31-.65-.63-1.37-1.18-2.15-1.66-.07-.04-.13-.11-.2-.16l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.25.1.8.44,1.63.79,2.5,1.03.14.04.29.06.43.09.8.19,1.61.3,2.43.32.1,0,.2.04.3.04.04,0,.09-.02.13-.02.88,0,1.77-.13,2.64-.34.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.57-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22Z"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -55,8 +60,9 @@
     <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
       <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
     </button>
-    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
-    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <a class="deepwiki-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="deepwiki-btn" href="https://deepwiki.com/juyangbai/MAS-PromptBench" title="Ask questions about the code on DeepWiki"><svg class="i" aria-hidden="true"><use href="#i-wiki"></use></svg><span>Ask DeepWiki</span></a>
+    <a class="icon-btn code-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="Code (GitHub repository)" title="Code"><svg class="i" aria-hidden="true"><use href="#i-code"></use></svg></a>
     <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
   </div>
 </header>
@@ -132,8 +138,6 @@
     <span class="nav-label">Optimizers</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
-  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
-  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
   <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
 </ul>
   </li>
@@ -141,7 +145,7 @@
     <span class="nav-label">Evaluation</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
-  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+  <li><a class="nav-link" href="../../evaluation/outputs/">Read Run Outputs</a></li>
 </ul>
   </li>
   <li class="nav-section">
@@ -170,118 +174,164 @@
     </p>
     <article class="prose">
       <h1 id="repository-map">Repository Map<a class="headerlink" href="#repository-map" title="Link to this section">#</a></h1>
-<p class="lede">Where everything lives in the MAS-PromptBench repository, what each folder is for, and which file to edit for the most common changes.</p>
+<p class="lede">Where everything lives in the MAS-PromptBench repository, how the layers depend on each other, how one task and one optimizer job flow through the code, and which file to edit for common changes.</p>
 <h2 id="folder-tree">Folder tree<a class="headerlink" href="#folder-tree" title="Link to this section">#</a></h2>
-<pre class="highlight"><code class="language-text">MAS-PromptBench/
-├── README.md
-├── environment.yml                  # conda env "mas-promptbench" (Python 3.11)
-├── assets/                          # logos and the overview figure
+<div class="language-text highlight"><pre><span></span><code>MAS-PromptBench/
+├── environment.yml                  # conda env &quot;mas-promptbench&quot; (Python 3.11), pinned frameworks
+├── requirements-openai-agents.txt   # the isolated OpenAI Agents SDK install
+├── assets/                          # logo and overview images
 ├── benchmarks/
-│   ├── &lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json   # frozen eval IDs, one per dataset
+│   ├── &lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json   # frozen evaluation IDs
+│   ├── &lt;dataset&gt;/&lt;dataset&gt;_splits.json     # fixed train / validation / test IDs
 │   └── apibank/apibank_upstream/           # vendored API-Bank source
-├── communications/
-│   ├── communication_formats.py     # format contracts, prompt injection, parsing, CLI
-│   ├── output_contracts.py          # re-exports topologies/output_contracts.py
-│   └── &lt;topology&gt;/&lt;dataset&gt;/&lt;dataset&gt;_&lt;format&gt;.py
 ├── configs/
 │   ├── generate_role_prompts.py     # writes the seed prompts with an LLM
-│   └── prompts/
-│       ├── meta_prompt.txt  domains.yaml  roles.yaml  tools.yaml
-│       └── &lt;topology&gt;/&lt;dataset&gt;/&lt;role&gt;.txt
-├── frameworks/                      # submodules: langgraph, crewAI, autogen,
-│                                    #   llm_multiagent_debate
-├── models/
-│   ├── serve_qwen3_5_9b.sh
-│   └── serve_qwen3_5_122b.sh
+│   ├── prompts/&lt;topology&gt;/&lt;dataset&gt;/&lt;role&gt;.txt
+│   └── teams/&lt;dataset&gt;.yaml         # team specs per topology and team size
+├── core/                            # code shared by every runner
+│   └── tasks/&lt;dataset&gt;.py           # one task module per dataset
+├── topologies/&lt;topology&gt;/[&lt;framework&gt;/]&lt;dataset&gt;/&lt;framework&gt;_&lt;dataset&gt;.py
+├── teamsizes/&lt;topology&gt;/&lt;dataset&gt;/&lt;dataset&gt;_r&lt;r&gt;.py
+├── communications/&lt;topology&gt;/&lt;dataset&gt;/&lt;dataset&gt;_&lt;format&gt;.py
 ├── optimizers/
-│   ├── gepa/
-│   │   ├── run_gepa.sh
-│   │   ├── real_runner_gepa/        # adapters/ datasets/ pilots/ registry.py ...
-│   │   ├── docs/ADDING_PAIR.md
-│   │   ├── templates/               # adapter_template.py, dataset_template.py
-│   │   └── scripts/smoke_new_adapters.py
-│   └── mipro/
-│       ├── run_mipro.sh
-│       ├── real_runner_mipro/
-│       └── docs/ADDING_PAIR.md
-├── scripts/
-│   ├── run_topologies.sh
-│   ├── run_communications.sh
-│   └── run_teamsizes.sh
-├── teamsizes/
-│   ├── output_contracts.py  apibank_common.py  toolhop_common.py
-│   ├── independent/langgraph_base.py
-│   └── &lt;topology&gt;/&lt;dataset&gt;/&lt;dataset&gt;_r{2,4,8,10}.py
-└── topologies/
-    ├── output_contracts.py  telemetry.py  code_extract.py
-    ├── single/                      # LangGraph only
-    ├── independent/                 # LangGraph only
-    ├── sequential/{langgraph,crewai}/
-    ├── centralized/{langgraph,autogen}/
-    └── decentralized/{langgraph,openai}/</code></pre>
-<p>Runs write to <code>results/</code> (and the optimizer workspaces to their own <code>results/</code> and <code>cache/</code>). These folders are created on first use and are gitignored.</p>
-<h2 id="folders">Folders<a class="headerlink" href="#folders" title="Link to this section">#</a></h2>
+│   ├── &lt;method&gt;/                    # one package per method, with integration.py
+│   ├── protocol/                    # the run protocol; methods/ holds the registry
+│   └── bridge/                      # real-runner adapters, dataset loaders, templates/
+├── models/                          # vLLM serve scripts
+├── scripts/                         # baseline sweep launchers
+├── tests/                           # core/ unit tests, golden/ behavior snapshots
+└── docs/                            # this site: mkdocs.yml, content/, theme/
+</code></pre></div>
+<p>The eight method packages are <code>gepa</code>, <code>mipro</code>, <code>mapro</code>, <code>maspo</code>, <code>hivemind</code>, <code>mamut_gepa</code>, <code>maspob</code> and <code>tavo</code>. Runs write to <code>results/</code> (runners) and <code>runs/</code> (the examples on these pages use it for protocol jobs); both are gitignored, and so is <code>vendor/</code>, where the OpenAI Agents SDK is installed.</p>
+<h2 id="layers">Layers<a class="headerlink" href="#layers" title="Link to this section">#</a></h2>
+<p>Each layer imports only the layers above it. The protocol loads the methods by name from its registry, <code>optimizers/protocol/methods/__init__.py</code>.</p>
 <table>
 <thead>
 <tr>
-<th>Folder</th>
-<th>Purpose</th>
-<th>Key files</th>
+<th>Layer</th>
+<th>Path</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>topologies/</code></td>
-<td>The core benchmark: 72 runners, one per topology variant and dataset, at <code>&lt;topology&gt;/[&lt;framework&gt;/]&lt;dataset&gt;/&lt;framework&gt;_&lt;dataset&gt;.py</code>. Each runner holds its own loader, scorer, batch loop and CLI.</td>
-<td><code>output_contracts.py</code> (final-answer contracts), <code>telemetry.py</code> (token and call counts per framework), <code>code_extract.py</code> (code-block extraction), base demos such as <code>single/langgraph_base.py</code></td>
+<td>Benchmarks</td>
+<td><code>benchmarks/&lt;dataset&gt;/</code></td>
+<td>Evaluation IDs, fixed splits, the API-Bank source.</td>
 </tr>
 <tr>
-<td><code>communications/</code></td>
-<td>60 runners that rerun the LangGraph variants of four topologies under the three message formats, for hotpotqa, lcb, toolhop, apibank and swe.</td>
-<td><code>communication_formats.py</code> (<code>install_proxy</code>, <code>cli_main</code>)</td>
-</tr>
-<tr>
-<td><code>teamsizes/</code></td>
-<td>144 runners that sweep the team size r over 2, 4, 8 and 10 for four topologies and all nine datasets.</td>
-<td><code>&lt;topology&gt;/&lt;dataset&gt;/&lt;dataset&gt;_r&lt;N&gt;.py</code>, <code>toolhop_common.py</code>, <code>apibank_common.py</code></td>
-</tr>
-<tr>
+<td>Configuration</td>
 <td><code>configs/</code></td>
-<td>Seed system prompts, one per topology, dataset and role, plus the spec and script that generated them.</td>
-<td><code>generate_role_prompts.py</code>, <code>prompts/roles.yaml</code>, <code>prompts/tools.yaml</code>, <code>prompts/domains.yaml</code>, <code>prompts/meta_prompt.txt</code></td>
+<td>Seed role prompts and team specs.</td>
 </tr>
 <tr>
-<td><code>benchmarks/</code></td>
-<td>Frozen eval-ID manifests (655 IDs over nine datasets) and the vendored API-Bank source.</td>
-<td><code>&lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json</code>, <code>apibank/apibank_upstream/</code></td>
+<td>Core</td>
+<td><code>core/</code></td>
+<td>Code shared by every runner; one task module per dataset in <code>core/tasks/</code>.</td>
 </tr>
 <tr>
-<td><code>optimizers/</code></td>
-<td>The GEPA and MIPRO workspaces, each with a bridge to the real runners, a per-pair pilot and a sweep launcher.</td>
-<td><code>real_runner_*/registry.py</code>, <code>real_runner_*/protocol.py</code>, <code>real_runner_*/pilots/run_*_dataset.py</code>, <code>run_*.sh</code>, <code>docs/ADDING_PAIR.md</code></td>
+<td>Runners</td>
+<td><code>topologies/</code>, <code>teamsizes/</code>, <code>communications/</code></td>
+<td>One module per (topology, framework, dataset), plus the team-size and communication variants.</td>
 </tr>
 <tr>
-<td><code>scripts/</code></td>
-<td>Baseline sweep launchers, one process per cell.</td>
-<td><code>run_topologies.sh</code>, <code>run_communications.sh</code>, <code>run_teamsizes.sh</code></td>
+<td>Optimizer bridge</td>
+<td><code>optimizers/bridge/</code></td>
+<td>Prompt-mutable runner adapters, dataset loaders and metrics, endpoints, DSPy programs.</td>
 </tr>
 <tr>
-<td><code>models/</code></td>
-<td>vLLM serve scripts for the task model and the reflection model.</td>
-<td><code>serve_qwen3_5_9b.sh</code>, <code>serve_qwen3_5_122b.sh</code></td>
+<td>Run protocol</td>
+<td><code>optimizers/protocol/</code></td>
+<td>One job = (method, cell, optimizer seed): optimize, validate, test; aggregation; the method registry and the <code>identity</code> method.</td>
 </tr>
 <tr>
-<td><code>frameworks/</code></td>
-<td>Agent frameworks as git submodules. <code>environment.yml</code> installs LangGraph, CrewAI and AutoGen from here in editable mode; the debate repository is a reference for the decentralized topology.</td>
-<td><code>langgraph</code>, <code>crewAI</code>, <code>autogen</code>, <code>llm_multiagent_debate</code></td>
-</tr>
-<tr>
-<td><code>assets/</code></td>
-<td>Logos and figures for the README and website.</td>
-<td><code>MAS-PromptBench_overview.png</code></td>
+<td>Methods</td>
+<td><code>optimizers/&lt;method&gt;/</code></td>
+<td>Eight optimizers, one package each, registered class in <code>integration.py</code>.</td>
 </tr>
 </tbody>
 </table>
+<h2 id="core">Core<a class="headerlink" href="#core" title="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>core/tasks/&lt;dataset&gt;.py</code></td>
+<td>Loading, prompt text, tools, answer extraction, reference scorer, records, batch summary.</td>
+</tr>
+<tr>
+<td><code>settings.py</code>, <code>llm.py</code></td>
+<td>Endpoint and decoding, read at call time; chat-client builders for every framework.</td>
+</tr>
+<tr>
+<td><code>prompts.py</code>, <code>output_contracts.py</code></td>
+<td>A role's seed prompt plus its protected final-output contract.</td>
+</tr>
+<tr>
+<td><code>teams.py</code>, <code>variant.py</code></td>
+<td>Team specs per (topology, dataset, r); running a runner's source with a preset <code>TEAM_SIZE</code>, <code>TOPOLOGY</code>, <code>STYLE</code> or <code>COMMUNICATION_FORMAT</code>.</td>
+</tr>
+<tr>
+<td><code>communication.py</code></td>
+<td>The three inter-agent formats (<code>CommPolicy</code>): contract, handoff rendering, parse metrics.</td>
+</tr>
+<tr>
+<td><code>cli.py</code>, <code>batch.py</code>, <code>logs.py</code></td>
+<td>Shared command line; batch loop (<code>attempt</code>, <code>run_batch</code>); console logging.</td>
+</tr>
+<tr>
+<td><code>telemetry.py</code>, <code>thinking.py</code>, <code>voting.py</code></td>
+<td>Token and call counts; <code>&lt;think&gt;</code> removal; gold-free majority vote of ensembles.</td>
+</tr>
+<tr>
+<td><code>calculator.py</code>, <code>code_tasks.py</code>, <code>bfcl_calls.py</code></td>
+<td>Calculator tool; code extraction, <code>python_exec</code>, guarded calls and code-task records; BFCL call parsing.</td>
+</tr>
+<tr>
+<td><code>swe_sandbox.py</code>, <code>agent_runs.py</code>, <code>runtime.py</code></td>
+<td>SWE-bench shell sandbox; API-Bank and ToolHop runners whose agents call the endpoint directly; replay-safe LangChain histories and <code>row_timeout</code>.</td>
+</tr>
+<tr>
+<td><code>paths.py</code></td>
+<td>Repository folders: the root, <code>configs/</code>, <code>configs/prompts/</code>, <code>benchmarks/</code> and <code>results/</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="runners">Runners<a class="headerlink" href="#runners" title="Link to this section">#</a></h2>
+<ul>
+<li><strong>Topologies.</strong> <code>topologies/&lt;topology&gt;/[&lt;framework&gt;/]&lt;dataset&gt;/&lt;framework&gt;_&lt;dataset&gt;.py</code>. <code>single</code> and <code>independent</code> are LangGraph only; <code>sequential</code> adds CrewAI, <code>centralized</code> AutoGen and <code>decentralized</code> the OpenAI Agents SDK. A runner wires its framework and takes everything else from <code>core</code>.</li>
+<li><strong>Team sizes.</strong> <code>teamsizes/&lt;topology&gt;/&lt;dataset&gt;/&lt;dataset&gt;_r&lt;r&gt;.py</code> runs the LangGraph runner's source with <code>TEAM_SIZE=r</code> (<code>core.variant.load</code>). API-Bank and ToolHop vote over r replicas instead (<code>teamsizes/apibank_common.py</code>, <code>toolhop_common.py</code>).</li>
+<li><strong>Communication formats.</strong> <code>communications/&lt;topology&gt;/&lt;dataset&gt;/&lt;dataset&gt;_&lt;format&gt;.py</code> loads the LangGraph runner as its own module with <code>COMMUNICATION_FORMAT</code> preset (<code>core.variant.module</code>).</li>
+</ul>
+<h2 id="one-task-through-a-runner">One task through a runner<a class="headerlink" href="#one-task-through-a-runner" title="Link to this section">#</a></h2>
+<div class="language-bash highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.centralized.langgraph.hotpotqa.langgraph_hotpotqa<span class="w"> </span>--batch<span class="w"> </span>--limit<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<ol>
+<li><strong>Import.</strong> The module builds its team from <code>configs/teams/hotpotqa.yaml</code> (r = 4 unless <code>TEAM_SIZE</code> is preset), its tools (one <code>delegate_to_&lt;worker&gt;</code> per worker) and its <code>CommPolicy</code> (default <code>freeform</code>).</li>
+<li><strong>Command line.</strong> <code>core.cli.main</code> parses the options, configures logging and loads the instances (<code>core.tasks.hotpotqa.load_instances</code>).</li>
+<li><strong>Batch.</strong> <code>core.batch.run_batch</code> empties the output files and calls the runner's <code>row</code> once per instance.</li>
+<li><strong>Solve.</strong> <code>solve(question)</code> runs inside <code>core.batch.attempt</code>, which times it and turns an exception into the record's <code>error</code>. Each system prompt is the role's seed prompt, its output contract and the format's contract. Every model call goes through <code>core.llm.chat_openai</code> with the decoding of <code>core.settings</code>.</li>
+<li><strong>Score.</strong> The reference scorer (here official EM and token F1) scores the extracted answer; <code>task.record</code> adds the telemetry.</li>
+<li><strong>Output.</strong> Records are appended to the predictions JSONL as they complete. Progress goes to stderr, the end-of-batch report to stdout.</li>
+</ol>
+<h2 id="one-optimizer-job">One optimizer job<a class="headerlink" href="#one-optimizer-job" title="Link to this section">#</a></h2>
+<div class="language-bash highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>optimizers.protocol.run<span class="w"> </span>--method<span class="w"> </span>gepa<span class="w"> </span>--dataset<span class="w"> </span>hotpotqa<span class="w"> </span>--topology<span class="w"> </span>centralized<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model<span class="w"> </span>qwen<span class="w"> </span>--seed<span class="w"> </span><span class="m">0</span><span class="w"> </span>--out<span class="w"> </span>runs/x
+</code></pre></div>
+<ol>
+<li><strong>Job setup.</strong> Check the cell against the grid (<code>cells.py</code>), load the fixed splits (test rows stay locked until selection), and build the adapter, the metric scorer and the seed bundle (each role's shipped prompt). <code>job.json</code> seals the job's identity.</li>
+<li><strong>Optimize.</strong> The method gets a <code>ProtocolRunner</code>, a <code>BudgetLedger</code> of 600 usable rollouts and the train and validation rows; it returns its incumbent bundle (<code>optimization.json</code>).</li>
+<li><strong>One rollout.</strong> Install the bundle's prompts, set <code>MODEL_ID</code>, <code>REQUEST_SEED</code> and the phase decoding, and call <code>adapter.run_example</code>, which runs the runner's solve code in a private copy of its module (<code>import_isolated_real_module</code>). The dataset metric scores the prediction. Infrastructure failures are retried up to twice and never charged.</li>
+<li><strong>Final validation.</strong> Uncharged and greedy, with paired request seeds. The incumbent is deployed only if its validation mean is strictly higher than the seed bundle's; <code>selection.json</code> locks the decision.</li>
+<li><strong>Test.</strong> Seed and deployed bundles on the test split with the same seeds (<code>test.json</code>, <code>result.json</code> and a one-line JSON summary on stdout).</li>
+<li><strong>Aggregate.</strong> <code>python -m optimizers.protocol.aggregate runs/</code> pairs the three optimizer seeds of each cell.</li>
+</ol>
+<p>The protocol scores with the bridge's dataset metrics, which are cheaper than the runners' scorers for LiveCodeBench, APPS and SWE-bench; see <a href="../../evaluation/protocol/#scorers">Scorers</a>.</p>
 <h2 id="where-do-i-change">Where do I change...<a class="headerlink" href="#where-do-i-change" title="Link to this section">#</a></h2>
 <table>
 <thead>
@@ -295,69 +345,71 @@
 <tr>
 <td>An agent's prompt</td>
 <td><code>configs/prompts/&lt;topology&gt;/&lt;dataset&gt;/&lt;role&gt;.txt</code></td>
-<td>The CrewAI runners read <code>sequential/</code>, the AutoGen runners <code>centralized/</code>, and the OpenAI-SDK debate runners <code>decentralized/</code> (MATH alone uses <code>decentralized_openai/</code>). To regenerate, edit <code>roles.yaml</code> or <code>tools.yaml</code> and run <code>configs/generate_role_prompts.py --force --only &lt;topology&gt;/&lt;dataset&gt;</code>. The optimizers read these files and never write them.</td>
+<td>The CrewAI runners read <code>sequential/</code>, the AutoGen runners <code>centralized/</code> and the Agents SDK runners <code>decentralized/</code>. To regenerate, see <a href="../cli/#prompt-generation">Prompt generation</a>. The optimizers never write these files.</td>
+</tr>
+<tr>
+<td>A team</td>
+<td><code>configs/teams/&lt;dataset&gt;.yaml</code></td>
+<td>API-Bank and ToolHop fix their roles in code.</td>
 </tr>
 <tr>
 <td>The required final-answer format</td>
-<td><code>DATASET_CONTRACTS</code> in <code>topologies/output_contracts.py</code></td>
-<td>Keep <code>teamsizes/output_contracts.py</code> and the copies in <code>optimizers/*/real_runner_*/output_contracts.py</code> in step. Some runners add a dataset-specific <code>_OUTPUT_FORMAT_NUDGE</code>.</td>
+<td><code>core/output_contracts.py</code></td>
+<td>The bridge adapters carry their own copy, <code>optimizers/bridge/output_contracts.py</code>.</td>
 </tr>
 <tr>
 <td>A scorer</td>
-<td>the scoring section of every runner for that dataset</td>
-<td>Each runner carries its own copy, including the team-size runners. Optimizer metrics live in <code>optimizers/*/real_runner_*/datasets/&lt;dataset&gt;.py</code>; the MATH metric imports <code>exact_match_score</code> from <code>topologies/single/math/langgraph_math.py</code>.</td>
+<td><code>core/tasks/&lt;dataset&gt;.py</code></td>
+<td>The protocol's metric is <code>metric</code> in <code>optimizers/bridge/datasets/&lt;dataset&gt;.py</code>.</td>
 </tr>
 <tr>
-<td>The model endpoint for runs</td>
+<td>The model endpoint of runs</td>
 <td><code>VLLM_BASE_URL</code>, <code>MODEL_ID</code>, <code>OPENAI_API_KEY</code></td>
-<td>See <a href="../environment/#model-connection">Environment Variables</a>.</td>
+<td>See <a href="../environment/#task-model-and-decoding">Task model and decoding</a>.</td>
 </tr>
 <tr>
-<td>The endpoints for optimization</td>
-<td><code>GEPA_TASK_ENDPOINTS</code>, <code>GEPA_REFL_ENDPOINT</code>, <code>MIPRO_TASK_ENDPOINTS</code>, <code>MIPRO_REFL_ENDPOINT</code></td>
-<td>Defaults live in <code>optimizers/*/real_runner_*/lm.py</code>.</td>
+<td>The endpoints of optimization</td>
+<td><code>TASK_ENDPOINTS</code>, <code>REFLECTION_MODEL_BASE_URL</code></td>
+<td>See <a href="../environment/#run-protocol">Run protocol</a>.</td>
 </tr>
 <tr>
-<td>Sampling settings</td>
-<td>the client factory in each runner (<code>build_agent</code>, <code>_build_llm</code> or <code>_build_client</code>); <code>task_sampling()</code> and <code>reflection_sampling()</code> in each optimizer's <code>lm.py</code></td>
-<td></td>
+<td>The protocol's budget, decoding or splits</td>
+<td><code>optimizers/protocol/config.py</code></td>
+<td>Hashed into every job's identity (<code>protocol_hash</code>), so a change makes jobs incomparable with earlier ones.</td>
+</tr>
+<tr>
+<td>A method's settings</td>
+<td>its settings dataclass</td>
+<td>Listed under <a href="../../optimizers/#method-settings">Method settings</a>.</td>
+</tr>
+<tr>
+<td>The experiment grid</td>
+<td><code>optimizers/protocol/cells.py</code></td>
+<td>Jobs outside it need <code>--allow-any-cell</code> and are non-conformant.</td>
 </tr>
 <tr>
 <td>A baseline sweep grid</td>
-<td><code>DATASETS</code>, <code>TOPOLOGIES</code>, <code>FORMATS</code>, <code>RVALUES</code> for <code>scripts/run_*.sh</code>; the <code>TOPOS</code> string inside <code>run_topologies.sh</code></td>
-<td>Row limits are the <code>LIMIT</code> table inside each script. See <a href="../cli/#sweep-scripts">Command-Line Flags</a>.</td>
+<td><code>DATASETS</code>, <code>TOPOLOGIES</code>, <code>FORMATS</code>, <code>RVALUES</code> for <code>scripts/run_*.sh</code>; <code>TOPOS</code> inside <code>run_topologies.sh</code></td>
+<td>Row limits are the <code>LIMIT</code> table in each script. See <a href="../environment/#sweep-launchers">Sweep launchers</a>.</td>
 </tr>
 <tr>
-<td>An optimizer sweep grid or budget</td>
-<td><code>DATASETS</code>, <code>TOPOLOGIES</code> and the budget variables for <code>optimizers/gepa/run_gepa.sh</code> and <code>optimizers/mipro/run_mipro.sh</code></td>
-<td>Or call the pilot directly with flags.</td>
-</tr>
-<tr>
-<td>The eval IDs</td>
-<td><code>benchmarks/&lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json</code></td>
-<td>Optimizers exclude these IDs from their splits. Runners score them when you pass the IDs with <code>--only</code>; the API-Bank runners read the file directly.</td>
+<td>The evaluation IDs or splits</td>
+<td><code>benchmarks/&lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json</code>, <code>&lt;dataset&gt;_splits.json</code></td>
+<td>The <code>test</code> split is the evaluation set.</td>
 </tr>
 <tr>
 <td>Which pairs an optimizer can target</td>
-<td><code>DATASET_ADAPTERS</code> in <code>optimizers/*/real_runner_*/registry.py</code></td>
+<td><code>DATASET_ADAPTERS</code> in <code>optimizers/bridge/registry.py</code></td>
 <td>See <a href="../../extending/add-topology/">Add a Topology</a>.</td>
 </tr>
 <tr>
-<td>Team size outside the team-size sweep</td>
-<td><code>INDEPENDENT_N_AGENTS</code>, <code>DECENTRALIZED_N_AGENTS</code>, <code>DECENTRALIZED_N_ROUNDS</code></td>
-<td>Or the pilot's <code>--n-agents</code> and <code>--n-rounds</code>.</td>
-</tr>
-<tr>
 <td>Where results go</td>
-<td><code>--out</code> or <code>--out-dir</code> on a runner, <code>--out</code> on a pilot, <code>OUT_ROOT</code> on a launcher</td>
-<td>Defaults are listed in <a href="../cli/#default-output-folders">Command-Line Flags</a>.</td>
+<td><code>--out</code> or <code>--out-dir</code> on a runner, <code>--out</code> on a job, <code>OUT_ROOT</code> on a launcher</td>
+<td>See <a href="../cli/">Command-Line Flags</a>.</td>
 </tr>
 </tbody>
 </table>
     </article>
-    <div class="page-meta">
-      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/reference/repository.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
-    </div>
     <nav class="pager" aria-label="Previous and next pages">
       <a class="pager-link prev" href="../environment/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Environment Variables</b></a>
     </nav>
@@ -366,7 +418,8 @@
       <span>MAS-PromptBench is released under the MIT License.</span>
       <span class="foot-links">
         <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
-        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">Code</a>
+        <a href="https://deepwiki.com/juyangbai/MAS-PromptBench">DeepWiki</a>
       </span>
     </footer>
   </main>
@@ -375,7 +428,15 @@
     <ul>
       <li><a href="#folder-tree">Folder tree</a>
       </li>
-      <li><a href="#folders">Folders</a>
+      <li><a href="#layers">Layers</a>
+      </li>
+      <li><a href="#core">Core</a>
+      </li>
+      <li><a href="#runners">Runners</a>
+      </li>
+      <li><a href="#one-task-through-a-runner">One task through a runner</a>
+      </li>
+      <li><a href="#one-optimizer-job">One optimizer job</a>
       </li>
       <li><a href="#where-do-i-change">Where do I change...</a>
       </li>
@@ -402,7 +463,7 @@
     svg: { fontCache: "global" }
   };
 </script>
-<script src="../../assets/docs.js?v=20261008091509" defer></script>
+<script src="../../assets/docs.js?v=20261022204625" defer></script>
 </div>
 </body>
 </html>

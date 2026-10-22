@@ -12,21 +12,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261022204625">
   <!-- page transition to and from the project page ("Short glide, ordered") -->
-  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
-  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script src="../../assets/mpb-transition.js?v=20261022204625"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261022204625">
   <script>
-    /* Apply a stored theme before first paint. "system" stores nothing. */
+    /* Apply a stored theme before first paint. "system" stores nothing. Hosts that
+       sandbox each page block storage, so the tab's
+       window.name carries the choice there. */
     (function () {
-      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+      var t = null;
+      try { t = localStorage.getItem('mpb-theme'); } catch (e) {}
+      if (!t) { var m = /^mpb-theme=(dark|light)$/.exec(window.name || ''); if (m) t = m[1]; }
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
   <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
   <link rel="expect" href="#mpb-title" blocking="render">
 </head>
 <body>
-<div class="site" data-base-url="../.." data-version="20261008091509">
+<div class="site" data-base-url="../.." data-version="20261022204625">
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
@@ -36,11 +41,11 @@
   <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
-  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5M13.5 4.5l-3 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-wiki" viewBox="110 110 460 500"><path fill="#21c19a" d="M418.73,332.37c9.84-5.68,22.07-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.58,1.06.19.06.37.11.55.16.87.21,1.76.34,2.65.35.04,0,.08.02.13.02.1,0,.19-.03.29-.04.83-.02,1.64-.13,2.45-.32.14-.03.28-.05.42-.09.87-.24,1.7-.59,2.5-1.03.08-.04.17-.06.25-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.06,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.57-1.06-.19-.06-.37-.11-.56-.16-.88-.21-1.76-.34-2.65-.34-.13,0-.26.02-.4.02-.84.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.24.1.8.44,1.64.79,2.5,1.03.14.04.28.06.42.09.81.19,1.62.3,2.45.32.1,0,.19.04.29.04.04,0,.08-.02.13-.02.89,0,1.77-.13,2.65-.35.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.58-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-.08-.04-.16-.06-.24-.1-.8-.44-1.64-.8-2.51-1.04-.13-.04-.26-.05-.39-.09-.82-.2-1.65-.31-2.49-.33-.13,0-.25-.02-.38-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.75.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.07,5.68-31.9,0-9.84-5.68-15.95-16.27-15.95-27.63s6.11-21.95,15.95-27.63Z"/><path fill="#3969ca" d="M141.09,317.65l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c.08-.04.13-.11.2-.16.78-.48,1.51-1.02,2.15-1.66.1-.1.18-.21.28-.31.57-.6,1.08-1.26,1.51-1.97.07-.12.15-.22.22-.34.44-.77.77-1.6,1.03-2.47.05-.19.1-.37.14-.56.22-.89.37-1.81.37-2.76v-29.43c0-11.36,6.11-21.95,15.96-27.63s22.06-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.57,1.06.19.06.37.11.56.16.87.21,1.76.34,2.64.35.04,0,.09.02.13.02.1,0,.19-.04.29-.04.83-.02,1.65-.13,2.45-.32.14-.03.28-.05.41-.09.87-.24,1.71-.6,2.51-1.04.08-.04.16-.06.24-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.07,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.58-1.06-.19-.06-.37-.11-.55-.16-.88-.21-1.76-.34-2.65-.35-.13,0-.26.02-.4.02-.83.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22Z"/><path fill="#0294de" d="M396.88,484.35l-50.97-29.43c-.08-.04-.17-.06-.24-.1-.8-.44-1.64-.79-2.51-1.03-.14-.04-.27-.06-.41-.09-.81-.19-1.64-.3-2.47-.32-.13,0-.26-.02-.39-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.76.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.06,5.68-31.9,0-9.84-5.68-15.96-16.27-15.96-27.63v-29.43c0-.95-.15-1.87-.37-2.76-.05-.19-.09-.37-.14-.56-.25-.86-.59-1.69-1.03-2.47-.07-.12-.15-.22-.22-.34-.43-.71-.94-1.37-1.51-1.97-.1-.1-.18-.21-.28-.31-.65-.63-1.37-1.18-2.15-1.66-.07-.04-.13-.11-.2-.16l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.25.1.8.44,1.63.79,2.5,1.03.14.04.29.06.43.09.8.19,1.61.3,2.43.32.1,0,.2.04.3.04.04,0,.09-.02.13-.02.88,0,1.77-.13,2.64-.34.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.57-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22Z"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -55,8 +60,9 @@
     <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
       <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
     </button>
-    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
-    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <a class="deepwiki-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="deepwiki-btn" href="https://deepwiki.com/juyangbai/MAS-PromptBench" title="Ask questions about the code on DeepWiki"><svg class="i" aria-hidden="true"><use href="#i-wiki"></use></svg><span>Ask DeepWiki</span></a>
+    <a class="icon-btn code-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="Code (GitHub repository)" title="Code"><svg class="i" aria-hidden="true"><use href="#i-code"></use></svg></a>
     <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
   </div>
 </header>
@@ -132,8 +138,6 @@
     <span class="nav-label">Optimizers</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
-  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
-  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
   <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
 </ul>
   </li>
@@ -141,7 +145,7 @@
     <span class="nav-label">Evaluation</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
-  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+  <li><a class="nav-link" href="../../evaluation/outputs/">Read Run Outputs</a></li>
 </ul>
   </li>
   <li class="nav-section">
@@ -174,65 +178,58 @@
 <div class="facts">
 <div><span>Domain</span>Reasoning</div>
 <div><span>Metric</span>Accuracy (is_equiv)</div>
-<div><span>Launcher limit</span>100</div>
 <div><span>Eval IDs</span>100</div>
+<div><span>Train / val</span>150 / 50</div>
 <div><span>Data</span>qwedsacf/competition_math</div>
 </div>
 <h2 id="the-task">The task<a class="headerlink" href="#the-task" title="Link to this section">#</a></h2>
-<p>Each instance is one problem statement, passed to the agents as is. Agents can call <code>calculator</code>, which evaluates a numeric Python expression with the usual math functions. The Decentralized (OpenAI SDK) runner also gives its agents <code>solve_equation</code> for one-variable equations.</p>
-<p>The final agent's output contract asks for a <code>\boxed{...}</code> line at the start, at most 12 short reasoning lines, and the same <code>\boxed{...}</code> line at the end. The scorer reads only the last boxed expression. The single-agent runner adds a format note with examples such as <code>\boxed{42}</code> and <code>\boxed{\frac{1}{2}}</code>.</p>
+<p>Each instance is one problem statement, passed to the agents as is. Agents can call <code>calculator</code>, which evaluates a numeric Python expression with the usual math functions.</p>
+<p>The answering agent's output contract asks for a <code>\boxed{...}</code> line at the start, at most 12 short reasoning lines, and the same <code>\boxed{...}</code> line at the end. The scorer reads only the last boxed expression. The Single and Independent runners also add a format note with examples such as <code>\boxed{42}</code> and <code>\boxed{\frac{1}{2}}</code>.</p>
 <h2 id="how-it-is-scored">How it is scored<a class="headerlink" href="#how-it-is-scored" title="Link to this section">#</a></h2>
 <ol>
 <li><strong>Extract</strong> the content of the last <code>\boxed{...}</code> in the final message, counting braces so nested expressions like <code>\boxed{\frac{1}{2}}</code> come out whole. No boxed answer means the instance is wrong.</li>
-<li><strong>Compare</strong> it to the gold answer with <code>is_equiv</code>, a verbatim port of Hendrycks' <code>math_equivalence.py</code>. Both strings are normalized and then compared for equality.</li>
+<li><strong>Compare</strong> it to the gold answer with <code>is_equiv</code>, a port of Hendrycks' <code>math_equivalence.py</code>. Both strings are normalized and then compared for equality.</li>
 </ol>
 <p>Normalization removes spaces, <code>\left</code> and <code>\right</code>, degree marks, <code>\$</code>, <code>\%</code> and trailing units; rewrites <code>tfrac</code> and <code>dfrac</code> as <code>frac</code>; repairs shorthand like <code>\frac12</code> and <code>\sqrt3</code>; turns <code>0.5</code> into <code>\frac{1}{2}</code> and simple <code>a/b</code> into <code>\frac{a}{b}</code>; and drops a short left-hand side such as <code>x =</code>.</p>
-<p>The batch reports <code>EM</code>, the fraction of instances judged equivalent, over all instances (a missing answer counts as wrong) and over those with an extracted answer.</p>
+<p>The batch reports <code>EM</code>, the fraction of instances judged equivalent, over all instances (a missing answer counts as wrong) and over those with an extracted answer. Independent and Decentralized teams group their agents' answers into buckets that <code>is_equiv</code> treats as equal and submit the largest bucket, ties going to the lowest agent.</p>
 <h2 id="data">Data<a class="headerlink" href="#data" title="Link to this section">#</a></h2>
-<p>The runner loads the Hugging Face dataset <code>qwedsacf/competition_math</code> (split <code>train</code>) and keeps rows whose subject is <code>Precalculus</code> and level is <code>Level 5</code>. That dataset has no answer field, so the gold answer is the last <code>\boxed{...}</code> in the reference solution; rows without one are skipped. Each row's ID is <code>math_</code> plus the first 10 hex characters of the MD5 of the problem text, so IDs match across topologies.</p>
-<p>The 100 frozen IDs are in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/benchmarks/math/math_eval_ids.json"><code>benchmarks/math/math_eval_ids.json</code></a>. No setup is needed beyond Hugging Face access.</p>
-<div class="admonition note">
-<p class="admonition-title">MATH-500 in the logs</p>
-<p>Most MATH runners still say "MATH-500" in their <code>--help</code> text and log lines. All eight load the Precalculus, Level 5 slice described above.</p>
-</div>
+<p>The runner loads the Hugging Face dataset <code>qwedsacf/competition_math</code> (split <code>train</code>) and keeps the 312 rows whose subject is <code>Precalculus</code> and level is <code>Level 5</code>. That dataset has no answer field, so the gold answer is the last <code>\boxed{...}</code> in the reference solution; rows without one are skipped. Each row's ID is <code>math_</code> plus the first 10 hex characters of the MD5 of the problem text, so IDs match across topologies.</p>
+<p>The 100 eval IDs are in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/benchmarks/math/math_eval_ids.json"><code>benchmarks/math/math_eval_ids.json</code></a>; they are the first 100 problems of the slice, so <code>--limit 100</code> scores exactly that set. No setup is needed beyond Hugging Face access.</p>
 <h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Link to this section">#</a></h2>
 <p>Run every command from the repository root. With no arguments, a runner solves <span class="arithmatex">\( 7!/5! \)</span> (expected <code>42</code>) and prints the extracted answer, its score and the message trace:</p>
-<pre class="highlight"><code class="language-bash">python -m topologies.single.math.langgraph_math</code></pre>
-<p>A batch needs <code>--batch</code>. Without <code>--out</code>, it only prints scores.</p>
+<div class="language-bash highlight"><span class="filename">Smoke demo</span><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.single.math.langgraph_math
+</code></pre></div>
+<p>A batch needs <code>--batch</code>:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Single</label><label for="__tabbed_1_2">Independent</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<pre class="highlight"><code class="language-bash">python -m topologies.single.math.langgraph_math --batch --limit 100 \
-  --out results/topologies_baseline/single_math/predictions.jsonl</code></pre>
+<div class="language-bash highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.single.math.langgraph_math<span class="w"> </span>--batch<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out-dir<span class="w"> </span>results/topologies_baseline/single_math
+</code></pre></div>
 </div>
 <div class="tabbed-block">
-<pre class="highlight"><code class="language-bash">python -m topologies.independent.math.langgraph_math --batch --limit 100 \
-  --out results/topologies_baseline/independent_math/predictions.jsonl</code></pre>
+<div class="language-bash highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.independent.math.langgraph_math<span class="w"> </span>--batch<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out-dir<span class="w"> </span>results/topologies_baseline/independent_math
+</code></pre></div>
 </div>
 </div>
 </div>
-<p>The Independent runner runs <code>INDEPENDENT_N_AGENTS</code> replicas (default 4) and takes a majority vote, grouping answers that <code>is_equiv</code> treats as equal.</p>
-<p>To score exactly the frozen set, pass its IDs to <code>--only</code>:</p>
-<pre class="highlight"><code class="language-bash">MANIFEST=benchmarks/math/math_eval_ids.json
-IDS=$(python -c "import json,sys; print(*json.load(open(sys.argv[1]))['ids'])" $MANIFEST)
-python -m topologies.single.math.langgraph_math --batch --only $IDS \
-  --out results/topologies_baseline/single_math/predictions.jsonl</code></pre>
-<p>To optimize the single-agent prompt with <a href="../../optimizers/gepa/">GEPA</a>:</p>
-<pre class="highlight"><code class="language-bash">cd optimizers/gepa
-python -m real_runner_gepa.pilots.run_gepa_dataset --dataset math --topology single \
-  --train-size 25 --val-size 25 --max-full-evals 5 --out results/gepa/single_math</code></pre>
+<p>The Independent runner runs <code>INDEPENDENT_N_AGENTS</code> replicas (default 4) and submits the largest equivalence bucket.</p>
+<h2 id="optimize-it">Optimize it<a class="headerlink" href="#optimize-it" title="Link to this section">#</a></h2>
+<p>Every optimizer runs through the same protocol command; change <code>--method</code> to switch. For example, MAPRO on the Independent team:</p>
+<div class="language-bash highlight"><span class="filename">MAPRO on Independent · MATH</span><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>optimizers.protocol.run<span class="w"> </span>--method<span class="w"> </span>mapro<span class="w"> </span>--dataset<span class="w"> </span>math<span class="w"> </span>--topology<span class="w"> </span>independent<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model<span class="w"> </span>qwen<span class="w"> </span>--seed<span class="w"> </span><span class="m">0</span><span class="w"> </span>--out<span class="w"> </span>runs/mapro/math/independent/qwen/0
+</code></pre></div>
+<p>Combinations outside the experiment grid need <code>--allow-any-cell</code>; see <a href="../#optimize-a-task">Optimize a task</a>.</p>
 <h2 id="flags">Flags<a class="headerlink" href="#flags" title="Link to this section">#</a></h2>
-<p>All eight MATH runners take the common flags and nothing else: <code>--batch</code>, <code>--limit N</code>, <code>--offset K</code>, <code>--only ID ...</code> (space-separated) and <code>--out PATH</code>. See <a href="../../reference/cli/">Command-Line Flags</a>.</p>
+<p>All eight MATH runners take the common flags and nothing else: <code>--batch</code>, <code>--limit N</code>, <code>--offset K</code>, <code>--only ID ...</code>, <code>--out-dir DIR</code> and <code>--out PATH</code>. See <a href="../../reference/cli/">Command-Line Flags</a>.</p>
 <h2 id="related">Related<a class="headerlink" href="#related" title="Link to this section">#</a></h2>
 <ul>
 <li><a href="../gpqa/">GPQA-Diamond</a> and <a href="../hotpotqa/">HotpotQA</a>, the other reasoning tasks.</li>
 <li><a href="../../mas/independent/">Independent</a> for the majority-vote ensemble.</li>
-<li><a href="../../evaluation/protocol/">Evaluation Protocol</a> for how the frozen IDs are used.</li>
+<li><a href="../../evaluation/protocol/">Evaluation Protocol</a> for how the eval IDs and splits are used.</li>
 </ul>
     </article>
-    <div class="page-meta">
-      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/tasks/math.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
-    </div>
     <nav class="pager" aria-label="Previous and next pages">
       <a class="pager-link prev" href="../hotpotqa/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>HotpotQA</b></a>
       <a class="pager-link next" href="../livecodebench/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>LiveCodeBench</b></a>
@@ -242,7 +239,8 @@ python -m real_runner_gepa.pilots.run_gepa_dataset --dataset math --topology sin
       <span>MAS-PromptBench is released under the MIT License.</span>
       <span class="foot-links">
         <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
-        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">Code</a>
+        <a href="https://deepwiki.com/juyangbai/MAS-PromptBench">DeepWiki</a>
       </span>
     </footer>
   </main>
@@ -256,6 +254,8 @@ python -m real_runner_gepa.pilots.run_gepa_dataset --dataset math --topology sin
       <li><a href="#data">Data</a>
       </li>
       <li><a href="#run-it">Run it</a>
+      </li>
+      <li><a href="#optimize-it">Optimize it</a>
       </li>
       <li><a href="#flags">Flags</a>
       </li>
@@ -285,7 +285,7 @@ python -m real_runner_gepa.pilots.run_gepa_dataset --dataset math --topology sin
   };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js" defer></script>
-<script src="../../assets/docs.js?v=20261008091509" defer></script>
+<script src="../../assets/docs.js?v=20261022204625" defer></script>
 </div>
 </body>
 </html>

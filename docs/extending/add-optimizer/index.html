@@ -12,21 +12,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261022204625">
   <!-- page transition to and from the project page ("Short glide, ordered") -->
-  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
-  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script src="../../assets/mpb-transition.js?v=20261022204625"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261022204625">
   <script>
-    /* Apply a stored theme before first paint. "system" stores nothing. */
+    /* Apply a stored theme before first paint. "system" stores nothing. Hosts that
+       sandbox each page block storage, so the tab's
+       window.name carries the choice there. */
     (function () {
-      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+      var t = null;
+      try { t = localStorage.getItem('mpb-theme'); } catch (e) {}
+      if (!t) { var m = /^mpb-theme=(dark|light)$/.exec(window.name || ''); if (m) t = m[1]; }
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
   <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
   <link rel="expect" href="#mpb-title" blocking="render">
 </head>
 <body>
-<div class="site" data-base-url="../.." data-version="20261008091509">
+<div class="site" data-base-url="../.." data-version="20261022204625">
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
@@ -36,11 +41,11 @@
   <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
-  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5M13.5 4.5l-3 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-wiki" viewBox="110 110 460 500"><path fill="#21c19a" d="M418.73,332.37c9.84-5.68,22.07-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.58,1.06.19.06.37.11.55.16.87.21,1.76.34,2.65.35.04,0,.08.02.13.02.1,0,.19-.03.29-.04.83-.02,1.64-.13,2.45-.32.14-.03.28-.05.42-.09.87-.24,1.7-.59,2.5-1.03.08-.04.17-.06.25-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.06,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.57-1.06-.19-.06-.37-.11-.56-.16-.88-.21-1.76-.34-2.65-.34-.13,0-.26.02-.4.02-.84.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.24.1.8.44,1.64.79,2.5,1.03.14.04.28.06.42.09.81.19,1.62.3,2.45.32.1,0,.19.04.29.04.04,0,.08-.02.13-.02.89,0,1.77-.13,2.65-.35.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.58-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-.08-.04-.16-.06-.24-.1-.8-.44-1.64-.8-2.51-1.04-.13-.04-.26-.05-.39-.09-.82-.2-1.65-.31-2.49-.33-.13,0-.25-.02-.38-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.75.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.07,5.68-31.9,0-9.84-5.68-15.95-16.27-15.95-27.63s6.11-21.95,15.95-27.63Z"/><path fill="#3969ca" d="M141.09,317.65l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c.08-.04.13-.11.2-.16.78-.48,1.51-1.02,2.15-1.66.1-.1.18-.21.28-.31.57-.6,1.08-1.26,1.51-1.97.07-.12.15-.22.22-.34.44-.77.77-1.6,1.03-2.47.05-.19.1-.37.14-.56.22-.89.37-1.81.37-2.76v-29.43c0-11.36,6.11-21.95,15.96-27.63s22.06-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.57,1.06.19.06.37.11.56.16.87.21,1.76.34,2.64.35.04,0,.09.02.13.02.1,0,.19-.04.29-.04.83-.02,1.65-.13,2.45-.32.14-.03.28-.05.41-.09.87-.24,1.71-.6,2.51-1.04.08-.04.16-.06.24-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.07,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.58-1.06-.19-.06-.37-.11-.55-.16-.88-.21-1.76-.34-2.65-.35-.13,0-.26.02-.4.02-.83.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22Z"/><path fill="#0294de" d="M396.88,484.35l-50.97-29.43c-.08-.04-.17-.06-.24-.1-.8-.44-1.64-.79-2.51-1.03-.14-.04-.27-.06-.41-.09-.81-.19-1.64-.3-2.47-.32-.13,0-.26-.02-.39-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.76.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.06,5.68-31.9,0-9.84-5.68-15.96-16.27-15.96-27.63v-29.43c0-.95-.15-1.87-.37-2.76-.05-.19-.09-.37-.14-.56-.25-.86-.59-1.69-1.03-2.47-.07-.12-.15-.22-.22-.34-.43-.71-.94-1.37-1.51-1.97-.1-.1-.18-.21-.28-.31-.65-.63-1.37-1.18-2.15-1.66-.07-.04-.13-.11-.2-.16l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.25.1.8.44,1.63.79,2.5,1.03.14.04.29.06.43.09.8.19,1.61.3,2.43.32.1,0,.2.04.3.04.04,0,.09-.02.13-.02.88,0,1.77-.13,2.64-.34.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.57-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22Z"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -55,8 +60,9 @@
     <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
       <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
     </button>
-    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
-    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <a class="deepwiki-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="deepwiki-btn" href="https://deepwiki.com/juyangbai/MAS-PromptBench" title="Ask questions about the code on DeepWiki"><svg class="i" aria-hidden="true"><use href="#i-wiki"></use></svg><span>Ask DeepWiki</span></a>
+    <a class="icon-btn code-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="Code (GitHub repository)" title="Code"><svg class="i" aria-hidden="true"><use href="#i-code"></use></svg></a>
     <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
   </div>
 </header>
@@ -132,8 +138,6 @@
     <span class="nav-label">Optimizers</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
-  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
-  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
   <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
 </ul>
   </li>
@@ -141,7 +145,7 @@
     <span class="nav-label">Evaluation</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
-  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+  <li><a class="nav-link" href="../../evaluation/outputs/">Read Run Outputs</a></li>
 </ul>
   </li>
   <li class="nav-section is-active">
@@ -170,164 +174,101 @@
     </p>
     <article class="prose">
       <h1 id="add-an-optimizer">Add an Optimizer<a class="headerlink" href="#add-an-optimizer" title="Link to this section">#</a></h1>
-<p class="lede">An optimizer plugs into MAS-PromptBench by rewriting the per-role prompts of a real topology runner and scoring each candidate by running that runner. This page describes what GEPA and MIPRO do so that a third optimizer produces results you can compare with theirs.</p>
-<div class="admonition note">
-<p class="admonition-title">A guide, not a plugin API</p>
-<p>The repository has no optimizer registry or shared base class. GEPA and MIPRO are self-contained workspaces that share one design by copy, kept separate on purpose because their dataset and LM internals have diverged (<code>optimizers/README.md</code>). Everything below is derived from those two workspaces.</p>
-</div>
-<h2 id="what-the-two-optimizers-share">What the two optimizers share<a class="headerlink" href="#what-the-two-optimizers-share" title="Link to this section">#</a></h2>
+<p class="lede">A method is one package, <code>optimizers/&lt;method&gt;/</code>, whose <code>integration.py</code> exposes an optimizer class registered with the run protocol. The protocol hands it a budgeted runner and the train and validation rows, and does everything else: final validation, selection, test and artifacts. Your results are then comparable with the other eight methods by construction.</p>
+<h2 id="what-the-protocol-owns">What the protocol owns<a class="headerlink" href="#what-the-protocol-owns" title="Link to this section">#</a></h2>
 <table>
 <thead>
 <tr>
-<th>Piece</th>
-<th>GEPA</th>
-<th>MIPRO</th>
+<th>The protocol</th>
+<th>The method</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Bridge package</td>
-<td><code>real_runner_gepa/</code></td>
-<td><code>real_runner_mipro/</code></td>
+<td>Builds the cell's adapter, the seed bundle and the dataset metric.</td>
+<td>Proposes candidate bundles.</td>
 </tr>
 <tr>
-<td>Adapter protocol</td>
-<td><code>protocol.py</code></td>
-<td><code>protocol.py</code> (identical)</td>
+<td>Charges usable rollouts to a <code>BudgetLedger</code> of B = 600 and never overshoots it.</td>
+<td>Decides which rows and bundles to run, within B.</td>
 </tr>
 <tr>
-<td>Pair registry</td>
-<td><code>registry.py</code></td>
-<td><code>registry.py</code> (same pairs)</td>
+<td>Retries infrastructure failures with the same seed, uncharged.</td>
+<td>Chooses its incumbent.</td>
 </tr>
 <tr>
-<td>DSPy program</td>
-<td><code>programs.py</code></td>
-<td><code>mipro_programs.py</code> (builds on <code>programs.py</code>)</td>
+<td>Runs the uncharged final validation and the strictly-better selection.</td>
+<td>Nothing: it never sees the selection.</td>
 </tr>
 <tr>
-<td>Dataset loaders and metrics</td>
-<td><code>datasets/&lt;ds&gt;.py</code></td>
-<td><code>datasets/&lt;ds&gt;.py</code></td>
+<td>Runs the test split after the selection is locked.</td>
+<td>Nothing: test rows never reach it.</td>
 </tr>
 <tr>
-<td>Endpoints and sampling</td>
-<td><code>lm.py</code> (<code>GEPA_*</code> variables)</td>
-<td><code>lm.py</code> (<code>MIPRO_*</code>, falling back to <code>GEPA_*</code>)</td>
-</tr>
-<tr>
-<td>Per-pair entry point</td>
-<td><code>pilots/run_gepa_dataset.py</code></td>
-<td><code>pilots/run_mipro_dataset.py</code></td>
-</tr>
-<tr>
-<td>Sweep launcher</td>
-<td><code>run_gepa.sh</code></td>
-<td><code>run_mipro.sh</code></td>
+<td>Writes <code>job.json</code>, <code>optimization.json</code>, <code>selection.json</code>, <code>test.json</code> and <code>result.json</code>.</td>
+<td>Writes optional scratch files under its <code>run_dir</code>.</td>
 </tr>
 </tbody>
 </table>
-<p>The quickest route for a new optimizer is a third workspace, <code>optimizers/&lt;name&gt;/</code>, that copies this layout and replaces only the optimization call. Run its pilot from the workspace folder with <code>python -m</code>, as GEPA and MIPRO do; the pilots put the workspace and the repository root on <code>sys.path</code> themselves.</p>
-<h2 id="1-drive-a-pair-through-the-adapter">1. Drive a pair through the adapter<a class="headerlink" href="#1-drive-a-pair-through-the-adapter" title="Link to this section">#</a></h2>
-<p>Every <code>(dataset, topology)</code> pair is reached through an adapter that implements the <code>RealRunnerAdapter</code> protocol:</p>
-<pre class="highlight"><code class="language-python">class RealRunnerAdapter(Protocol):
-    topology: str
-    dataset: str
-
-    def roles(self) -&gt; list[str]: ...
-    def get_prompt(self, role: str) -&gt; str: ...
-    def set_prompt(self, role: str, text: str) -&gt; None: ...
-    def reset(self) -&gt; None: ...
-    def run_example(self, example: Any) -&gt; Any: ...
-    def format_role_trace(self, role: str, output: Any) -&gt; str: ...</code></pre>
-<p><code>validate_adapter</code> requires the first five methods. <code>registry.get_adapter_class(dataset, topology)</code> returns an adapter class and <code>registry.topologies(dataset)</code> lists the valid names. Adapters read seed prompts from <code>configs/prompts/&lt;topology&gt;/&lt;dataset&gt;/&lt;role&gt;.txt</code> and never write back. The shared module adapters patch the runner's prompt loader, model client and team size, call its <code>solve()</code>, and return a dict with <code>model_output</code>, <code>winner</code>, <code>buckets</code> and the raw <code>runner_output</code>. <code>format_role_trace</code> gives short per-role text for reflection.</p>
-<p>To an optimizer, then, a pair is a set of named text parameters (the roles) plus a black-box <code>run_example</code> that runs the whole multi-agent system once.</p>
-<h2 id="2-expose-the-prompts-as-parameters">2. Expose the prompts as parameters<a class="headerlink" href="#2-expose-the-prompts-as-parameters" title="Link to this section">#</a></h2>
-<p>Both existing optimizers are DSPy teleprompters, so they wrap the adapter in a <code>dspy.Module</code> with one predictor per role:</p>
+<p><a href="../../evaluation/protocol/">Evaluation Protocol</a> defines each of these steps.</p>
+<h2 id="1-create-and-register-the-package">1. Create and register the package<a class="headerlink" href="#1-create-and-register-the-package" title="Link to this section">#</a></h2>
+<p>Put the method in <code>optimizers/&lt;method&gt;/</code>, with its optimizer class in <code>integration.py</code> and its knobs in one frozen settings dataclass, as the existing methods do. Register the class in <code>METHODS</code> in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/protocol/methods/__init__.py"><code>optimizers/protocol/methods/__init__.py</code></a>:</p>
+<div class="language-python highlight"><span class="filename">optimizers/protocol/methods/__init__.py</span><pre><span></span><code><span class="n">METHODS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;gepa&quot;</span><span class="p">:</span> <span class="s2">&quot;optimizers.gepa.integration:GEPAOptimizer&quot;</span><span class="p">,</span>
+    <span class="c1"># ...</span>
+    <span class="s2">&quot;my_method&quot;</span><span class="p">:</span> <span class="s2">&quot;optimizers.my_method.integration:MyOptimizer&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The registry is lazy: nothing is imported until a job asks for the method, and the <code>--method</code> choices of <code>optimizers.protocol.run</code> come from it. <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/optimizers/protocol/methods/identity.py"><code>identity.py</code></a> is the smallest complete method: it returns the seed bundle without a rollout.</p>
+<h2 id="2-implement-the-interface">2. Implement the interface<a class="headerlink" href="#2-implement-the-interface" title="Link to this section">#</a></h2>
+<div class="language-python highlight"><span class="filename">optimizers/my_method/integration.py</span><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyOptimizer</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed_bundle</span><span class="p">:</span> <span class="n">PromptBundle</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">run_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reflection_lm</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell</span><span class="p">:</span> <span class="n">CellSpec</span><span class="p">,</span> <span class="n">runner</span><span class="p">,</span> <span class="n">budget</span><span class="p">:</span> <span class="n">BudgetLedger</span><span class="p">,</span>
+                 <span class="n">training</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">validation</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">OptimizerResult</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
 <ul>
-<li><strong>GEPA</strong> uses <code>AdapterBackedProgram</code>. Each role becomes a <code>RealRunnerRolePredict</code> whose signature instructions are the role prompt, so GEPA finds and edits them through <code>named_predictors()</code>. <code>forward(task_instance)</code> copies every predictor's instructions into the adapter with <code>set_prompt</code>, runs the adapter once, converts the output into a <code>dspy.Prediction</code> (<code>answer</code>, <code>tool_calls</code>, <code>winner</code>, <code>vote_summary</code>, <code>agent_trace</code>) and appends one trace entry per role.</li>
-<li><strong>MIPRO</strong> uses <code>MIPROAdapterBackedProgram</code>. Its <code>MIPRORolePredict</code> renders the selected instruction and few-shot demos into one prompt before calling <code>set_prompt</code>, and <code>role_artifacts()</code> returns each role's final prompt and demos for saving.</li>
+<li><strong>Constructor.</strong> <code>methods.build_optimizer</code> passes the seed bundle as <code>seed_bundle</code> or <code>initial_bundle</code>, whichever the signature declares. If declared, it also passes <code>run_dir</code> (a scratch folder, <code>optimization/native/</code>), <code>reflection_lm</code> (<code>dspy_bridge.build_reflection_lm()</code>) and <code>task_lm</code> (<code>dspy_bridge.build_task_lm()</code>).</li>
+<li><strong>Bundles.</strong> A <code>PromptBundle</code> holds <code>roles</code> (role name to prompt text), optional <code>demos</code> and <code>metadata</code>; its <code>digest</code> covers all three. A candidate must have exactly the seed bundle's roles.</li>
+<li><strong>Rows.</strong> JSON-safe dicts with an <code>id</code>, a <code>task_instance</code> and the gold labels. Pass them to the runner unchanged.</li>
+<li><strong>Runner.</strong> <code>ProtocolRunner.run(example, bundle, request_seed) -&gt; RunRecord</code> and <code>run_batch(examples, bundle, request_seeds) -&gt; BatchExecution</code>, plus <code>budget</code>, <code>cell</code>, <code>phase</code>, <code>seed_bundle</code> / <code>initial_bundle</code>, <code>required_roles</code>, <code>validate_bundle</code>, <code>artifact_store</code>, <code>artifact_directory</code> and <code>supports_concurrent = False</code>. A batch reserves budget before dispatch and is trimmed at B.</li>
+<li><strong>Records.</strong> A <code>RunRecord</code> carries <code>score</code>, <code>status</code>, <code>final_output</code>, <code>messages</code>, <code>usage</code> and the metric's feedback text in <code>metadata["scorer_metadata"]["feedback"]</code>. Only <code>success</code> and <code>semantic_failure</code> records are usable and charged.</li>
 </ul>
-<p>A DSPy-based optimizer can reuse <code>AdapterBackedProgram</code> unchanged. An optimizer outside DSPy can call <code>set_prompt</code> and <code>run_example</code> directly, but the dataset metrics expect a prediction with an <code>answer</code> field, which <code>prediction_from_adapter_output</code> in <code>programs.py</code> builds. Calling the program and scoring its output is the simpler path.</p>
-<h2 id="3-score-candidates-the-same-way">3. Score candidates the same way<a class="headerlink" href="#3-score-candidates-the-same-way" title="Link to this section">#</a></h2>
-<p>Use the dataset modules and the same split, metric and acceptance rule as the existing pilots:</p>
+<p>The protocol package has building blocks for the common cases: <code>seeding.request_seeds</code> for logical request seeds, <code>rollouts</code> for text methods, <code>session.RunnerSession</code> for a method with its own adapter-driven loop, <code>reflection.ReflectionClient</code> for the reflection model, and <code>methods/dspy_bridge.py</code> for DSPy programs. Rollouts are serialized per process; run jobs in parallel as processes.</p>
+<h2 id="3-return-a-result">3. Return a result<a class="headerlink" href="#3-return-a-result" title="Link to this section">#</a></h2>
+<p><code>optimize</code> returns a <code>schema.OptimizerResult</code> with <code>method</code>, <code>cell_id</code>, the seed and incumbent bundles, <code>budget_snapshot == budget.snapshot()</code> and a <code>schema.StopReason</code>. The protocol rejects a result whose identity or budget snapshot differs from the job, or whose incumbent the runtime cannot execute.</p>
+<ul>
+<li><strong>Layouts.</strong> The result is published as <code>SEARCH_LAYOUT</code> (the incumbent as <code>selected_bundle</code>; GEPA, MIPRO, MASPOB and TAVO) or <code>JOURNAL_LAYOUT</code> (<code>incumbent_bundle</code>; <code>identity</code> and the <code>RunnerSession</code> methods, through <code>journal.LifecycleJournal</code>).</li>
+<li><strong>Errors.</strong> All exceptions live in <code>optimizers/protocol/errors.py</code>. An infrastructure failure (<code>PreObservationInfrastructureFailure</code>, <code>NativeInfrastructureExhausted</code>, <code>OptimizerInfrastructureFailure</code>) keeps the seed bundle with the fallback reason <code>infrastructure_invalid_optimization</code>; any other exception fails the job.</li>
+<li><strong>Masked execution.</strong> A bundle with <code>metadata["optimizer_control"]</code> runs through the hook registered by <code>runner.register_execution_hook("optimizer_control", hook)</code>, which provides <code>build_adapter(runtime, request, control)</code> and <code>verify(runtime, request, control, output)</code>; without a hook it is rejected.</li>
+</ul>
+<h2 id="4-test-it">4. Test it<a class="headerlink" href="#4-test-it" title="Link to this section">#</a></h2>
 <ol>
-<li><strong>Load and split.</strong> <code>rows = dataset_mod.load_all()</code>, then <code>dataset_mod.train_val_split(rows, train_size, val_size, seed, offset)</code>.</li>
-<li><strong>Keep eval IDs out.</strong> The split functions drop every ID in <code>benchmarks/&lt;dataset&gt;/&lt;dataset&gt;_eval_ids.json</code> unless <code>GEPA_EXCLUDE_REAL_EVAL_IDS</code> (or <code>MIPRO_EXCLUDE_REAL_EVAL_IDS</code>) is set to <code>0</code>, <code>false</code>, <code>no</code> or <code>off</code>; API-Bank and ToolHop always drop them. Reuse these functions rather than writing your own, and record what was excluded in <code>meta.json</code>.</li>
-<li><strong>Score.</strong> <code>dataset_mod.metric(example, prediction)</code> returns an object whose <code>.score</code> is in [0, 1] and whose <code>.feedback</code> text GEPA uses for reflection. A split's score is the mean of its per-row scores.</li>
-<li><strong>Baseline and compiled.</strong> Evaluate the seed prompts on the validation split (baseline), optimize on the train split, then evaluate the optimized prompts on the same validation split (compiled). <code>delta = compiled_score - baseline_score</code>.</li>
-<li><strong>Accept or keep the seeds.</strong> If any compiled validation record contains an infrastructure-error marker (connection errors, CUDA out-of-memory, context-length errors, Python tracebacks; see <code>HARD_INFRA_MARKERS</code> in the pilots), the compiled prompts are rejected. ToolHop uses a stricter rule that also rejects ties without row-level gains and prompts that fail its anti-memorization checks. Otherwise the compiled prompts are accepted when <code>compiled_score + 1e-9 &gt;= baseline_score</code>. The records of the selected side are written to <code>optimized_val.jsonl</code>.</li>
+<li>
+<p><strong>Unit tests</strong> go to <code>optimizers/&lt;method&gt;/tests/</code>. Use fakes (see <code>optimizers/conftest.py</code>) so they need no endpoint:</p>
+<div class="language-bash highlight"><pre><span></span><code><span class="nv">PYTHONDONTWRITEBYTECODE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-p<span class="w"> </span>no:cacheprovider<span class="w"> </span>optimizers/&lt;method&gt;<span class="w"> </span>-q
+</code></pre></div>
+</li>
+<li>
+<p><strong>Smoke job.</strong> A new method is outside the experiment grid, so it needs <code>--allow-any-cell</code>. Methods charge rollouts before proposing anything, so pick a budget that reaches one proposal (see <a href="../../optimizers/running/#smoke-runs">smoke runs</a>):</p>
+<div class="language-bash highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>optimizers.protocol.run<span class="w"> </span>--method<span class="w"> </span>my_method<span class="w"> </span>--dataset<span class="w"> </span>hotpotqa<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--topology<span class="w"> </span>centralized<span class="w"> </span>--model<span class="w"> </span>qwen<span class="w"> </span>--seed<span class="w"> </span><span class="m">0</span><span class="w"> </span>--budget<span class="w"> </span><span class="m">60</span><span class="w"> </span>--allow-any-cell<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out<span class="w"> </span>runs/smoke/my_method
+</code></pre></div>
+</li>
+<li>
+<p><strong>Golden cell.</strong> Add a row to <code>METHOD_CELLS</code> in <code>tests/golden/methods.py</code>. These cells pin each method's end-to-end trace against a scripted fake server. Record it with <code>python -m tests.golden.record --only 'methods/my_method/*'</code>.</p>
+</li>
 </ol>
-<p>Before the compiled evaluation, both pilots cap LCB prompts at <code>LCB_COMPILED_PROMPT_CHAR_LIMIT</code> characters (default 24000) and strip concrete examples from ToolHop prompts. Copy those steps if your optimizer can produce long or example-heavy prompts.</p>
-<h2 id="4-write-the-same-artifacts">4. Write the same artifacts<a class="headerlink" href="#4-write-the-same-artifacts" title="Link to this section">#</a></h2>
-<p>Write everything under the <code>--out</code> folder in the layout the existing pilots use:</p>
-<pre class="highlight"><code class="language-text">&lt;out&gt;/
-├── status.json               # current phase; "complete" or "failed" at the end
-├── meta.json                 # settings, splits, scores, acceptance decision
-├── baseline_val.jsonl        # per-row validation records, seed prompts
-├── compiled_val.jsonl        # per-row validation records, optimized prompts
-├── optimized_val.jsonl       # whichever of the two was selected
-├── compiled/&lt;role&gt;.txt       # deployable prompts
-├── compiled_raw/&lt;role&gt;.txt   # raw optimizer output
-└── &lt;name&gt;_state/             # optimizer logs (gepa_state/, mipro_state/)</code></pre>
-<p>Each validation record holds <code>id</code>, <code>score</code>, <code>latency_s</code>, <code>answer</code>, <code>winner</code>, <code>vote_summary</code> and <code>agent_trace</code>. MIPRO also writes <code>compiled_demos/&lt;role&gt;.json</code>.</p>
-<p>The repository ships no analysis script that reads <code>meta.json</code>; the fields below are what both pilots write, so keeping them makes your runs comparable. <a href="../../evaluation/results/">Read the Results</a> explains how to use them.</p>
-<table>
-<thead>
-<tr>
-<th>Group</th>
-<th>Fields</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Identity</td>
-<td><code>cell</code>, <code>mode</code>, <code>dataset</code>, <code>topology</code></td>
-</tr>
-<tr>
-<td>Split</td>
-<td><code>train_size</code>, <code>val_size</code>, <code>offset</code>, <code>split_seed</code>, <code>actual_train_ids</code>, <code>actual_val_ids</code>, <code>split_manifest</code></td>
-</tr>
-<tr>
-<td>Eval protection</td>
-<td><code>exclude_real_eval_ids</code>, <code>excluded_real_eval_id_count</code>, <code>excluded_real_eval_ids</code>, <code>train_real_eval_overlap</code>, <code>val_real_eval_overlap</code>, <code>protected_eval_sample</code></td>
-</tr>
-<tr>
-<td>Prompts</td>
-<td><code>adapter_roles</code>, <code>compiled_prompt_files</code>, <code>compiled_prompt_quality</code>, <code>compiled_prompt_sanitizer</code></td>
-</tr>
-<tr>
-<td>Models</td>
-<td><code>task_model</code>, <code>reflection_model</code>, <code>task_endpoints</code>, <code>reflection_endpoint</code></td>
-</tr>
-<tr>
-<td>Settings</td>
-<td><code>n_agents</code>, <code>n_rounds</code>, <code>auto</code>, <code>num_threads</code>, <code>output_contract_version</code>, <code>dspy_version</code>, plus your optimizer's budget settings</td>
-</tr>
-<tr>
-<td>Outcome</td>
-<td><code>baseline_score</code>, <code>compiled_score</code>, <code>delta</code>, <code>accept_compiled_prompt</code>, <code>selected_prompt_source</code>, <code>selection_reason</code>, <code>acceptance_diagnostics</code>, <code>baseline_failure_summary</code>, <code>compiled_failure_summary</code>, <code>baseline_records</code>, <code>compiled_records</code></td>
-</tr>
-</tbody>
-</table>
-<p>For team-size and protocol pairs the pilots add <code>team_size</code>, <code>base_topology</code> and <code>teamsizes_module</code>, or <code>communications_format</code> and <code>communications_module</code>.</p>
-<h2 id="5-use-the-same-models-and-a-launcher">5. Use the same models and a launcher<a class="headerlink" href="#5-use-the-same-models-and-a-launcher" title="Link to this section">#</a></h2>
-<p>Copy <code>lm.py</code> and give its variables your optimizer's prefix. It builds a round-robin task LM over a comma-separated endpoint list and a separate reflection or proposal LM. Task sampling is fixed at temperature 0.2, top-p 0.9, seed 0, 1024 max tokens and thinking disabled; keep it so your baselines run under the same conditions as GEPA's and MIPRO's.</p>
-<p>Finally, add <code>run_&lt;name&gt;.sh</code>: loop over <code>DATASETS</code> and <code>TOPOLOGIES</code>, start one pilot process per pair with <code>--out "$OUT_ROOT/${topo}_${dataset}"</code>, and continue past failures, as <code>run_gepa.sh</code> does. See <a href="../../optimizers/running/">Run an Optimizer</a> for how the existing launchers are used.</p>
+<p>Jobs outside the grid are non-conformant, so <code>optimizers.protocol.aggregate</code> skips them unless you pass <code>--include-nonconformant</code>. The grid of published cells is <code>build_grid</code> in <code>optimizers/protocol/cells.py</code>.</p>
 <h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Link to this section">#</a></h2>
 <ol>
-<li>A workspace <code>optimizers/&lt;name&gt;/</code> with its own bridge package, pilot and launcher.</li>
-<li>The adapter protocol and registry reused unchanged, so every existing pair is a target.</li>
-<li>Prompts exposed per role, synced into the adapter with <code>set_prompt</code> before each run.</li>
-<li>Train and validation splits from the dataset modules, with eval IDs excluded and recorded.</li>
-<li>Baseline and compiled scores on the same validation split, and the acceptance rule above.</li>
-<li><code>status.json</code>, <code>meta.json</code>, the three validation JSONL files, <code>compiled/</code> and <code>compiled_raw/</code> under <code>--out</code>; seed prompts in <code>configs/</code> left untouched.</li>
-<li>A one-row run (<code>--train-size 1 --val-size 1</code>) before any sweep.</li>
+<li><code>optimizers/&lt;method&gt;/integration.py</code> with the optimizer class and a frozen settings dataclass.</li>
+<li>A <code>METHODS</code> entry in <code>optimizers/protocol/methods/__init__.py</code>.</li>
+<li><code>optimize</code> spends only the runner's ledger, uses train and validation rows only, and returns an <code>OptimizerResult</code> with the matching budget snapshot.</li>
+<li>Seed prompts in <code>configs/</code> left untouched; scratch files under <code>run_dir</code>.</li>
+<li>Unit tests with fakes, a smoke job and a golden cell.</li>
 </ol>
     </article>
-    <div class="page-meta">
-      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/extending/add-optimizer.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
-    </div>
     <nav class="pager" aria-label="Previous and next pages">
       <a class="pager-link prev" href="../add-topology/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Add a Topology</b></a>
       <a class="pager-link next" href="../../reference/cli/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Command-Line Flags</b></a>
@@ -337,24 +278,23 @@
       <span>MAS-PromptBench is released under the MIT License.</span>
       <span class="foot-links">
         <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
-        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">Code</a>
+        <a href="https://deepwiki.com/juyangbai/MAS-PromptBench">DeepWiki</a>
       </span>
     </footer>
   </main>
   <aside class="toc" aria-label="On this page">
     <span class="nav-label">On this page</span>
     <ul>
-      <li><a href="#what-the-two-optimizers-share">What the two optimizers share</a>
+      <li><a href="#what-the-protocol-owns">What the protocol owns</a>
       </li>
-      <li><a href="#1-drive-a-pair-through-the-adapter">1. Drive a pair through the adapter</a>
+      <li><a href="#1-create-and-register-the-package">1. Create and register the package</a>
       </li>
-      <li><a href="#2-expose-the-prompts-as-parameters">2. Expose the prompts as parameters</a>
+      <li><a href="#2-implement-the-interface">2. Implement the interface</a>
       </li>
-      <li><a href="#3-score-candidates-the-same-way">3. Score candidates the same way</a>
+      <li><a href="#3-return-a-result">3. Return a result</a>
       </li>
-      <li><a href="#4-write-the-same-artifacts">4. Write the same artifacts</a>
-      </li>
-      <li><a href="#5-use-the-same-models-and-a-launcher">5. Use the same models and a launcher</a>
+      <li><a href="#4-test-it">4. Test it</a>
       </li>
       <li><a href="#checklist">Checklist</a>
       </li>
@@ -381,7 +321,7 @@
     svg: { fontCache: "global" }
   };
 </script>
-<script src="../../assets/docs.js?v=20261008091509" defer></script>
+<script src="../../assets/docs.js?v=20261022204625" defer></script>
 </div>
 </body>
 </html>

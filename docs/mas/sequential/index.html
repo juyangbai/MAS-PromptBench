@@ -12,21 +12,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,700;1,14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="../../assets/docs.css?v=20261008091509">
+  <link rel="stylesheet" href="../../assets/docs.css?v=20261022204625">
   <!-- page transition to and from the project page ("Short glide, ordered") -->
-  <script src="../../assets/mpb-transition.js?v=20261008091509"></script>
-  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261008091509">
+  <script src="../../assets/mpb-transition.js?v=20261022204625"></script>
+  <link rel="stylesheet" href="../../assets/mpb-transition.css?v=20261022204625">
   <script>
-    /* Apply a stored theme before first paint. "system" stores nothing. */
+    /* Apply a stored theme before first paint. "system" stores nothing. Hosts that
+       sandbox each page block storage, so the tab's
+       window.name carries the choice there. */
     (function () {
-      try { var t = localStorage.getItem('mpb-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+      var t = null;
+      try { t = localStorage.getItem('mpb-theme'); } catch (e) {}
+      if (!t) { var m = /^mpb-theme=(dark|light)$/.exec(window.name || ''); if (m) t = m[1]; }
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
   <!-- hold the first frame until the title is parsed, so it can glide (keep at the end of <head>) -->
   <link rel="expect" href="#mpb-title" blocking="render">
 </head>
 <body>
-<div class="site" data-base-url="../.." data-version="20261008091509">
+<div class="site" data-base-url="../.." data-version="20261022204625">
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
@@ -36,11 +41,11 @@
   <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
-  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5M13.5 4.5l-3 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-wiki" viewBox="110 110 460 500"><path fill="#21c19a" d="M418.73,332.37c9.84-5.68,22.07-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.58,1.06.19.06.37.11.55.16.87.21,1.76.34,2.65.35.04,0,.08.02.13.02.1,0,.19-.03.29-.04.83-.02,1.64-.13,2.45-.32.14-.03.28-.05.42-.09.87-.24,1.7-.59,2.5-1.03.08-.04.17-.06.25-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.06,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.57-1.06-.19-.06-.37-.11-.56-.16-.88-.21-1.76-.34-2.65-.34-.13,0-.26.02-.4.02-.84.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.24.1.8.44,1.64.79,2.5,1.03.14.04.28.06.42.09.81.19,1.62.3,2.45.32.1,0,.19.04.29.04.04,0,.08-.02.13-.02.89,0,1.77-.13,2.65-.35.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.58-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-.08-.04-.16-.06-.24-.1-.8-.44-1.64-.8-2.51-1.04-.13-.04-.26-.05-.39-.09-.82-.2-1.65-.31-2.49-.33-.13,0-.25-.02-.38-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.75.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.07,5.68-31.9,0-9.84-5.68-15.95-16.27-15.95-27.63s6.11-21.95,15.95-27.63Z"/><path fill="#3969ca" d="M141.09,317.65l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c.08-.04.13-.11.2-.16.78-.48,1.51-1.02,2.15-1.66.1-.1.18-.21.28-.31.57-.6,1.08-1.26,1.51-1.97.07-.12.15-.22.22-.34.44-.77.77-1.6,1.03-2.47.05-.19.1-.37.14-.56.22-.89.37-1.81.37-2.76v-29.43c0-11.36,6.11-21.95,15.96-27.63s22.06-5.68,31.91,0l25.49,14.71c.82.48,1.69.8,2.57,1.06.19.06.37.11.56.16.87.21,1.76.34,2.64.35.04,0,.09.02.13.02.1,0,.19-.04.29-.04.83-.02,1.65-.13,2.45-.32.14-.03.28-.05.41-.09.87-.24,1.71-.6,2.51-1.04.08-.04.16-.06.24-.1l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-.08.04-.13.11-.2.16-.78.48-1.51,1.02-2.15,1.66-.1.1-.18.21-.28.31-.57.6-1.08,1.26-1.51,1.97-.07.12-.15.22-.22.34-.44.77-.77,1.6-1.03,2.47-.05.19-.1.37-.14.56-.22.89-.37,1.81-.37,2.76v29.43c0,11.36-6.11,21.95-15.95,27.63-9.84,5.68-22.07,5.68-31.91,0l-25.49-14.71c-.82-.48-1.69-.8-2.58-1.06-.19-.06-.37-.11-.55-.16-.88-.21-1.76-.34-2.65-.35-.13,0-.26.02-.4.02-.83.02-1.66.13-2.47.32-.13.03-.27.05-.4.09-.87.24-1.71.6-2.51,1.04-.08.04-.16.06-.24.1l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22Z"/><path fill="#0294de" d="M396.88,484.35l-50.97-29.43c-.08-.04-.17-.06-.24-.1-.8-.44-1.64-.79-2.51-1.03-.14-.04-.27-.06-.41-.09-.81-.19-1.64-.3-2.47-.32-.13,0-.26-.02-.39-.02-.89,0-1.78.13-2.66.35-.18.04-.36.1-.54.15-.88.26-1.76.59-2.58,1.07l-25.49,14.72c-9.84,5.68-22.06,5.68-31.9,0-9.84-5.68-15.96-16.27-15.96-27.63v-29.43c0-.95-.15-1.87-.37-2.76-.05-.19-.09-.37-.14-.56-.25-.86-.59-1.69-1.03-2.47-.07-.12-.15-.22-.22-.34-.43-.71-.94-1.37-1.51-1.97-.1-.1-.18-.21-.28-.31-.65-.63-1.37-1.18-2.15-1.66-.07-.04-.13-.11-.2-.16l-50.97-29.43c-3.65-2.11-8.15-2.11-11.81,0l-50.97,29.43c-3.65,2.11-5.9,6.01-5.9,10.22v58.86c0,4.22,2.25,8.11,5.9,10.22l50.97,29.43c.08.04.17.06.25.1.8.44,1.63.79,2.5,1.03.14.04.29.06.43.09.8.19,1.61.3,2.43.32.1,0,.2.04.3.04.04,0,.09-.02.13-.02.88,0,1.77-.13,2.64-.34.19-.04.37-.1.56-.16.88-.26,1.75-.59,2.57-1.06l25.49-14.71c9.84-5.68,22.06-5.68,31.91,0,9.84,5.68,15.95,16.27,15.95,27.63v29.43c0,.95.15,1.87.37,2.76.05.19.09.37.14.56.25.86.59,1.69,1.03,2.47.07.12.15.22.22.34.43.71.94,1.37,1.51,1.97.1.1.18.21.28.31.65.63,1.37,1.18,2.15,1.66.07.04.13.11.2.16l50.97,29.43c1.83,1.05,3.86,1.58,5.9,1.58s4.08-.53,5.9-1.58l50.97-29.43c3.65-2.11,5.9-6.01,5.9-10.22v-58.86c0-4.22-2.25-8.11-5.9-10.22Z"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -55,8 +60,9 @@
     <button class="search-trigger" type="button" aria-label="Search the docs" aria-haspopup="dialog">
       <svg class="i" aria-hidden="true"><use href="#i-search"></use></svg><span class="search-placeholder">Search the docs</span><kbd>/</kbd>
     </button>
-    <a class="topbar-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
-    <a class="icon-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="GitHub repository"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg></a>
+    <a class="deepwiki-btn project-btn" href="https://juyangbai.github.io/MAS-PromptBench/" title="Project page"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg><span>Project Page</span></a>
+    <a class="deepwiki-btn" href="https://deepwiki.com/juyangbai/MAS-PromptBench" title="Ask questions about the code on DeepWiki"><svg class="i" aria-hidden="true"><use href="#i-wiki"></use></svg><span>Ask DeepWiki</span></a>
+    <a class="icon-btn code-btn" href="https://github.com/juyangbai/MAS-PromptBench" aria-label="Code (GitHub repository)" title="Code"><svg class="i" aria-hidden="true"><use href="#i-code"></use></svg></a>
     <button class="icon-btn theme-toggle" type="button" aria-label="Switch color theme"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="i" aria-hidden="true"><use href="#i-moon"></use></svg></button>
   </div>
 </header>
@@ -132,8 +138,6 @@
     <span class="nav-label">Optimizers</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../optimizers/">Overview</a></li>
-  <li><a class="nav-link" href="../../optimizers/gepa/">GEPA</a></li>
-  <li><a class="nav-link" href="../../optimizers/mipro/">MIPRO</a></li>
   <li><a class="nav-link" href="../../optimizers/running/">Run an Optimizer</a></li>
 </ul>
   </li>
@@ -141,7 +145,7 @@
     <span class="nav-label">Evaluation</span>
     <ul class="nav-list nav-l1">
   <li><a class="nav-link" href="../../evaluation/protocol/">Evaluation Protocol</a></li>
-  <li><a class="nav-link" href="../../evaluation/results/">Read the Results</a></li>
+  <li><a class="nav-link" href="../../evaluation/outputs/">Read Run Outputs</a></li>
 </ul>
   </li>
   <li class="nav-section">
@@ -259,68 +263,70 @@
 </tr>
 </tbody>
 </table>
-<p>Each role's seed prompt is <code>configs/prompts/sequential/&lt;dataset&gt;/&lt;role&gt;.txt</code>. Both frameworks read the same files. Every dataset folder holds ten role files: the four above plus six specialists that only the 8- and 10-stage <a href="../team-sizes/">team-size</a> variants use. For HotpotQA those are <code>query_decomposer</code>, <code>searcher</code>, <code>entity_disambiguator</code>, <code>evidence_filter</code>, <code>citation_compiler</code> and <code>answer_simplifier</code>. All role descriptions are under <code>sequential:</code> in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/configs/prompts/roles.yaml"><code>configs/prompts/roles.yaml</code></a>.</p>
+<p>Each role's seed prompt is <code>configs/prompts/sequential/&lt;dataset&gt;/&lt;role&gt;.txt</code>, and both frameworks read the same files. The LangGraph stages, their tools and each stage's task message come from the team spec in <code>configs/teams/&lt;dataset&gt;.yaml</code>; ToolHop and API-Bank fix their four stages in code. Every dataset folder holds ten role files: the four above plus six specialists that only the 8- and 10-stage <a href="../team-sizes/">team-size</a> variants use. For HotpotQA those are <code>query_decomposer</code>, <code>searcher</code>, <code>entity_disambiguator</code>, <code>evidence_filter</code>, <code>citation_compiler</code> and <code>answer_simplifier</code>. All role descriptions are under <code>sequential:</code> in <a href="https://github.com/juyangbai/MAS-PromptBench/blob/main/configs/prompts/roles.yaml"><code>configs/prompts/roles.yaml</code></a>.</p>
 <h2 id="implementations">Implementations<a class="headerlink" href="#implementations" title="Link to this section">#</a></h2>
 <h3 id="langgraph">LangGraph<a class="headerlink" href="#langgraph" title="Link to this section">#</a></h3>
-<p><code>topologies/sequential/langgraph/&lt;dataset&gt;/langgraph_&lt;dataset&gt;.py</code> builds a <code>StateGraph</code> with one node per stage and plain edges <code>START → stage 1 → … → stage 4 → END</code>. A stage with tools is a <code>create_react_agent</code>; a stage without tools is a single chat call. Stage outputs collect in a <code>by_stage</code> dict in the graph state, which the next node formats into its prompt. The <a href="../communication-protocols/">communication-protocol</a> runners wrap this implementation, and the team-size runners mirror it.</p>
+<p><code>topologies/sequential/langgraph/&lt;dataset&gt;/langgraph_&lt;dataset&gt;.py</code> builds a <code>StateGraph</code> with one node per stage and plain edges <code>START → stage 1 → … → stage 4 → END</code>. A stage with tools is a <code>create_react_agent</code>; a stage without tools is a single chat call. Stage outputs collect in a <code>by_stage</code> dict in the graph state, which the next node formats into its prompt. The <a href="../communication-protocols/">communication-protocol</a> and <a href="../team-sizes/">team-size</a> runners run this implementation with a preset format or team.</p>
 <h3 id="crewai">CrewAI<a class="headerlink" href="#crewai" title="Link to this section">#</a></h3>
-<p><code>topologies/sequential/crewai/&lt;dataset&gt;/crewai_&lt;dataset&gt;.py</code> builds one CrewAI <code>Agent</code> per stage, with the seed prompt as the agent's <code>backstory</code>, and one <code>Task</code> per stage whose <code>context</code> lists every earlier task. A <code>Crew</code> runs them with <code>Process.sequential</code>. The model is reached through CrewAI's <code>LLM</code> class at <code>openai/&lt;MODEL_ID&gt;</code> on <code>VLLM_BASE_URL</code>.</p>
+<p><code>topologies/sequential/crewai/&lt;dataset&gt;/crewai_&lt;dataset&gt;.py</code> builds one CrewAI <code>Agent</code> per stage, with the seed prompt as the agent's <code>backstory</code>, and one <code>Task</code> per stage whose <code>context</code> lists every earlier task. A <code>Crew</code> runs them with <code>Process.sequential</code>. The model is reached through CrewAI's <code>LLM</code> class at <code>openai/&lt;MODEL_ID&gt;</code> on <code>VLLM_BASE_URL</code>, with the same decoding settings as every runner.</p>
 <p><a href="https://github.com/juyangbai/MAS-PromptBench/tree/main/topologies/sequential/crewai/crewai_base"><code>topologies/sequential/crewai/crewai_base/</code></a> is a CrewAI project scaffold (<code>crew.py</code>, <code>main.py</code>, <code>config/agents.yaml</code>, <code>config/tasks.yaml</code>) with a researcher, analyst, writer and editor. It is a reference demo, not a benchmark runner. There is no separate LangGraph base file for this topology.</p>
 <div class="admonition note">
 <p class="admonition-title">ToolHop and API-Bank</p>
-<p>These runners use no framework objects. Both variants run the same plain-Python loop over the four roles, passing each stage the trimmed reports of the earlier stages. The two files differ only in their <code>STYLE</code> label.</p>
+<p>These runners use no framework objects. They run the four roles in a plain-Python loop, passing each stage the trimmed reports of the earlier stages. The CrewAI runner is the LangGraph runner's code under the <code>sequential_crewai</code> label.</p>
 </div>
 <h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Link to this section">#</a></h2>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">LangGraph</label><label for="__tabbed_1_2">CrewAI</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<pre class="highlight"><code class="language-bash">python -m topologies.sequential.langgraph.bfcl.langgraph_bfcl --limit 100 \
-  --out-dir results/topologies_baseline/sequential_langgraph_bfcl</code></pre>
+<div class="language-bash highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.sequential.langgraph.bfcl.langgraph_bfcl<span class="w"> </span>--category<span class="w"> </span>simple<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out-dir<span class="w"> </span>results/topologies_baseline/sequential_langgraph_bfcl/simple
+</code></pre></div>
 </div>
 <div class="tabbed-block">
-<pre class="highlight"><code class="language-bash">python -m topologies.sequential.crewai.bfcl.crewai_bfcl --limit 100 \
-  --out-dir results/topologies_baseline/sequential_crewai_bfcl</code></pre>
+<div class="language-bash highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.sequential.crewai.bfcl.crewai_bfcl<span class="w"> </span>--category<span class="w"> </span>simple<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out-dir<span class="w"> </span>results/topologies_baseline/sequential_crewai_bfcl/simple
+</code></pre></div>
 </div>
 </div>
 </div>
-<p>BFCL runners always run a batch, take <code>--out-dir</code>, and reject <code>--batch</code>. They score the <code>simple</code> category unless you pass <code>--category</code>. For HotpotQA, MATH, GPQA, LiveCodeBench and APPS use <code>--batch</code> and <code>--out &lt;file.jsonl&gt;</code> instead:</p>
-<pre class="highlight"><code class="language-bash">python -m topologies.sequential.langgraph.hotpotqa.langgraph_hotpotqa --batch --limit 100 \
-  --out results/topologies_baseline/sequential_langgraph_hotpotqa/predictions.jsonl</code></pre>
+<p>BFCL runners always run a batch and score one category at a time. For HotpotQA, MATH, GPQA, LiveCodeBench and APPS, add <code>--batch</code>, or the runner plays its demo:</p>
+<div class="language-bash highlight"><span class="filename">HotpotQA, LangGraph pipeline</span><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>topologies.sequential.langgraph.hotpotqa.langgraph_hotpotqa<span class="w"> </span>--batch<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out-dir<span class="w"> </span>results/topologies_baseline/sequential_langgraph_hotpotqa
+</code></pre></div>
 <h2 id="optimize-it">Optimize it<a class="headerlink" href="#optimize-it" title="Link to this section">#</a></h2>
 <table>
 <thead>
 <tr>
-<th>Optimizer topology name</th>
+<th>Protocol flags</th>
 <th>What it runs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>sequential</code></td>
+<td><code>--topology sequential</code></td>
 <td>the LangGraph pipeline</td>
 </tr>
 <tr>
-<td><code>sequential_crewai</code></td>
-<td>the CrewAI pipeline</td>
+<td><code>--topology sequential --framework crewai</code></td>
+<td>the CrewAI pipeline (<code>sequential_crewai</code>)</td>
 </tr>
 <tr>
-<td><code>sequential_r2</code>, <code>sequential_r4</code>, <code>sequential_r8</code>, <code>sequential_r10</code></td>
-<td>team-size variants (HotpotQA, LiveCodeBench, ToolHop, API-Bank)</td>
+<td><code>--topology sequential --team-size N</code></td>
+<td>the N-stage <a href="../team-sizes/">team-size</a> variant (<code>sequential_r&lt;N&gt;</code>)</td>
 </tr>
 <tr>
-<td><code>sequential_communications_&lt;format&gt;</code></td>
-<td>communication-protocol variants (same four datasets)</td>
+<td><code>--topology sequential --communication FORMAT</code></td>
+<td>a <a href="../communication-protocols/">communication-protocol</a> variant (<code>sequential_communications_&lt;format&gt;</code>)</td>
 </tr>
 </tbody>
 </table>
-<p>The optimizer tunes all four stage prompts. For example, GEPA on <code>sequential_crewai</code> / <code>bfcl</code>:</p>
-<pre class="highlight"><code class="language-bash">cd optimizers/gepa
-python -m real_runner_gepa.pilots.run_gepa_dataset --dataset bfcl --topology sequential_crewai \
-  --train-size 25 --val-size 25 --max-full-evals 5 --out results/gepa/sequential_crewai_bfcl</code></pre>
+<p>The optimizer tunes every stage prompt. Any of the eight methods runs it; for example, GEPA on the CrewAI pipeline for BFCL:</p>
+<div class="language-bash highlight"><span class="filename">GEPA on Sequential (CrewAI) · BFCL</span><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>optimizers.protocol.run<span class="w"> </span>--method<span class="w"> </span>gepa<span class="w"> </span>--dataset<span class="w"> </span>bfcl<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--topology<span class="w"> </span>sequential<span class="w"> </span>--framework<span class="w"> </span>crewai<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model<span class="w"> </span>qwen<span class="w"> </span>--seed<span class="w"> </span><span class="m">0</span><span class="w"> </span>--out<span class="w"> </span>runs/gepa/bfcl/sequential_crewai/qwen/0
+</code></pre></div>
+<p>See <a href="../../optimizers/running/">Run an Optimizer</a>.</p>
     </article>
-    <div class="page-meta">
-      <a class="edit-link" href="https://github.com/juyangbai/MAS-PromptBench/edit/main/docs/mas/sequential.md"><svg class="i" aria-hidden="true"><use href="#i-edit"></use></svg>Edit this page on GitHub</a>
-    </div>
     <nav class="pager" aria-label="Previous and next pages">
       <a class="pager-link prev" href="../independent/"><span><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Previous</span><b>Independent</b></a>
       <a class="pager-link next" href="../centralized/"><span>Next<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></span><b>Centralized</b></a>
@@ -330,7 +336,8 @@ python -m real_runner_gepa.pilots.run_gepa_dataset --dataset bfcl --topology seq
       <span>MAS-PromptBench is released under the MIT License.</span>
       <span class="foot-links">
         <a href="https://juyangbai.github.io/MAS-PromptBench/">Project page</a>
-        <a href="https://github.com/juyangbai/MAS-PromptBench">GitHub</a>
+        <a href="https://github.com/juyangbai/MAS-PromptBench">Code</a>
+        <a href="https://deepwiki.com/juyangbai/MAS-PromptBench">DeepWiki</a>
       </span>
     </footer>
   </main>
@@ -372,7 +379,7 @@ python -m real_runner_gepa.pilots.run_gepa_dataset --dataset bfcl --topology seq
     svg: { fontCache: "global" }
   };
 </script>
-<script src="../../assets/docs.js?v=20261008091509" defer></script>
+<script src="../../assets/docs.js?v=20261022204625" defer></script>
 </div>
 </body>
 </html>
