@@ -1,17 +1,16 @@
-"""Centralized topology specialized for BFCL, AutoGen."""
+"""Centralized BFCL runner (AutoGen): a manager and tool-less workers in a SelectorGroupChat.
+
+The workers are the r=4 centralized team (``configs/teams/bfcl.yaml``). Control
+returns to the manager after every other speaker; the chat ends on
+``TERMINATE`` or after the team's ``max_turns`` messages. The prediction is the
+manager's last fenced canonical JSON (else the caller's).
+"""
 
 from __future__ import annotations
 
-import argparse
 import asyncio
-import json
-import os
-import re
-import sys
+from collections.abc import Sequence
 from pathlib import Path
-
-from topologies.output_contracts import append_output_contract_from_path
-from typing import Sequence
 
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.conditions import MaxMessageTermination, TextMentionTermination
@@ -19,317 +18,93 @@ from autogen_agentchat.messages import BaseAgentEvent, BaseChatMessage
 from autogen_agentchat.teams import SelectorGroupChat
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
-# Shared telemetry.
-_TOPO_ROOT = str(Path(__file__).resolve().parents[4])
-if _TOPO_ROOT not in sys.path:
-    sys.path.insert(0, _TOPO_ROOT)
-from topologies.telemetry import autogen_telemetry, normalize  # noqa: E402
+from core import prompts, settings, teams
+from core.llm import autogen_client
+from core.paths import RESULTS_DIR
+from core.tasks import bfcl as task
+from core.tasks.bfcl import AST_CATEGORIES, HF_DATASET, extract_canonical, format_task, load_instances  # noqa: F401
+from core.telemetry import autogen_telemetry, normalize
 
-from huggingface_hub import hf_hub_download
+TOPOLOGY = "centralized"
+TEAM = teams.spec(TOPOLOGY, task.DATASET)
+DEFAULT_OUT_DIR = RESULTS_DIR / "bfcl_centralized"
 
-from bfcl_eval.constants.enums import Language
-from bfcl_eval.constants.model_config import MODEL_CONFIG_MAPPING, ModelConfig
-from bfcl_eval.eval_checker.ast_eval.ast_checker import ast_checker
+VLLM_BASE_URL = settings.base_url()
+MODEL_ID = settings.model_id()
 
+_MAX_MESSAGES = TEAM.max_turns
+_MANAGER_TERMINATE_NUDGE = task.TERMINATE_NUDGE
 
-VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://lai:8001/v1")
-MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
-
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_PROMPTS_DIR = _REPO_ROOT / "configs" / "prompts" / "centralized" / "bfcl"
-
-HF_DATASET = "gorilla-llm/Berkeley-Function-Calling-Leaderboard"
-AST_CATEGORIES = ("simple", "multiple", "parallel", "parallel_multiple")
-
-
-def _load_prompt(role: str) -> str:
-    return append_output_contract_from_path((_PROMPTS_DIR / f"{role}.txt").read_text().strip(), __file__, role)
-
-
-# Model registration in bfcl-eval
-def _register_model_with_bfcl(model_id: str) -> None:
-    """Register `model_id` in bfcl-eval's MODEL_CONFIG_MAPPING.
-
-    `ast_checker` -> `convert_func_name` looks the model up there to decide
-    whether to rewrite '.' -> '_' in function names. Unregistered models
-    raise KeyError on any instance with a dotted name (e.g. `math.factorial`).
-    Qwen3.5-9B handles dots fine, same as the registered qwen3-8b/-14b
-    entries.
-    """
-    if model_id in MODEL_CONFIG_MAPPING:
-        return
-    template = MODEL_CONFIG_MAPPING["qwen3-8b"]
-    MODEL_CONFIG_MAPPING[model_id] = ModelConfig(
-        model_name=model_id,
-        display_name=model_id,
-        url=template.url,
-        org=template.org,
-        license=template.license,
-        model_handler=template.model_handler,
-        is_fc_model=True,
-        underscore_to_dot=False,
-    )
-
-
+_register_model_with_bfcl = task.register_model  # called again by callers that repoint MODEL_ID
 _register_model_with_bfcl(MODEL_ID)
 
-
-# LLM
-def _build_client() -> OpenAIChatCompletionClient:
-    return OpenAIChatCompletionClient(
-        model=MODEL_ID,
-        base_url=VLLM_BASE_URL,
-        api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
-        model_info={
-            "vision": False,
-            "function_calling": True,
-            "json_output": True,
-            "family": "qwen",
-            "structured_output": False,
-        },
-        temperature=0.2,
-        top_p=0.9,
-        seed=0,
-        # BFCL calls are short; bounded output is fine.
-        max_tokens=1024,
-        extra_body={
-            "repetition_penalty": 1.05,
-            "chat_template_kwargs": {"enable_thinking": False},
-        },
-    )
-
-
-# Team
-_MANAGER_TERMINATE_NUDGE = (
-    "\n\nWhen you emit the final fenced ```json``` block containing "
-    "the canonical call list, immediately follow it with the literal "
-    "string TERMINATE on its own line so the group-chat knows to stop."
+# AutoGen agent descriptions, which the selector shows as the roster.
+_DESCRIPTIONS = {
+    "manager": "Coordinator that plans the call, dispatches composition + validation, and emits the final canonical JSON.",
+    "inspector_worker": "Reads the schema and returns an argument plan.",
+    "caller_worker": "Composes the canonical JSON call per manager instruction.",
+    "validator_worker": "Checks the call against the schema (name exists, required params present, types valid).",
+}
+_SELECTOR_PROMPT = (
+    "You are coordinating a 4-agent team on a BFCL function-calling task.\n"
+    "Select the next agent to act.\n\n{roles}\n\n"
+    "Conversation so far:\n{history}\n\n"
+    "Pick exactly one agent from {participants}."
 )
 
 
+def _load_prompt(role: str) -> str:
+    return prompts.role_prompt(TOPOLOGY, task.DATASET, role)
+
+
+def _build_client() -> OpenAIChatCompletionClient:
+    return autogen_client(model=MODEL_ID, base_url=VLLM_BASE_URL)
+
+
+def score_one(function_schemas: list[dict], model_output: list[dict], ground_truth: list[dict], category: str) -> dict:
+    return task.score_one(function_schemas, model_output, ground_truth, category, MODEL_ID)
+
+
 def build_team() -> SelectorGroupChat:
+    """The manager and its workers, all sharing one client."""
     client = _build_client()
+    agents = [
+        AssistantAgent(
+            role,
+            description=_DESCRIPTIONS[role],
+            model_client=client,
+            system_message=_load_prompt(role) + (_MANAGER_TERMINATE_NUDGE if role == TEAM.manager else ""),
+        )
+        for role in TEAM.roles
+    ]
+    manager = agents[0]
 
-    manager = AssistantAgent(
-        "manager",
-        description="Coordinator that plans the call, dispatches composition + validation, and emits the final canonical JSON.",
-        model_client=client,
-        system_message=_load_prompt("manager") + _MANAGER_TERMINATE_NUDGE,
-    )
-
-    inspector_worker = AssistantAgent(
-        "inspector_worker",
-        description="Reads the schema and returns an argument plan.",
-        model_client=client,
-        system_message=_load_prompt("inspector_worker"),
-    )
-
-    caller_worker = AssistantAgent(
-        "caller_worker",
-        description="Composes the canonical JSON call per manager instruction.",
-        model_client=client,
-        system_message=_load_prompt("caller_worker"),
-    )
-
-    validator_worker = AssistantAgent(
-        "validator_worker",
-        description="Checks the call against the schema (name exists, required params present, types valid).",
-        model_client=client,
-        system_message=_load_prompt("validator_worker"),
-    )
-
-    # Force manager routing: after any worker speaks, the manager goes next,
-    # so workers never chain turns with each other.
     def _selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
-        if not messages:
-            return manager.name
-        if messages[-1].source != manager.name:
+        if not messages or messages[-1].source != manager.name:
             return manager.name
         return None
 
-    selector_prompt = (
-        "You are coordinating a 4-agent team on a BFCL function-calling task.\n"
-        "Select the next agent to act.\n\n{roles}\n\n"
-        "Conversation so far:\n{history}\n\n"
-        "Pick exactly one agent from {participants}."
-    )
-
-    termination = TextMentionTermination("TERMINATE") | MaxMessageTermination(24)
-
+    termination = TextMentionTermination("TERMINATE") | MaxMessageTermination(_MAX_MESSAGES)
     return SelectorGroupChat(
-        [manager, inspector_worker, caller_worker, validator_worker],
+        agents,
         model_client=client,
         termination_condition=termination,
-        selector_prompt=selector_prompt,
+        selector_prompt=_SELECTOR_PROMPT,
         selector_func=_selector_func,
         allow_repeated_speaker=True,
     )
 
 
-# Prompt scaffolding
-def format_task(user_request: str, schemas_text: str) -> str:
-    """Build the task string for the group chat's first `user` message.
-
-    Both the request and the schemas go in it, so every agent sees them from
-    the start.
-    """
-    return (
-        "USER REQUEST:\n"
-        f"{user_request}\n\n"
-        "SCHEMAS:\n"
-        f"{schemas_text}\n\n"
-        "Emit the final canonical call list as a SINGLE fenced ```json "
-        "block. Canonical form is a list of dicts; each dict has exactly "
-        "ONE key equal to the ACTUAL function name from one of the "
-        "schemas above, and the value is the arguments dict. "
-        "Do NOT use the literal string 'fn_name' as the key, and do NOT "
-        "use the shape {\"fn_name\": \"<name>\", \"args\": {...}}. "
-        "Example for a schema named calculate_area: "
-        "[{\"calculate_area\": {\"width\": 5, \"height\": 3}}]. "
-        "For parallel calls, emit multiple such dicts in the list."
-    )
-
-
-# Output parsing
-_FENCED_RE = re.compile(r"```(?:\w*)\s*([\s\S]*?)\s*```")
-
-# Common non-canonical shapes the model emits instead of {name: args}:
-#   {"fn_name": "<real>", "args": {...}}           (model misreads the template)
-#   {"name": "<real>", "arguments": {...}}         (OpenAI tool-call shape)
-#   {"function_name": "<real>", "arguments": {...}}
-_NAME_ARGS_PAIRS = (
-    ("fn_name", "args"),
-    ("name", "arguments"),
-    ("function_name", "arguments"),
-    ("function", "arguments"),
-)
-
-
-def _normalize_call(d: dict) -> dict:
-    """Map the common wrong shapes to canonical {name: args}.
-
-    Other dicts, including already-canonical ones, pass through unchanged.
-    """
-    for name_key, args_key in _NAME_ARGS_PAIRS:
-        if (
-            name_key in d
-            and args_key in d
-            and isinstance(d[name_key], str)
-            and isinstance(d[args_key], dict)
-        ):
-            return {d[name_key]: d[args_key]}
-    return d
-
-
-def extract_canonical(text: str) -> list[dict] | None:
-    """Return the last fenced JSON list of dicts in `text`, normalized.
-
-    None if no fenced block parses to a non-empty list of dicts. TERMINATE
-    is stripped first so the fence regex doesn't misalign.
-    """
-    text = re.sub(r"\bTERMINATE\b", "", text)
-    candidates: list[str] = [m.group(1) for m in _FENCED_RE.finditer(text)]
-    for cand in reversed(candidates):
-        try:
-            parsed = json.loads(cand)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(parsed, list) and parsed and all(isinstance(x, dict) for x in parsed):
-            return [_normalize_call(d) for d in parsed]
-    return None
-
-
-# Scoring
-def score_one(
-    function_schemas: list[dict],
-    model_output: list[dict],
-    ground_truth: list[dict],
-    category: str,
-) -> dict:
-    """Score with bfcl-eval's AST checker, same as the other topologies."""
-    return ast_checker(
-        function_schemas,
-        model_output,
-        ground_truth,
-        Language.PYTHON,
-        category,
-        MODEL_ID,
-    )
-
-
-# Dataset
-def load_instances(
-    category: str,
-    limit: int | None = None,
-    offset: int = 0,
-    only: list[str] | None = None,
-) -> tuple[list[dict], list[dict]]:
-    """Load (rows, ground_truths) for one BFCL subset."""
-    main = Path(
-        hf_hub_download(HF_DATASET, f"BFCL_v3_{category}.json", repo_type="dataset")
-    )
-    ans = Path(
-        hf_hub_download(
-            HF_DATASET,
-            f"possible_answer/BFCL_v3_{category}.json",
-            repo_type="dataset",
-        )
-    )
-
-    rows = [json.loads(line) for line in main.read_text().splitlines() if line.strip()]
-    gt_by_id = {
-        json.loads(line)["id"]: json.loads(line)
-        for line in ans.read_text().splitlines()
-        if line.strip()
-    }
-
-    if only:
-        want = set(only)
-        rows = [r for r in rows if r["id"] in want]
-    rows = rows[offset:]
-    if limit is not None:
-        rows = rows[:limit]
-
-    missing = [r["id"] for r in rows if r["id"] not in gt_by_id]
-    if missing:
-        raise RuntimeError(f"no ground truth for ids: {missing[:5]}")
-
-    return rows, [gt_by_id[r["id"]] for r in rows]
-
-
-# Orchestration
-def _flatten_user_request(question: list) -> str:
-    """BFCL stores `question` as [[msgs...]]; for single-turn subsets, join
-    the turns' contents into one string.
-    """
-    if not question:
-        return ""
-    turns = question[0] if isinstance(question[0], list) else question
-    parts = []
-    for msg in turns:
-        if isinstance(msg, dict):
-            role = msg.get("role", "user")
-            content = msg.get("content", "")
-            parts.append(f"[{role}] {content}")
-        else:
-            parts.append(str(msg))
-    return "\n".join(parts)
-
-
 async def solve_async(instance: dict) -> dict:
-    """Run the centralized team on one BFCL instance.
+    """Run the team on one instance.
 
-    Returns a dict with:
-        model_output  canonical call list [{fn: {arg: val}}], or []
-        raw           manager's last message content
-        messages      [{source, content}] for every turn
+    Returns ``{"model_output", "raw", "messages", "telemetry"}``: the canonical
+    calls (or []), the manager's last message, every message as ``{source,
+    content}`` and token/call counts.
     """
     team = build_team()
-    user_request = _flatten_user_request(instance["question"])
-    schemas_text = json.dumps(instance["function"], indent=2)
-    task = format_task(user_request, schemas_text)
-
-    result = await team.run(task=task)
+    prompt = format_task(task.flatten_question(instance["question"]), task.render_schemas(instance["function"]))
+    result = await team.run(task=prompt)
     messages = [
         {
             "source": getattr(m, "source", None),
@@ -341,7 +116,6 @@ async def solve_async(instance: dict) -> dict:
     ]
     manager_msgs = [m for m in messages if m["source"] == "manager"]
     final = manager_msgs[-1]["content"] if manager_msgs else ""
-    # Prefer manager's final fenced JSON; fall back to caller_worker's.
     model_output = extract_canonical(final)
     if model_output is None:
         caller_msgs = [m for m in messages if m["source"] == "caller_worker"]
@@ -359,58 +133,19 @@ def solve(instance: dict) -> dict:
     return asyncio.run(solve_async(instance))
 
 
-# Batch runner
-def run_one(
-    instance: dict,
-    ground_truth: dict,
-    category: str,
-    out_dir: Path,
-) -> dict:
-    """Solve and score one BFCL instance with the manager-worker team.
-
-    Writes the group-chat trace to out_dir/traces/<id>.txt.
-    """
-    iid = instance["id"]
-    summary: dict = {"id": iid, "category": category}
-
+def run_one(instance: dict, ground_truth: dict, category: str, out_dir: Path) -> dict:
+    """Solve and score one instance and write the group chat to ``out_dir/traces/<id>.txt``."""
+    summary: dict = {"id": instance["id"], "category": category}
     try:
         out = solve(instance)
     except Exception as e:
-        summary["error"] = f"{type(e).__name__}: {e}"
-        summary["stage"] = "solve"
-        return summary
-
+        return task.solve_failed(summary, e)
     summary["model_output"] = out.get("model_output") or []
     summary["n_messages"] = len(out.get("messages") or [])
     summary["tool_calls"] = len(summary["model_output"])
     summary.update(out.get("telemetry") or {})
-
-    trace_path = out_dir / "traces" / f"{iid}.txt"
-    trace_path.parent.mkdir(parents=True, exist_ok=True)
-    with trace_path.open("w") as f:
-        for m in out.get("messages") or []:
-            src = m.get("source", "?")
-            content = m.get("content", "")
-            f.write(f"=== {str(src).upper()} ===\n{content}\n\n")
-
-    try:
-        checker_result = score_one(
-            instance["function"],
-            summary["model_output"],
-            ground_truth["ground_truth"],
-            category,
-        )
-    except Exception as e:
-        summary["valid"] = False
-        summary["error"] = f"{type(e).__name__}: {e}"
-        summary["stage"] = "score"
-        return summary
-
-    summary["valid"] = bool(checker_result.get("valid"))
-    summary["error_type"] = checker_result.get("error_type")
-    if not summary["valid"]:
-        summary["score_error"] = (checker_result.get("error") or [])[:3]
-    return summary
+    task.write_trace(out_dir, instance["id"], task.messages_trace(out.get("messages") or []))
+    return task.add_verdict(summary, score_one, instance, ground_truth, category)
 
 
 def run_batch(
@@ -421,77 +156,21 @@ def run_batch(
     out_dir: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Iterate one AST subset; write predictions.jsonl + results.jsonl."""
-    _default_root = Path(__file__).resolve().parents[4]
-    out_dir = out_dir or (_default_root / "results" / "bfcl_centralized")
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    rows, gts = load_instances(category, limit, offset, only)
-    if verbose:
-        print(f"loaded {len(rows)} instance(s) from {HF_DATASET} / {category}")
-
-    preds_path = out_dir / "predictions.jsonl"
-    results_path = out_dir / "results.jsonl"
-
-    valid = 0
-    with preds_path.open("a") as fp, results_path.open("a") as fr:
-        for i, (row, gt) in enumerate(zip(rows, gts), start=1):
-            if verbose:
-                print(f"\n[{i}/{len(rows)}] {row['id']}  ({category})")
-            summary = run_one(row, gt, category, out_dir)
-            if summary.get("valid"):
-                valid += 1
-
-            fp.write(json.dumps({
-                "id": row["id"],
-                "category": category,
-                "model_output": summary.get("model_output"),
-                "model_name_or_path": MODEL_ID,
-            }) + "\n")
-            fr.write(json.dumps(summary) + "\n")
-            fp.flush()
-            fr.flush()
-            if verbose:
-                print(f"  -> {json.dumps(summary)}")
-
-    if verbose:
-        print(
-            f"\ndone: valid {valid}/{len(rows)}"
-            f"\n      predictions -> {preds_path}"
-            f"\n      results     -> {results_path}"
-        )
-    return {
-        "n": len(rows),
-        "valid": valid,
-        "valid_rate": (valid / len(rows)) if rows else 0.0,
-        "category": category,
-    }
+    """Score a slice of one subset; writes predictions.jsonl and results.jsonl afresh in ``out_dir``."""
+    return task.evaluate(
+        run_one, category, limit, offset, only, out_dir or DEFAULT_OUT_DIR, model_id=MODEL_ID, verbose=verbose
+    )
 
 
-# CLI
+def main(argv: list[str] | None = None) -> int:
+    return task.cli_main(
+        argv,
+        description="Centralized-topology BFCL runner (AutoGen SelectorGroupChat).",
+        run_one=run_one,
+        model_id=MODEL_ID,
+        default_out_dir=DEFAULT_OUT_DIR,
+    )
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Centralized-topology BFCL runner (AutoGen SelectorGroupChat)."
-    )
-    parser.add_argument(
-        "--category", default="simple", choices=list(AST_CATEGORIES),
-        help="BFCL subset (default: simple).",
-    )
-    parser.add_argument("--limit", type=int, default=5)
-    parser.add_argument("--offset", type=int, default=0)
-    parser.add_argument(
-        "--only", action="append", default=None, metavar="INSTANCE_ID",
-    )
-    _default_out = str(
-        Path(__file__).resolve().parents[4] / "results" / "bfcl_centralized"
-    )
-    parser.add_argument("--out-dir", default=_default_out)
-    args = parser.parse_args()
-
-    run_batch(
-        category=args.category,
-        limit=args.limit if not args.only else None,
-        offset=args.offset,
-        only=args.only,
-        out_dir=Path(args.out_dir),
-    )
+    raise SystemExit(main())

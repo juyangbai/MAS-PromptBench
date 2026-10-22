@@ -1,2 +1,1 @@
 """Independent-topology msg baselines."""
-

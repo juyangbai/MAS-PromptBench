@@ -1,0 +1,166 @@
+{
+ "agents_sdk": "decentralized/openai_agents turns use the harness stand-in (tests/golden/sdk_fake.py); the OpenAI Agents SDK request format itself is not covered",
+ "cells": 790,
+ "fast_cells": [
+  "cli/topologies/single",
+  "communications/sequential/bfcl/structured_soft",
+  "datasets/gepa/gpqa",
+  "datasets/gepa/hotpotqa",
+  "prompts/gepa/hotpotqa",
+  "registry/gepa/gpqa/single",
+  "registry/gepa/hotpotqa/centralized_autogen",
+  "scorers/communications",
+  "scorers/gpqa",
+  "static/decoding",
+  "teamsizes/centralized/hotpotqa/r2",
+  "topologies/centralized/autogen/math",
+  "topologies/centralized/langgraph/lcb",
+  "topologies/decentralized/langgraph/apibank",
+  "topologies/decentralized/openai_agents/gpqa",
+  "topologies/independent/langgraph/bfcl",
+  "topologies/sequential/crewai/hotpotqa",
+  "topologies/sequential/langgraph/toolhop",
+  "topologies/single/langgraph/gpqa"
+ ],
+ "golden_bytes": {
+  "cli.json.gz": 12327,
+  "communications.json.gz": 196604,
+  "datasets.json.gz": 24157,
+  "methods.json.gz": 619910,
+  "prompts.json.gz": 122727,
+  "registry.json.gz": 949198,
+  "scorers.json.gz": 13003,
+  "static.json.gz": 2854,
+  "teamsizes.json.gz": 219985,
+  "topologies.json.gz": 192177
+ },
+ "golden_bytes_total": 2352942,
+ "last_full_record_seconds": 475.1,
+ "not_ok": [],
+ "partially_skipped": {
+  "communications/centralized/swe/freeform": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/centralized/swe/semi_structured": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/centralized/swe/structured_soft": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/decentralized/swe/freeform": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/decentralized/swe/semi_structured": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/decentralized/swe/structured_soft": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/independent/swe/freeform": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/independent/swe/semi_structured": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/independent/swe/structured_soft": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/sequential/swe/freeform": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/sequential/swe/semi_structured": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "communications/sequential/swe/structured_soft": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/centralized/swe/r10": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/centralized/swe/r2": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/centralized/swe/r4": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/centralized/swe/r8": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/decentralized/swe/r10": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/decentralized/swe/r2": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/decentralized/swe/r4": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/decentralized/swe/r8": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/independent/swe/r10": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/independent/swe/r2": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/independent/swe/r4": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/independent/swe/r8": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/sequential/swe/r10": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/sequential/swe/r2": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/sequential/swe/r4": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "teamsizes/sequential/swe/r8": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "topologies/centralized/autogen/swe": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "topologies/centralized/langgraph/swe": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "topologies/decentralized/langgraph/swe": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "topologies/decentralized/openai_agents/swe": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "topologies/independent/langgraph/swe": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "topologies/sequential/crewai/swe": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "topologies/sequential/langgraph/swe": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  },
+  "topologies/single/langgraph/swe": {
+   "grading": "grading needs the per-instance SWE-bench Singularity image (and the clone needs GitHub): the run path executes with eval_mode='none' on a toy git repository standing in for the clone; the offline scoring helpers are snapshotted on canned reports instead"
+  }
+ },
+ "per_area": {
+  "cli": 13,
+  "communications": 72,
+  "datasets": 18,
+  "methods": 18,
+  "prompts": 18,
+  "registry": 424,
+  "scorers": 10,
+  "static": 1,
+  "teamsizes": 144,
+  "topologies": 72
+ },
+ "record_command": "python -m tests.golden.record --force",
+ "status": {
+  "ok": 790
+ }
+}

@@ -1,2 +1,1 @@
 """Centralized-topology msg baselines."""
-

@@ -1,20 +1,15 @@
-"""Independent topology: 4 LLM agents fan out from START with no
-inter-agent communication.
-"""
+"""Independent topology: 4 LLM agents fan out from START, no inter-agent communication."""
 
 import asyncio
 import operator
 import os
 from typing import Annotated
 
-from typing_extensions import TypedDict
-
-from openai import AsyncOpenAI
-
 from langgraph.constants import END, START
 from langgraph.graph.state import StateGraph
 from langgraph.types import Send
-
+from openai import AsyncOpenAI
+from typing_extensions import TypedDict
 
 AGENTS = [
     {"name": "agent_1", "model": "gpt-4o-mini", "system": "You are a concise analyst."},
@@ -22,6 +17,7 @@ AGENTS = [
     {"name": "agent_3", "model": "gpt-4o-mini", "system": "You are a skeptical critic."},
     {"name": "agent_4", "model": "gpt-4o-mini", "system": "You are a pragmatic engineer."},
 ]
+
 
 class State(TypedDict):
     prompt: str

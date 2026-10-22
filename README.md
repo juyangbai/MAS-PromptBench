@@ -1,185 +1,171 @@
-
-
 <div align="center">
-  <img src="assets/MAS-PromptBench_lockup.svg" alt="MAS-PromptBench" width="560">
+  <img src="https://juyangbai.github.io/MAS-PromptBench/assets/MAS-PromptBench_lockup.svg" alt="MAS-PromptBench" width="560">
 </div>
+
+<p align="center">
+  <a href="https://arxiv.org/abs/2606.23664"><img src="https://img.shields.io/badge/arXiv-2606.23664-b31b1b" alt="arXiv"></a>
+  <a href="https://juyangbai.github.io/MAS-PromptBench/"><img src="https://img.shields.io/badge/Project-Page-2f6db3" alt="Project Page"></a>
+  <a href="https://deepwiki.com/juyangbai/MAS-PromptBench"><img src="assets/deepwiki-badge.svg" alt="Ask DeepWiki"></a>
+</p>
 
 <h2 align="center">
   A Benchmark of Prompt Optimization for Multi-Agent LLM Systems
 </h2>
 
-<p align="center">
-  <a href="https://juyangbai.github.io/MAS-PromptBench/" style="margin: 0 10px;">🌐 Website</a> |
-  <a href="https://arxiv.org/abs/2606.23664" style="margin: 0 10px;">📖 Paper</a> |
-  <a href="https://github.com/juyangbai/MAS-PromptBench" style="margin: 0 10px;">💻 GitHub</a>
-</p>
-
 <details open>
 <summary><b>Contents</b></summary>
 
-1. [News and Updates](#-news-and-updates)
-2. [Introduction](#-introduction)
-3. [Code Structure](#-code-structure)
-4. [Quickstart](#-quickstart)
+1. [Introduction](#-introduction)
+2. [Code Structure](#-code-structure)
+3. [Quickstart](#-quickstart)
+4. [How to Extend](#-how-to-extend)
 5. [Referenced Resources](#-referenced-resources)
-6. [Contributing](#-contributing)
+6. [Citation](#-citation)
 
 </details>
-
----
-
-## 🔔 News and Updates
-
-- **[2026-06-22]** — Initial public release of the code!
 
 ---
 
 ## 📖 Introduction
 
 <div align="center">
-  <img src="assets/MAS-PromptBench_overview.png" alt="MAS-PromptBench overview" width="820">
+  <img src="https://juyangbai.github.io/MAS-PromptBench/assets/MAS-PromptBench_overview.png" alt="MAS-PromptBench overview" width="820">
 </div>
 
-A reproducible benchmark for studying when prompt optimization improves multi-agent LLM systems across optimizers, tasks, topologies, communication formats, and team sizes.
+MAS-PromptBench measures when prompt optimization improves multi-agent LLM systems. It runs real multi-agent runners on nine reasoning, coding, and tool-use datasets and optimizes their per-role prompts with eight methods under one run protocol.
 
-- **Optimizer** — GEPA and MIPRO prompt optimizers, run on the real multi-agent runners.
-- **Task dataset** — 9 reasoning, coding, and tool-use benchmarks, each scored with its official / community-standard scorer.
-- **Workflow Topology** — `single`, `independent`, `sequential`, `centralized`, and `decentralized`, implemented across LangGraph, CrewAI, AutoGen, and the OpenAI SDK.
+- **Optimizer** — GEPA, MIPRO, MAPRO, MASPO, HiveMind, MAMUT-GEPA, MASPOB, and TAVO.
+- **Task dataset** — GPQA-Diamond, HotpotQA, MATH, LiveCodeBench, APPS, BFCL, SWE-bench Verified, API-Bank, and ToolHop.
+- **Workflow Topology** — `single`, `independent`, `sequential`, `centralized`, and `decentralized`, implemented across LangGraph, CrewAI, AutoGen, and the OpenAI Agents SDK.
 - **Communication format** — three inter-agent message formats (`freeform`, `semi_structured`, `structured_soft`).
 - **Team size** — the number of agents per team, `r ∈ {2, 4, 8, 10}`.
+- **Task model** — `Qwen/Qwen3.5-9B`, plus `meta-llama/Llama-3.1-8B-Instruct` for a subset of cells.
 
 ---
 
 ## 🌳 Code Structure
 
-
-| Path                                 | Contents                                                                  |
-| ------------------------------------ | ------------------------------------------------------------------------- |
-| [`benchmarks/`](benchmarks/)         | per-dataset evaluation-ID manifests + the API-Bank source                 |
-| [`communications/`](communications/) | inter-agent message-format studies                                        |
-| [`configs/`](configs/)               | seed per-role prompts (`configs/prompts/<topology>/<dataset>/<role>.txt`) |
-| [`frameworks/`](frameworks/)         | LangGraph, CrewAI, AutoGen, and debate submodules (editable installs)     |
-| [`models/`](models/)                 | node-agnostic vLLM serve scripts (Qwen3.5-9B / 122B)                      |
-| [`optimizers/`](optimizers/)         | GEPA and MIPRO prompt optimizers over the real runners                    |
-| [`scripts/`](scripts/)               | helper and launcher scripts                                               |
-| [`teamsizes/`](teamsizes/)           | team-size sweeps (number of agents per team)                              |
-| [`topologies/`](topologies/)         | the core benchmark — 5 topologies × 9 datasets, one runnable pair each    |
-
+| Path                                 | Contents                                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| [`assets/`](assets/)                 | logo and overview images                                                                                            |
+| [`benchmarks/`](benchmarks/)         | evaluation ids, optimization splits, and the API-Bank source                                                        |
+| [`communications/`](communications/) | inter-agent communication-format variants                                                                           |
+| [`configs/`](configs/)               | seed role prompts (`prompts/<topology>/<dataset>/<role>.txt`) and team specs                                        |
+| [`core/`](core/)                     | shared runner code and one task module per dataset                                                                  |
+| [`docs/`](docs/)                     | source of the [documentation site](docs/content/index.md): tutorials, configuration and CLI reference               |
+| [`models/`](models/)                 | vLLM serve scripts (Qwen3.5-9B / 122B, Llama-3.1-8B)                                                                |
+| [`optimizers/`](optimizers/)         | eight prompt optimizers, their shared run protocol, and the real-runner bridge                                      |
+| [`scripts/`](scripts/)               | sweep launchers                                                                                                     |
+| [`teamsizes/`](teamsizes/)           | team-size variants (number of agents per team)                                                                      |
+| [`tests/`](tests/)                   | unit tests and golden behavior snapshots                                                                            |
+| [`topologies/`](topologies/)         | the core benchmark — 5 topologies × 9 datasets, one runnable pair each                                              |
 
 ---
 
 ## 🚀 Quickstart
 
-Go from a fresh clone to scored results in four steps — install, connect a model, run a baseline, then optimize its prompts.
+Go from a fresh clone to scored results in four steps — install, serve a model, run a baseline, then optimize its prompts.
 
 ### 1. Install
-
-Clone with the framework submodules and create the conda environment:
 
 ```bash
 git clone https://github.com/juyangbai/MAS-PromptBench.git
 cd MAS-PromptBench
-git submodule update --init --recursive
 
-conda env create -f environment.yml      # Python 3.11 + vLLM + benchmark deps
+conda env create -f environment.yml      # Python 3.11 + vLLM + benchmark and optimizer deps
 conda activate mas-promptbench
+pip install --target vendor/openai_agents -r requirements-openai-agents.txt   # OpenAI Agents SDK (needs openai>=3, kept isolated)
 ```
 
-### 2. Connect a model
+`environment.yml` pins LangGraph, CrewAI, and AutoGen to the commits the results were produced with. Run every module with `python -m` from the repository root.
 
-Every agent talks to the same **OpenAI-compatible** chat endpoint, configured via `VLLM_BASE_URL` and `MODEL_ID` (plus `OPENAI_API_KEY` when the provider requires one). Pick one path:
+### 2. Serve a model
 
-*Option A — Use a model API (no GPU).* Manage keys in a `.env` file — uncomment one provider block, fill in your key, and load it:
-
-```bash
-# edit .env — pick a provider, set OPENAI_API_KEY
-set -a && source .env && set +a
-```
-
-`.env` ships ready-to-use blocks for **OpenAI**, **Anthropic**, **Google Gemini**, **Mistral AI**, **DeepSeek**, and **local vLLM** — no local GPU required.
-
-*Option B — Local serving (vLLM, on your own GPUs).* Serve a Qwen model from [`models/`](models/), then point runs at it:
+Every agent talks to the same **OpenAI-compatible** chat endpoint (vLLM, or a server that accepts vLLM's sampling fields), configured via `VLLM_BASE_URL` and `MODEL_ID`. Serve a model from [`models/`](models/), then point runs at it:
 
 ```bash
 bash models/serve_qwen3_5_9b.sh
 export VLLM_BASE_URL=http://localhost:8000/v1
 export MODEL_ID=Qwen/Qwen3.5-9B
-# OPENAI_API_KEY not needed (the local endpoint accepts any key)
 ```
 
-| Script | Model | Serving | GPUs needed |
-|---|---|---|---|
-| [`serve_qwen3_5_9b.sh`](models/serve_qwen3_5_9b.sh) | `Qwen/Qwen3.5-9B` | one replica per GPU | **≥ 1** CUDA GPU |
-| [`serve_qwen3_5_122b.sh`](models/serve_qwen3_5_122b.sh) | `Qwen/Qwen3.5-122B-A10B-FP8` | tensor-parallel (TP=4) | **4** FP8-capable GPUs (Hopper / Blackwell) |
+| Script                                                  | Model                                           | Serving                           | GPUs needed                                 |
+| ------------------------------------------------------- | ----------------------------------------------- | --------------------------------- | ------------------------------------------- |
+| [`serve_qwen3_5_9b.sh`](models/serve_qwen3_5_9b.sh)     | `Qwen/Qwen3.5-9B` (task model)                  | one replica per GPU, ports 8000+  | **≥ 1** CUDA GPU                            |
+| [`serve_llama3_1_8b.sh`](models/serve_llama3_1_8b.sh)   | `meta-llama/Llama-3.1-8B-Instruct` (task model) | one replica per GPU, ports 8100+  | **≥ 1** CUDA GPU                            |
+| [`serve_qwen3_5_122b.sh`](models/serve_qwen3_5_122b.sh) | `Qwen/Qwen3.5-122B-A10B-FP8` (reflection model) | tensor-parallel (TP=4), port 8200 | **4** FP8-capable GPUs (Hopper / Blackwell) |
+
+Llama is gated: export `HF_TOKEN`, or serve a downloaded copy with `HF_HUB_OFFLINE=1` (see [model serving](docs/content/reference/environment.md#model-serving)).
 
 ### 3. Run a baseline
 
-Every `(topology, dataset)` pair ships a no-arg smoke demo and a `--batch` mode that writes predictions, per-instance results, and traces to `results/<dataset>/`:
+Every `(topology, dataset)` pair is a module with a smoke demo and a `--batch` mode that writes predictions and per-instance records under `results/`:
 
 ```bash
-# smoke demo (built-in example, no dataset download)
-python topologies/single/hotpotqa/langgraph_hotpotqa.py
-
-# real batch on a slice
-python topologies/single/hotpotqa/langgraph_hotpotqa.py --batch --limit 100
+python -m topologies.single.hotpotqa.langgraph_hotpotqa                       # smoke demo
+python -m topologies.single.hotpotqa.langgraph_hotpotqa --batch --limit 100   # real batch on a slice
+bash scripts/run_topologies.sh                                                # full sweep on the evaluation ids
 ```
 
-See [topologies/README.md](topologies/README.md) for the full run interface, per-dataset setup, and scoring details.
+See [topologies/README.md](topologies/README.md) for the run interface and per-dataset setup; [teamsizes/](teamsizes/README.md) and [communications/](communications/README.md) have their own sweeps.
 
 ### 4. Optimize prompts
 
-[`optimizers/`](optimizers/) holds two optimizers — **GEPA** (reflective prompt evolution) and **MIPRO** (instruction + few-shot example search) — that improve the seed prompts by running the **real** topology runners and re-scoring, so gains transfer directly back to the benchmark:
+[`optimizers/`](optimizers/) holds eight prompt optimizers — **GEPA**, **MIPRO**, **MAPRO**, **MASPO**, **HiveMind**, **MAMUT-GEPA**, **MASPOB**, and **TAVO** — that improve the seed prompts by running the **real** topology runners under one run protocol: 600 rollouts per job, deployment only if the optimized prompts beat the seeds on validation, and scoring on a held-out test split.
 
 ```bash
-# from optimizers/gepa/
-python -m real_runner_gepa.pilots.run_gepa_dataset \
-  --dataset math --topology single --train-size 25 --val-size 25 \
-  --max-full-evals 5 --out results/gepa/single_math
+export TASK_ENDPOINTS=http://localhost:8000/v1             # task model
+export REFLECTION_MODEL_BASE_URL=http://localhost:8200/v1  # reflection model
+
+python -m optimizers.protocol.run --method gepa --dataset math --topology centralized \
+    --model qwen --seed 0 --out runs/gepa/math/centralized/qwen/0
+python -m optimizers.protocol.aggregate runs/ --out runs/summary.json   # paired summary over seeds 0-2
 ```
 
-Train/val splits draw from the frozen eval-ID manifests, so optimization never trains on reported eval instances. See [optimizers/README.md](optimizers/README.md).
+See [optimizers/README.md](optimizers/README.md).
+
+---
+
+## 🧩 How to Extend
+
+Every piece is written once and reused, so an extension adds only what is new:
+
+| Add a         | What you write                                                                                                      | Guide                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Dataset**   | a task module in `core/tasks/`, a team spec, thin runners, seed prompts, evaluation IDs and splits, a bridge loader | [Add a Dataset](https://juyangbai.github.io/MAS-PromptBench/docs/extending/add-dataset/)      |
+| **Topology**  | one thin runner per dataset on top of `core/`, a team spec and prompts, bridge adapters                             | [Add a Topology](https://juyangbai.github.io/MAS-PromptBench/docs/extending/add-topology/)    |
+| **Optimizer** | a package `optimizers/<method>/` whose `integration.py` is registered with the run protocol                         | [Add an Optimizer](https://juyangbai.github.io/MAS-PromptBench/docs/extending/add-optimizer/) |
+
+Then run the [tests](tests/golden/README.md): refactors must leave the golden snapshots unchanged.
 
 ---
 
 ## 🔗 Referenced Resources
 
-The agent frameworks under `frameworks/` retain their own upstream licenses:
+MAS-PromptBench builds on the agent frameworks and libraries below, which retain their own upstream licenses, and evaluates on nine existing benchmarks. Please cite and comply with the license of each original dataset when reporting results.
 
-- **[LangGraph](https://github.com/langchain-ai/langgraph)** — stateful graph-based agent orchestration
-- **[CrewAI](https://github.com/crewAIInc/crewAI)** — role-based multi-agent framework
-- **[AutoGen](https://github.com/microsoft/autogen)** — conversational multi-agent framework
-- **[LLM Multi-Agent Debate](https://github.com/composable-models/llm_multiagent_debate)** — multi-agent debate reference implementation
-
-MAS-PromptBench evaluates on nine existing benchmarks. Please cite and comply with the license of each original dataset when reporting results:
-
-- **[GPQA](https://github.com/idavidrein/gpqa)** — graduate-level science multiple-choice QA
-- **[HotpotQA](https://hotpotqa.github.io/)** — multi-hop open-domain QA
-- **[MATH](https://github.com/hendrycks/math)** — competition mathematics
-- **[LiveCodeBench](https://livecodebench.github.io/)** — contamination-free code generation
-- **[APPS](https://github.com/hendrycks/apps)** — programming problems
-- **[Berkeley Function Calling Leaderboard (BFCL)](https://gorilla.cs.berkeley.edu/leaderboard.html)** — function / tool calling
-- **[SWE-bench Verified](https://www.swebench.com/)** — real-world GitHub issue resolution
-- **[API-Bank](https://github.com/AlibabaResearch/DAMO-ConvAI/tree/main/api-bank)** — tool-augmented API calling
-- **[ToolHop](https://huggingface.co/datasets/bytedance-research/ToolHop)** — multi-hop tool use
-
-MAS-PromptBench also builds on:
-
-- **[vLLM](https://github.com/vllm-project/vllm)** — high-throughput, OpenAI-compatible LLM serving (the `models/` endpoints)
-- **[DSPy](https://github.com/stanfordnlp/dspy)** — the prompt-optimization backend behind GEPA and MIPRO
-
----
-
-## 🤝 Contributing
-
-Contributions are very welcome — a new topology, dataset, or optimizer, a framework integration, a bug fix, or even a typo. Every bit helps!
-
-A few tips to make it smooth:
-
-- For anything substantial, open an issue first so we can talk through the approach together.
-- Match the existing pair / runner conventions — [topologies/README.md](topologies/README.md) and the per-optimizer `ADDING_PAIR.md` guides are great starting points.
-- Give the relevant smoke demo a quick run (plus a small `--batch --limit` slice) before opening your PR.
-
-Then send over a pull request — and thank you for helping make MAS-PromptBench better! 🙌
+<table>
+  <tr><th>Resource</th><th>Description</th></tr>
+  <tr><th colspan="2" align="center">Agent framework</th></tr>
+  <tr><td><a href="https://github.com/langchain-ai/langgraph">LangGraph</a></td><td>stateful graph-based agent orchestration</td></tr>
+  <tr><td><a href="https://github.com/crewAIInc/crewAI">CrewAI</a></td><td>role-based multi-agent framework</td></tr>
+  <tr><td><a href="https://github.com/microsoft/autogen">AutoGen</a></td><td>conversational multi-agent framework</td></tr>
+  <tr><td><a href="https://github.com/openai/openai-agents-python">OpenAI Agents SDK</a></td><td>agent runtime of the decentralized debate runners</td></tr>
+  <tr><td><a href="https://github.com/composable-models/llm_multiagent_debate">LLM Multi-Agent Debate</a></td><td>multi-agent debate reference implementation</td></tr>
+  <tr><th colspan="2" align="center">Benchmark</th></tr>
+  <tr><td><a href="https://github.com/idavidrein/gpqa">GPQA</a></td><td>graduate-level science multiple-choice QA</td></tr>
+  <tr><td><a href="https://hotpotqa.github.io/">HotpotQA</a></td><td>multi-hop open-domain QA</td></tr>
+  <tr><td><a href="https://github.com/hendrycks/math">MATH</a></td><td>competition mathematics</td></tr>
+  <tr><td><a href="https://livecodebench.github.io/">LiveCodeBench</a></td><td>contamination-free code generation</td></tr>
+  <tr><td><a href="https://github.com/hendrycks/apps">APPS</a></td><td>programming problems</td></tr>
+  <tr><td><a href="https://gorilla.cs.berkeley.edu/leaderboard.html">Berkeley Function Calling Leaderboard (BFCL)</a></td><td>function / tool calling</td></tr>
+  <tr><td><a href="https://www.swebench.com/">SWE-bench Verified</a></td><td>real-world GitHub issue resolution</td></tr>
+  <tr><td><a href="https://github.com/AlibabaResearch/DAMO-ConvAI/tree/main/api-bank">API-Bank</a></td><td>tool-augmented API calling</td></tr>
+  <tr><td><a href="https://huggingface.co/datasets/bytedance-research/ToolHop">ToolHop</a></td><td>multi-hop tool use</td></tr>
+  <tr><th colspan="2" align="center">Library</th></tr>
+  <tr><td><a href="https://github.com/vllm-project/vllm">vLLM</a></td><td>model serving (the <code>models/</code> endpoints)</td></tr>
+  <tr><td><a href="https://github.com/stanfordnlp/dspy">DSPy</a></td><td>the optimization backend of GEPA and MIPRO</td></tr>
+</table>
 
 ---
 
@@ -200,4 +186,4 @@ If you use MAS-PromptBench in your research, please cite it:
 
 ## ⚖️ License
 
-MAS-PromptBench is released under the [MIT License](LICENSE). The framework libraries under `frameworks/` and the API-Bank source under `benchmarks/apibank/apibank_upstream/` retain their respective upstream licenses — comply with each when redistributing.
+MAS-PromptBench is released under the [MIT License](LICENSE). The agent frameworks and the API-Bank source under `benchmarks/apibank/apibank_upstream/` retain their respective upstream licenses — comply with each when redistributing.

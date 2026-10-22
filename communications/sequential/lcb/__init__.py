@@ -1,2 +1,1 @@
 """Sequential LCB msg baselines."""
-

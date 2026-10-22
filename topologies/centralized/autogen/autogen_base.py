@@ -1,14 +1,14 @@
 """Centralized topology: 1 manager (PlanningAgent) + 3 workers, hub-and-spoke.
 
-Follows AutoGen's `SelectorGroupChat` tutorial
+Pattern follows AutoGen's `SelectorGroupChat` tutorial
 (python/docs/src/user-guide/agentchat-user-guide/selector-group-chat.ipynb):
-`selector_func` hands the turn back to the manager after every worker
-turn, so workers never talk to each other directly.
+the manager is forced back into the loop after every worker turn via
+`selector_func`, so workers never speak to each other directly.
 """
 
 import asyncio
 import os
-from typing import Sequence
+from collections.abc import Sequence
 
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.conditions import MaxMessageTermination, TextMentionTermination

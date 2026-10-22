@@ -1,129 +1,58 @@
-"""Sequential LangGraph topology specialized for GPQA-Diamond."""
+"""Sequential GPQA-Diamond runner (LangGraph): a pipeline of stages, each seeing all earlier outputs.
+
+The stages are the team spec (``configs/teams/gpqa.yaml``): at r=4 analyzer ->
+solver -> critic -> verifier. Every stage is a ReAct agent with its spec tools;
+the answer is the letter extracted from the last stage's output.
+``teamsizes/sequential/gpqa`` runs this module with r = 2, 4, 8 and 10.
+"""
 
 from __future__ import annotations
 
-import argparse
-import hashlib
-import json
 import operator
-import os
-import random
-import re
-import sys
-import time
 from pathlib import Path
-
-from topologies.output_contracts import append_output_contract_from_path
 from typing import Annotated
 
-from typing_extensions import TypedDict
-
-from langchain_core.messages import HumanMessage, SystemMessage  # noqa: F401
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import create_react_agent
+from typing_extensions import TypedDict
 
-_REPO_ROOT = Path(__file__).resolve().parents[4]
+from core import cli, prompts, settings, teams
+from core.batch import attempt
+from core.calculator import CALCULATOR_DOC_DECIMAL_PI, make_calculator
+from core.llm import chat_openai
+from core.paths import RESULTS_DIR
+from core.tasks import gpqa as task
+from core.tasks.gpqa import extract_answer, load_instances
+from core.telemetry import langchain_telemetry, normalize
 
-# Shared telemetry.
-_TOPO_ROOT = str(_REPO_ROOT)
-if _TOPO_ROOT not in sys.path:
-    sys.path.insert(0, _TOPO_ROOT)
-from topologies.telemetry import langchain_telemetry, normalize  # noqa: E402
+TOPOLOGY = "sequential"
+TEAM_SIZE = globals().get("TEAM_SIZE")  # preset by the teamsizes/ variants (core.variant)
+TEAM = teams.spec(TOPOLOGY, task.DATASET, TEAM_SIZE)
+DEFAULT_PREDICTIONS = (
+    RESULTS_DIR
+    / ("gpqa_sequential_langgraph" if TEAM_SIZE is None else f"gpqa_sequential_r{TEAM_SIZE}")
+    / "predictions.jsonl"
+)
 
+VLLM_BASE_URL = settings.base_url()
+MODEL_ID = settings.model_id()
 
-VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://n12:8000/v1")
-MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
+calculator = tool(make_calculator(CALCULATOR_DOC_DECIMAL_PI))
+TOOLS = {"calculator": calculator}
 
-_PROMPTS_DIR = _REPO_ROOT / "configs" / "prompts" / "sequential" / "gpqa"
+format_mcq = task.format_prompt
 
 
 def _load_prompt(role: str) -> str:
-    return append_output_contract_from_path((_PROMPTS_DIR / f"{role}.txt").read_text().strip(), __file__, role)
+    return prompts.role_prompt(TOPOLOGY, task.DATASET, role)
 
 
-# Tools (LangChain)
-@tool
-def calculator(expression: str) -> str:
-    """Evaluate a numeric Python expression (arithmetic + math functions).
-
-    Supports +, -, *, /, **, parentheses, and math functions (sqrt, log,
-    log10, log2, exp, sin, cos, tan, asin, acos, atan, floor, ceil, pow,
-    pi, e). Example: calculator("(4/3) * 3.14159 * 2**3")
-    """
-    import math
-
-    allowed = {
-        k: getattr(math, k)
-        for k in (
-            "sqrt", "log", "log10", "log2", "exp",
-            "sin", "cos", "tan", "asin", "acos", "atan",
-            "floor", "ceil", "pow", "pi", "e",
-        )
-    }
-    allowed["__builtins__"] = {}
-    try:
-        return str(eval(expression, allowed))
-    except Exception as e:
-        return f"ERROR: {e}"
-
-
-CALC_TOOLS = [calculator]
-
-
-# LLM
 def _build_llm() -> ChatOpenAI:
-    return ChatOpenAI(
-        model=MODEL_ID,
-        base_url=VLLM_BASE_URL,
-        api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
-        temperature=0.2,
-        top_p=0.9,
-        seed=0,
-        max_tokens=4096,
-        extra_body={
-            "repetition_penalty": 1.05,
-            "chat_template_kwargs": {"enable_thinking": False},
-        },
-    )
+    return chat_openai(model=MODEL_ID, base_url=VLLM_BASE_URL)
 
 
-# Per-stage task descriptions (same as CrewAI Task.description)
-_TASK_DESCRIPTIONS = {
-    "analyzer": (
-        "Analyze the multiple-choice question below. Enumerate the "
-        "scientific principles at play and describe, option by option "
-        "(A, B, C, D), how each candidate answer would be derived. "
-        "Do NOT commit to a final letter.\n\n"
-        "QUESTION:\n{question}"
-    ),
-    "solver": (
-        "Using the Analyzer's principles, select the single correct "
-        "option and emit your reasoning + final letter. Your output "
-        "MUST end with a line matching 'Answer: X' where X is one of "
-        "A, B, C, D.\n\n"
-        "QUESTION:\n{question}"
-    ),
-    "critic": (
-        "Challenge the Solver's pick. Given the Analyzer's principles "
-        "and the Solver's tentative letter + reasoning, identify any "
-        "concrete errors in the Solver's logic and — for each "
-        "REJECTED option — describe the strongest argument that "
-        "would have defended it. Do NOT declare a new final letter.\n\n"
-        "QUESTION:\n{question}"
-    ),
-    "verifier": (
-        "Reconcile the Solver's pick with the Critic's challenges. "
-        "If the Critic exposed a concrete error, override; otherwise "
-        "confirm. Your output MUST end with a line matching "
-        "'Final answer: X' where X is one of A, B, C, D.\n\n"
-        "QUESTION:\n{question}"
-    ),
-}
-
-
-# StateGraph scaffolding (sequential 4-stage pipeline)
 def _merge_dict(a: dict | None, b: dict | None) -> dict:
     out = dict(a or {})
     out.update(b or {})
@@ -136,12 +65,10 @@ class SequentialState(TypedDict, total=False):
     messages: Annotated[list, operator.add]
 
 
-def _format_user(
-    template: str, inputs: dict, by_stage: dict, prior_roles: list[str]
-) -> str:
+def _format_user(template: str, inputs: dict, by_stage: dict, prior_roles: list[str]) -> str:
     body = template.format(**inputs)
-    for r in prior_roles:
-        body += f"\n\n--- PRIOR STAGE: {r} ---\n{by_stage.get(r, '')}"
+    for role in prior_roles:
+        body += f"\n\n--- PRIOR STAGE: {role} ---\n{by_stage.get(role, '')}"
     return body
 
 
@@ -149,13 +76,8 @@ def _make_tool_node(role, sys_prompt, tools, llm, template, prior_roles):
     agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
 
     def node(state: SequentialState) -> dict:
-        user = _format_user(
-            template, state["inputs"], state.get("by_stage") or {}, prior_roles
-        )
-        res = agent.invoke(
-            {"messages": [("user", user)]},
-            config={"recursion_limit": 50},
-        )
+        user = _format_user(template, state["inputs"], state.get("by_stage") or {}, prior_roles)
+        res = agent.invoke({"messages": [("user", user)]}, config={"recursion_limit": TEAM.recursion_limit})
         raw = next(
             (
                 m.content
@@ -171,116 +93,31 @@ def _make_tool_node(role, sys_prompt, tools, llm, template, prior_roles):
 
 
 def _build_graph(llm: ChatOpenAI):
-    """Build the 4-stage analyzer -> solver -> critic -> verifier pipeline.
-    Every stage has the calculator tool.
-    """
-    stages = [
-        (
-            "analyzer",
-            _load_prompt("analyzer"),
-            CALC_TOOLS,
-            _TASK_DESCRIPTIONS["analyzer"],
-        ),
-        (
-            "solver",
-            _load_prompt("solver"),
-            CALC_TOOLS,
-            _TASK_DESCRIPTIONS["solver"],
-        ),
-        (
-            "critic",
-            _load_prompt("critic"),
-            CALC_TOOLS,
-            _TASK_DESCRIPTIONS["critic"],
-        ),
-        (
-            "verifier",
-            _load_prompt("verifier"),
-            CALC_TOOLS,
-            _TASK_DESCRIPTIONS["verifier"],
-        ),
-    ]
-
+    """Compile the team's stage pipeline; returns ``(graph, roles)``."""
     graph = StateGraph(SequentialState)
-    prior: list[str] = []
-    for role, sys_p, tools, tmpl in stages:
-        node_fn = _make_tool_node(role, sys_p, tools, llm, tmpl, list(prior))
-        graph.add_node(role, node_fn)
-        prior.append(role)
-
-    graph.add_edge(START, stages[0][0])
-    for a, b in zip(stages, stages[1:]):
-        graph.add_edge(a[0], b[0])
-    graph.add_edge(stages[-1][0], END)
-
-    return graph.compile(), [s[0] for s in stages]
-
-
-# Output Parsing
-_LETTERS = ["A", "B", "C", "D"]
-
-# Strip markdown (`**bold**`, `*italic*`, backticks) before matching; the
-# 9B often emits "**Answer:** B", which broke the bare regexes.
-_MARKDOWN_STRIP_RE = re.compile(r"[*_`]+")
-# Primary: "Final answer: X" / "Answer: X" (what the verifier is asked for).
-_ANSWER_RE = re.compile(
-    r"\b(?:final\s+)?answer\b\s*[:\s]*\(?([A-D])\)?",
-    re.IGNORECASE,
-)
-# Fallback: "Option X" / "choice X" / "Option: X" / "correct option is C".
-_OPTION_RE = re.compile(
-    r"\b(?:option|choice)\b\s*(?:is)?\s*[:\s]*\(?([A-D])\)?",
-    re.IGNORECASE,
-)
-# Fallback: bare [A-D] on its own line near the end.
-_BARE_LETTER_RE = re.compile(
-    r"(?:^|\n)\s*\(?([A-D])\)?\s*(?:[.\n]|$)", re.MULTILINE
-)
+    roles: list[str] = []
+    for stage in TEAM.stages:
+        tools = [TOOLS[name] for name in stage.tools]
+        node = _make_tool_node(stage.role, _load_prompt(stage.role), tools, llm, stage.task, list(roles))
+        graph.add_node(stage.role, node)
+        roles.append(stage.role)
+    graph.add_edge(START, roles[0])
+    for a, b in zip(roles, roles[1:]):
+        graph.add_edge(a, b)
+    graph.add_edge(roles[-1], END)
+    return graph.compile(), roles
 
 
-def extract_answer(text: str) -> str | None:
-    """Return the MCQ letter from the verifier's final output.
-
-    Uses the same 3-pattern cascade and markdown stripping as the
-    single/independent/centralized/decentralized gpqa runners, so extracted
-    letters are comparable across topologies.
-    """
-    cleaned = _MARKDOWN_STRIP_RE.sub("", text)
-    for pattern in (_ANSWER_RE, _OPTION_RE, _BARE_LETTER_RE):
-        matches = pattern.findall(cleaned)
-        if matches:
-            return matches[-1].upper()
-    return None
-
-
-# Format helpers
-def format_mcq(question: str, choices: list[str]) -> str:
-    """Build the user-facing MCQ string (4 choices, labeled A-D)."""
-    assert len(choices) == 4, "GPQA expects exactly 4 choices."
-    body = "\n".join(f"{_LETTERS[i]}) {choices[i]}" for i in range(4))
-    return f"{question}\n\n{body}"
-
-
-# Orchestration
 def solve(question: str, choices: list[str]) -> dict:
-    """Run the 4-stage sequential graph on one GPQA-style MCQ.
+    """Run the pipeline on one question.
 
-    Returns a dict with:
-        answer     final letter A/B/C/D, or None
-        raw        verifier's final output text
-        by_stage   {analyzer, solver, critic, verifier} -> stage output
-        telemetry  normalized 5-key token/call counts
+    Returns ``{"answer", "raw", "by_stage", "telemetry"}``: the last stage's
+    letter and text, every stage's text and token/call counts.
     """
-    llm = _build_llm()
-    compiled, roles = _build_graph(llm)
-    mcq = format_mcq(question, choices)
-    result = compiled.invoke(
-        {"inputs": {"question": mcq}, "by_stage": {}, "messages": []}
-    )
-
+    compiled, roles = _build_graph(_build_llm())
+    result = compiled.invoke({"inputs": {"question": format_mcq(question, choices)}, "by_stage": {}, "messages": []})
     stages_out = result.get("by_stage") or {}
     final = stages_out.get(roles[-1], "")
-
     return {
         "answer": extract_answer(final),
         "raw": final,
@@ -289,221 +126,43 @@ def solve(question: str, choices: list[str]) -> dict:
     }
 
 
-# Dataset loader (aligned to single/gpqa + independent/gpqa)
-_HF_DATASET = "Idavidrein/gpqa"
-_HF_CONFIG = "gpqa_diamond"
-_HF_SPLIT = "train"
+def run_batch(instances: list[dict], out_path: Path | None = None, verbose: bool = True) -> dict:
+    """Solve and score every instance."""
 
-
-def _stable_row_id(row: dict, fallback_idx: int) -> str:
-    """Stable row id from a hash of the question text. Matches single/gpqa and
-    independent/gpqa so per-row comparisons line up across topologies.
-    """
-    q = (row.get("Question") or "").strip()
-    if q:
-        return "gpqa_" + hashlib.md5(q.encode("utf-8")).hexdigest()[:10]
-    return f"gpqa_idx_{fallback_idx}"
-
-
-def load_instances(
-    limit: int | None = None,
-    offset: int = 0,
-    only: list[str] | None = None,
-    shuffle_seed: int = 0,
-) -> list[dict]:
-    """Load GPQA-Diamond rows from HuggingFace, shuffling the 4 choices
-    deterministically per row (`Random(f"{shuffle_seed}|{row_id}")`).
-    Same algorithm and default seed as single/gpqa and independent/gpqa, so
-    the same `shuffle_seed` gives the same choice order, and the same
-    `correct_letter`, for each row id across topologies.
-    """
-    from datasets import load_dataset
-
-    ds = load_dataset(_HF_DATASET, _HF_CONFIG)[_HF_SPLIT]
-    rows: list[dict] = []
-    for i, row in enumerate(ds):
-        rid = _stable_row_id(row, i)
-        if only is not None and rid not in set(only):
-            continue
-        correct = (row.get("Correct Answer") or "").strip()
-        incorrects = [(row.get(f"Incorrect Answer {k}") or "").strip() for k in (1, 2, 3)]
-        if not correct or any(not x for x in incorrects):
-            continue
-        four = [correct, *incorrects]
-        rng = random.Random(f"{shuffle_seed}|{rid}")
-        indices = list(range(4))
-        rng.shuffle(indices)
-        shuffled = [four[j] for j in indices]
-        correct_slot = indices.index(0)
-        rows.append({
-            "id": rid,
-            "question": (row.get("Question") or "").strip(),
-            "choices": shuffled,
-            "correct_letter": _LETTERS[correct_slot],
-            "raw": dict(row),
-        })
-    rows = rows[offset:]
-    if limit is not None:
-        rows = rows[:limit]
-    return rows
-
-
-# Batch eval
-def run_batch(
-    instances: list[dict],
-    out_path: Path | None = None,
-    verbose: bool = True,
-) -> dict:
-    """Run the 4-stage sequential pipeline on every instance and compare the
-    verifier's letter against gold. Returns a summary and optionally writes
-    per-instance records to JSONL:
-
-        {id, question, choices, correct_letter, predicted_letter, correct,
-         by_stage: {analyzer, solver, critic, verifier} (excerpts),
-         latency_s, error}
-    """
-    per_instance: list[dict] = []
-    n = len(instances)
-    n_correct = 0
-    n_extracted = 0
-    start = time.time()
-
-    out_f = None
-    if out_path is not None:
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_f = open(out_path, "w")
-
-    try:
-        for i, inst in enumerate(instances):
-            t0 = time.time()
-            try:
-                out = solve(inst["question"], inst["choices"])
-                error = None
-            except Exception as e:
-                out = {"answer": None, "raw": "", "by_stage": {}}
-                error = f"{type(e).__name__}: {e}"
-            latency_s = time.time() - t0
-
-            pred = out["answer"]
-            gold = inst["correct_letter"]
-            is_correct = pred is not None and pred == gold
-            if pred is not None:
-                n_extracted += 1
-            if is_correct:
-                n_correct += 1
-
-            # Only short stage excerpts go in the JSONL; rerun for full text.
-            by_stage = out.get("by_stage") or {}
-            excerpts = {k: (v or "")[:800] for k, v in by_stage.items()}
-            rec = {
-                "id": inst["id"],
-                "question": inst["question"],
-                "choices": inst["choices"],
-                "correct_letter": gold,
-                "predicted_letter": pred,
-                "correct": is_correct,
-                "raw": out.get("raw") or "",
-                "by_stage": excerpts,
-                "latency_s": round(latency_s, 2),
-                **(out.get("telemetry") or {}),
-                "error": error,
-            }
-            per_instance.append(rec)
-            if out_f is not None:
-                out_f.write(json.dumps(rec) + "\n")
-                out_f.flush()
-
-            if verbose:
-                running_acc = n_correct / (i + 1)
-                mark = "✓" if is_correct else ("?" if pred is None else "✗")
-                print(
-                    f"[{i + 1:>3}/{n}] {inst['id']} {mark}  "
-                    f"pred={pred or '-'}  gold={gold}  "
-                    f"acc={running_acc:.3f}  lat={latency_s:.1f}s",
-                    flush=True,
-                )
-    finally:
-        if out_f is not None:
-            out_f.close()
-
-    elapsed = time.time() - start
-    summary = {
-        "n": n,
-        "n_extracted": n_extracted,
-        "n_correct": n_correct,
-        "accuracy": (n_correct / n) if n else 0.0,
-        "extracted_acc": (n_correct / n_extracted) if n_extracted else 0.0,
-        "total_s": round(elapsed, 1),
-        "per_instance": per_instance,
-    }
-    if verbose:
-        print(
-            f"\n=== sequential/GPQA-Diamond batch complete ===\n"
-            f"  n={summary['n']}  n_extracted={summary['n_extracted']}  "
-            f"n_correct={summary['n_correct']}\n"
-            f"  accuracy={summary['accuracy']:.3f}  "
-            f"extracted_acc={summary['extracted_acc']:.3f}  "
-            f"total_s={summary['total_s']}\n"
+    def row(_, inst: dict) -> dict:
+        out, latency_s, error = attempt(lambda: solve(inst["question"], inst["choices"]))
+        return task.record(
+            inst,
+            out["answer"],
+            raw=out.get("raw") or "",
+            by_stage=task.stage_excerpts(out.get("by_stage") or {}),
+            latency_s=round(latency_s, 2),
+            **(out.get("telemetry") or {}),
+            error=error,
         )
-    return summary
+
+    return task.run_batch(instances, row, out_path=out_path, verbose=verbose, label="sequential/GPQA-Diamond")
 
 
-# Demo
 def _canned_demo() -> None:
-    question = (
-        "A circular wire loop of radius R carries a steady current I. "
-        "What is the magnitude of the magnetic field at the geometric center "
-        "of the loop? (mu_0 is the vacuum permeability.)"
+    out = solve(task.DEMO_QUESTION, task.DEMO_CHOICES)
+    for role, text in out["by_stage"].items():
+        print(f"\n=== {role.capitalize()} (excerpt) ===\n{text[:400]}...")
+    task.print_demo_answer(out["answer"])
+
+
+def main(argv: list[str] | None = None) -> int:
+    return cli.main(
+        argv,
+        description="Sequential-topology GPQA-Diamond runner (LangGraph).",
+        load_instances=load_instances,
+        run_batch=run_batch,
+        demo=_canned_demo,
+        source=task.SOURCE,
+        predictions=DEFAULT_PREDICTIONS,
+        add_arguments=task.add_arguments,
     )
-    choices = [
-        "mu_0 * I / (2 * R)",
-        "mu_0 * I / (4 * pi * R)",
-        "mu_0 * I / R",
-        "mu_0 * I / (pi * R)",
-    ]
-    out = solve(question, choices)
-    print(f"\n=== Analyzer (excerpt) ===\n{out['by_stage'].get('analyzer', '')[:400]}...")
-    print(f"\n=== Solver (excerpt) ===\n{out['by_stage'].get('solver', '')[:400]}...")
-    print(f"\n=== Critic (excerpt) ===\n{out['by_stage'].get('critic', '')[:400]}...")
-    print(f"\n=== Verifier (excerpt) ===\n{out['by_stage'].get('verifier', '')[:400]}...")
-    print(f"\n=== Extracted answer: {out['answer']}  (expected: A) ===")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Sequential-topology GPQA-Diamond runner (LangGraph)."
-    )
-    parser.add_argument(
-        "--batch", action="store_true",
-        help="Run the real GPQA-Diamond eval (else: one canned MCQ demo).",
-    )
-    parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--offset", type=int, default=0)
-    parser.add_argument(
-        "--shuffle-seed", type=int, default=0,
-        help="Per-row choice-shuffling seed (default 0 — matches "
-             "single/gpqa + independent/gpqa for cross-topology parity).",
-    )
-    parser.add_argument("--out", type=str, default=None)
-    parser.add_argument("--only", nargs="*", default=None)
-    args = parser.parse_args()
-
-    if not args.batch:
-        _canned_demo()
-        sys.exit(0)
-
-    print(f"loading GPQA-Diamond from {_HF_DATASET} [{_HF_CONFIG}/{_HF_SPLIT}] ...")
-    instances = load_instances(
-        limit=args.limit, offset=args.offset,
-        shuffle_seed=args.shuffle_seed, only=args.only,
-    )
-    if not instances:
-        print("no instances loaded (check --limit/--offset/--only)", file=sys.stderr)
-        sys.exit(1)
-    print(f"  loaded {len(instances)} instance(s)")
-    _default_out = (
-        _REPO_ROOT / "results" / "gpqa_sequential_langgraph" / "predictions.jsonl"
-    )
-    out_path = Path(args.out) if args.out else _default_out
-    run_batch(instances, out_path=out_path)
-    print(f"  predictions written to {out_path}")
+    raise SystemExit(main())

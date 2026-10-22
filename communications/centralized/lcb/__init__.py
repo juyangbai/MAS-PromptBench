@@ -1,2 +1,1 @@
 """Centralized LCB msg baselines."""
-

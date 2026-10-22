@@ -1,14 +1,16 @@
 #!/bin/bash
-# Serve Qwen/Qwen3.5-9B as N independent replicas, one vLLM process per GPU,
-# on consecutive ports. Each replica has its own OpenAI-compatible API.
+# Serve Qwen/Qwen3.5-9B as N independent single-GPU replicas (one vLLM
+# process per GPU) on consecutive ports, each exposing an OpenAI-compatible API.
 #
-# GPU list, ports, model cache and memory settings can all be overridden with
-# env vars. By default it starts one replica per visible GPU from port 8000.
+# Node-agnostic: GPU list, ports, model cache, and memory settings are all
+# overridable via environment variables. By default it serves one replica per
+# visible GPU starting at port 8000.
 
 set -e
 
-# Conda env. vLLM lives in the project env (see environment.yml); activate it
-# if needed. Override the env name with CONDA_ENV=...
+# --- Conda env ---
+# vLLM lives in the project conda env (see environment.yml). Activate it if it
+# isn't already active. Override the env name with CONDA_ENV=...
 CONDA_ENV=${CONDA_ENV:-mas-promptbench}
 if [ "${CONDA_DEFAULT_ENV:-}" != "${CONDA_ENV}" ]; then
     if command -v conda >/dev/null 2>&1; then
@@ -18,22 +20,26 @@ if [ "${CONDA_DEFAULT_ENV:-}" != "${CONDA_ENV}" ]; then
     fi
 fi
 
-# Model cache. Point HF_HOME / MODEL_PATH at your local cache (default:
-# $HOME/models).
+# --- Model cache ---
+# HF_HOME and MODEL_PATH (vLLM's --download-dir) default to $HOME/models, a flat
+# download directory with the models--<org>--<name>/ folders right under it, not
+# the standard ~/.cache/huggingface/hub layout. To serve from an existing Hugging
+# Face cache, set HF_HOME to it and MODEL_PATH / TRANSFORMERS_CACHE to <HF_HOME>/hub.
 export HF_HOME=${HF_HOME:-$HOME/models}
 export MODEL_PATH=${MODEL_PATH:-$HF_HOME}
 export TRANSFORMERS_CACHE=${TRANSFORMERS_CACHE:-$HF_HOME}
 # Linker path for flashinfer's ninja JIT (needs the libcuda.so driver stub).
 export LIBRARY_PATH=${LIBRARY_PATH:+$LIBRARY_PATH:}$CONDA_PREFIX/targets/x86_64-linux/lib/stubs
 
-# Server. Override with VLLM_HOST / VLLM_BASE_PORT: plain HOST is taken by
-# conda's gcc activation scripts (they set HOST=x86_64-conda-linux-gnu).
+# --- Server config ---
+# Use VLLM_HOST / VLLM_BASE_PORT to override; raw HOST is reserved by conda's
+# gcc activation scripts (they set HOST=x86_64-conda-linux-gnu).
 HOST=${VLLM_HOST:-0.0.0.0}
 BASE_PORT=${VLLM_BASE_PORT:-${BASE_PORT:-8000}}
 
-# Model
+# --- Model config ---
 MODEL_ID=${MODEL_ID:-Qwen/Qwen3.5-9B}
-# One replica per visible GPU by default; restrict with VLLM_GPU_LIST="0,1,2".
+# Default: one replica per visible GPU. Restrict with VLLM_GPU_LIST="0,1,2".
 if command -v nvidia-smi >/dev/null 2>&1; then
     _ALL_GPUS=$(seq -s, 0 $(( $(nvidia-smi -L | wc -l) - 1 )))
 else
@@ -42,8 +48,8 @@ fi
 GPU_LIST_RAW=${VLLM_GPU_LIST:-${GPU_LIST:-$_ALL_GPUS}}
 MAX_MODEL_LEN=${MAX_MODEL_LEN:-131072}
 GPU_MEMORY_UTIL=${GPU_MEMORY_UTIL:-0.90}
-# "auto" (FP16) works on any GPU. On FP8-capable GPUs (Hopper, Blackwell),
-# KV_CACHE_DTYPE=fp8 roughly halves the KV cache size.
+# KV cache dtype: "auto" (FP16) works on any GPU. FP8-capable GPUs
+# (Hopper / Blackwell) can set KV_CACHE_DTYPE=fp8 to ~halve the KV footprint.
 KV_CACHE_DTYPE=${KV_CACHE_DTYPE:-auto}
 
 IFS=',' read -r -a GPU_IDS <<< "${GPU_LIST_RAW}"
@@ -54,7 +60,7 @@ if (( NUM_REPLICAS > ${#GPU_IDS[@]} )); then
     exit 1
 fi
 
-# Every requested GPU index must be visible to NVML.
+# --- Preflight: every requested GPU index must be visible to NVML ---
 if command -v nvidia-smi >/dev/null 2>&1; then
     NVML_COUNT=$(nvidia-smi -L | wc -l)
     for gpu_id in "${GPU_IDS[@]}"; do
@@ -65,11 +71,12 @@ if command -v nvidia-smi >/dev/null 2>&1; then
     done
 fi
 
-# Logs
+# --- Log dir ---
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 LOG_DIR=${LOG_DIR:-${SCRIPT_DIR}/../results/vllm_qwen3_5_9b}
 mkdir -p "${LOG_DIR}"
 
+# --- Banner ---
 echo "=========================================="
 echo "vLLM OpenAI API server: ${MODEL_ID}"
 echo "=========================================="
@@ -84,7 +91,7 @@ echo "Endpoints:        http://${HOST}:<port>/v1"
 echo "Logs:             ${LOG_DIR}/replica_<idx>.log"
 echo "=========================================="
 
-# Launch
+# --- Launch ---
 pids=()
 
 cleanup() {

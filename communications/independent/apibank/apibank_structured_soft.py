@@ -1,7 +1,5 @@
-from communications.communication_formats import install_proxy, cli_main
+"""Communications pair: independent API-Bank with structured_soft inter-agent reports."""
 
-install_proxy(globals(), topology="independent", dataset="apibank", fmt="structured_soft")
+from communications import communication_formats
 
-
-if __name__ == "__main__":
-    raise SystemExit(cli_main(globals()))
+communication_formats.install(globals(), topology="independent", dataset="apibank", fmt="structured_soft")

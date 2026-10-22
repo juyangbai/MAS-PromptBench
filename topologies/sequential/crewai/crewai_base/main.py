@@ -2,7 +2,7 @@
 import warnings
 from datetime import datetime
 
-from crew import SequentialResearchCrew
+from topologies.sequential.crewai.crewai_base.crew import SequentialResearchCrew
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 

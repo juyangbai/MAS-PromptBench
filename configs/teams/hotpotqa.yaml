@@ -1,0 +1,188 @@
+# Team specs for hotpotqa; schema in configs/teams/README.md. Text is sent to the model verbatim.
+
+hotpotqa:
+  independent:
+    role: solver
+    recursion_limit: 20
+
+  decentralized:
+    role: debater
+    n_rounds: 2
+    recursion_limit: 12
+
+  sequential:
+    recursion_limit: 50
+    tasks:
+      planner: |-
+        Read the HotpotQA question and plan the search strategy. Identify the key entities, decide which Wikipedia pages should be consulted and in what order, and what facts from each page would settle the question. Do NOT retrieve — the Retriever handles that.
+
+        QUESTION:
+        {question}
+      retriever: |-
+        Execute the Planner's search plan via `wikipedia_search` and `wikipedia_page`. Extract verbatim the facts the Planner flagged as load-bearing. Do NOT commit to a final answer.
+
+        QUESTION:
+        {question}
+      reasoner: |-
+        Using the Retriever's dossier, reason step by step from the facts to the answer. Make the logical chain explicit: 'Fact A says X; Fact B says Y; therefore ...'. Do NOT emit the final answer string yet.
+
+        QUESTION:
+        {question}
+      writer: |-
+        Given the Reasoner's derivation, emit the final short-form answer. HotpotQA answers are typically 1-5 words (an entity name, a year, a yes/no, a number). Your output MUST end with a line matching 'Answer: <short form>'.
+
+        QUESTION:
+        {question}
+      query_decomposer: |-
+        Decompose the multi-hop question into 1-3 ordered sub-questions, each answerable with a single Wikipedia lookup.
+
+        QUESTION:
+        {question}
+      searcher: |-
+        Broadly search Wikipedia for the entities mentioned in the planner's sub-questions. Use wikipedia_search to gather candidate titles + 1-line summaries.
+
+        QUESTION:
+        {question}
+      entity_disambiguator: |-
+        After the searcher returns candidate Wikipedia titles, pick the right one per entity (handles duplicate names). Use wikipedia_search for clarifier queries.
+
+        QUESTION:
+        {question}
+      evidence_filter: |-
+        Filter the retriever's evidence dump down to facts that bear on the original question. Output: numbered list with sources.
+
+        QUESTION:
+        {question}
+      citation_compiler: |-
+        After the reasoner drafts an answer, map each claim to the supporting evidence: CLAIM_1 -> EVIDENCE_<n>; ... Pass through the answer text at the bottom.
+
+        QUESTION:
+        {question}
+      answer_simplifier: |-
+        After the writer drafts a candidate answer, strip preamble/explanations to the shortest factual form.
+
+        QUESTION:
+        {question}
+    sizes:
+      2:
+        - {role: retriever, tools: [wikipedia_search, wikipedia_page]}
+        - {role: writer, tools: []}
+      4:
+        - {role: planner, tools: []}
+        - {role: retriever, tools: [wikipedia_search, wikipedia_page]}
+        - {role: reasoner, tools: []}
+        - {role: writer, tools: []}
+      8:
+        - {role: query_decomposer, tools: []}
+        - {role: planner, tools: []}
+        - {role: searcher, tools: [wikipedia_search, wikipedia_page]}
+        - {role: retriever, tools: [wikipedia_search, wikipedia_page]}
+        - {role: evidence_filter, tools: []}
+        - {role: reasoner, tools: []}
+        - {role: citation_compiler, tools: []}
+        - {role: writer, tools: []}
+      10:
+        - {role: query_decomposer, tools: []}
+        - {role: planner, tools: []}
+        - {role: searcher, tools: [wikipedia_search, wikipedia_page]}
+        - {role: entity_disambiguator, tools: [wikipedia_search, wikipedia_page]}
+        - {role: retriever, tools: [wikipedia_search, wikipedia_page]}
+        - {role: evidence_filter, tools: []}
+        - {role: reasoner, tools: []}
+        - {role: citation_compiler, tools: []}
+        - {role: writer, tools: []}
+        - {role: answer_simplifier, tools: []}
+
+  centralized:
+    recursion_limit: 30
+    manager_tools: [wikipedia_search, wikipedia_page]
+    worker_tools: [wikipedia_search, wikipedia_page]
+    tools_by_worker:
+      query_decomposer_worker: []
+      evidence_filter_worker: []
+      citation_worker: []
+      answer_simplifier_worker: []
+    delegates:
+      retriever_worker: |-
+        Hand the next turn to the retriever_worker. Use this when you need
+            a single Wikipedia lookup (search or page fetch) performed and the
+            results returned as structured facts.
+
+            Args:
+                instructions: what you want the retriever to look up this turn.
+      reasoner_worker: |-
+        Hand the next turn to the reasoner_worker. Use this when you have
+            enough retrieved facts and want them chained into a logical derivation
+            that answers the question.
+
+            Args:
+                instructions: what reasoning you want the reasoner to perform this turn.
+      writer_worker: |-
+        Hand the next turn to the writer_worker. Use this when the answer
+            is determined and you want the final short-form answer formatted.
+
+            Args:
+                instructions: what the writer should format this turn.
+      query_decomposer_worker: |-
+        Hand the next turn to the query_decomposer_worker.
+
+            Args:
+                instructions: what you want the query_decomposer_worker to do this turn.
+      searcher_worker: |-
+        Hand the next turn to the searcher_worker.
+
+            Args:
+                instructions: what you want the searcher_worker to do this turn.
+      evidence_filter_worker: |-
+        Hand the next turn to the evidence_filter_worker.
+
+            Args:
+                instructions: what you want the evidence_filter_worker to do this turn.
+      citation_worker: |-
+        Hand the next turn to the citation_worker.
+
+            Args:
+                instructions: what you want the citation_worker to do this turn.
+      entity_disambiguator_worker: |-
+        Hand the next turn to the entity_disambiguator_worker.
+
+            Args:
+                instructions: what you want the entity_disambiguator_worker to do this turn.
+      answer_simplifier_worker: |-
+        Hand the next turn to the answer_simplifier_worker.
+
+            Args:
+                instructions: what you want the answer_simplifier_worker to do this turn.
+    sizes:
+      2:
+        manager: manager
+        max_turns: 9
+        workers: [retriever_worker]
+      4:
+        manager: manager
+        max_turns: 18
+        workers: [retriever_worker, reasoner_worker, writer_worker]
+      8:
+        manager: manager_r8
+        max_turns: 18
+        workers:
+          - retriever_worker
+          - reasoner_worker
+          - writer_worker
+          - query_decomposer_worker
+          - searcher_worker
+          - evidence_filter_worker
+          - citation_worker
+      10:
+        manager: manager_r10
+        max_turns: 18
+        workers:
+          - retriever_worker
+          - reasoner_worker
+          - writer_worker
+          - query_decomposer_worker
+          - searcher_worker
+          - evidence_filter_worker
+          - citation_worker
+          - entity_disambiguator_worker
+          - answer_simplifier_worker

@@ -1,0 +1,213 @@
+# Team specs for bfcl; schema in configs/teams/README.md. Text is sent to the model verbatim.
+
+bfcl:
+  independent:
+    role: caller
+    recursion_limit: 25
+
+  decentralized:
+    role: debater
+    n_rounds: 2
+
+  sequential:
+    tasks:
+      analyzer: |-
+        Parse the user request below to extract the intent (what the user wants done), entities (names, numbers, dates), and any implicit constraints. Do NOT reference the schemas yet.
+
+        USER REQUEST:
+        {user_request}
+      inspector: |-
+        Given the Analyzer's summary and the function schema(s) below, map the intent onto a specific function and propose argument values. Name the required parameters and the types they must have.
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+      caller: |-
+        Emit the call in BFCL canonical JSON. Follow the Inspector's plan exactly. Output a SINGLE fenced ```json block containing a list of dicts with one key per dict where the key is the function name and the value is the arg dict. For a single call it's a one-element list. For parallel calls it's a multi-element list. Example:
+        ```json
+        [{{"calculate_triangle_area": {{"base": 10, "height": 5}}}}]
+        ```
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+      verifier: |-
+        Validate the Caller's canonical JSON against the schema(s). Check: (a) each function name appears in the schemas, (b) every required parameter is present, (c) each argument's value has the schema's declared type (coerce only where the schema permits). If correct, re-emit the SAME JSON. If an error is found, emit a CORRECTED canonical JSON. Output a SINGLE fenced ```json block as the FINAL answer.
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+      intent_extractor: |-
+        Parse the user request to extract intent (one sentence) and the entities/values referenced. Do NOT inspect schemas yet.
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+      disambiguator: |-
+        After the intent_extractor parses the user request, resolve ambiguous referents (pronouns, vague nouns). Output: DISAMBIGUATIONS + UNRESOLVABLE list.
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+      schema_indexer: |-
+        Index the available schemas: numbered list of <fn> -> <one-line purpose>. Flag the schema(s) that match the intent.
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+      arg_planner: |-
+        Given the chosen function and entities, plan the exact argument values. Output: per-arg spec with types.
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+      value_enricher: |-
+        After arg_planner specs out required args, choose which optional schema params would meaningfully improve the call. Output: ENRICHED_ARGS = required + chosen optionals.
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+      type_validator: |-
+        Validate the caller's emitted JSON against the schema. If correct, repeat unchanged; if not, emit a corrected fenced ```json``` block as the final answer.
+
+        USER REQUEST:
+        {user_request}
+
+        SCHEMAS:
+        {schemas_text}
+    sizes:
+      2:
+        - {role: caller, tools: []}
+        - {role: verifier, tools: []}
+      4:
+        - {role: analyzer, tools: []}
+        - {role: inspector, tools: []}
+        - {role: caller, tools: []}
+        - {role: verifier, tools: []}
+      8:
+        - {role: intent_extractor, tools: []}
+        - {role: analyzer, tools: []}
+        - {role: schema_indexer, tools: []}
+        - {role: inspector, tools: []}
+        - {role: arg_planner, tools: []}
+        - {role: caller, tools: []}
+        - {role: type_validator, tools: []}
+        - {role: verifier, tools: []}
+      10:
+        - {role: intent_extractor, tools: []}
+        - {role: disambiguator, tools: []}
+        - {role: analyzer, tools: []}
+        - {role: schema_indexer, tools: []}
+        - {role: inspector, tools: []}
+        - {role: arg_planner, tools: []}
+        - {role: value_enricher, tools: []}
+        - {role: caller, tools: []}
+        - {role: type_validator, tools: []}
+        - {role: verifier, tools: []}
+
+  centralized:
+    recursion_limit: 30
+    manager_tools: []
+    worker_tools: []
+    delegates:
+      inspector_worker: |-
+        Hand the next turn to the inspector_worker. Use this to have the
+            inspector read the provided schema(s) and produce a structured argument
+            plan (which schema to call, which arguments are required, where each
+            value comes from in the user request).
+
+            Args:
+                instructions: what you want the inspector to analyze this turn.
+      caller_worker: |-
+        Hand the next turn to the caller_worker. Use this once the inspector's
+            arg plan is ready; the caller composes the canonical JSON call (a list
+            of dicts of the form [{"<fn_name>": {<args>}}]).
+
+            Args:
+                instructions: what call shape you want composed this turn.
+      validator_worker: |-
+        Hand the next turn to the validator_worker. Use this once a candidate
+            canonical call exists; the validator checks name existence, required
+            params, and type validity against the provided schemas.
+
+            Args:
+                instructions: what the validator should check this turn.
+      intent_worker: |-
+        Hand the next turn to the intent_worker.
+
+            Args:
+                instructions: what you want the intent_worker to do this turn.
+      schema_indexer_worker: |-
+        Hand the next turn to the schema_indexer_worker.
+
+            Args:
+                instructions: what you want the schema_indexer_worker to do this turn.
+      arg_planner_worker: |-
+        Hand the next turn to the arg_planner_worker.
+
+            Args:
+                instructions: what you want the arg_planner_worker to do this turn.
+      type_check_worker: |-
+        Hand the next turn to the type_check_worker.
+
+            Args:
+                instructions: what you want the type_check_worker to do this turn.
+      disambiguator_worker: |-
+        Hand the next turn to the disambiguator_worker.
+
+            Args:
+                instructions: what you want the disambiguator_worker to do this turn.
+      value_enricher_worker: |-
+        Hand the next turn to the value_enricher_worker.
+
+            Args:
+                instructions: what you want the value_enricher_worker to do this turn.
+    sizes:
+      2:
+        manager: manager
+        max_turns: 12
+        workers: [caller_worker]
+      4:
+        manager: manager
+        max_turns: 24
+        workers: [inspector_worker, caller_worker, validator_worker]
+      8:
+        manager: manager_r8
+        max_turns: 24
+        workers:
+          - inspector_worker
+          - caller_worker
+          - validator_worker
+          - intent_worker
+          - schema_indexer_worker
+          - arg_planner_worker
+          - type_check_worker
+      10:
+        manager: manager_r10
+        max_turns: 24
+        workers:
+          - inspector_worker
+          - caller_worker
+          - validator_worker
+          - intent_worker
+          - schema_indexer_worker
+          - arg_planner_worker
+          - type_check_worker
+          - disambiguator_worker
+          - value_enricher_worker

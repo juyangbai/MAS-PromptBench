@@ -1,0 +1,190 @@
+# Team specs for swe; schema in configs/teams/README.md. Text is sent to the model verbatim.
+
+swe:
+  independent:
+    role: patcher
+    recursion_limit: 100
+
+  decentralized:
+    role: debater
+    n_rounds: 2
+    recursion_limit: 60
+
+  sequential:
+    recursion_limit: 50
+    tasks:
+      issue_parser: |-
+        Parse the issue to extract EXPECTED, ACTUAL, REPRO, FILES_MENTIONED.
+
+        {task_brief}
+      investigator: |-
+        Explore the repo to localize the reported bug. Use list_dir, search_repo, and file_read. Identify the specific file(s), function(s), and line range(s) where the fix must land. Do NOT edit anything.
+
+        {task_brief}
+      root_cause_analyzer: |-
+        After the investigator localizes the bug, diagnose the underlying root cause in one paragraph using file_read if needed.
+
+        {task_brief}
+      planner: |-
+        Given the Investigator's pointer, design the fix. Specify concretely: what lines change, what the new code should look like (semantically, not as a literal diff), and how the change resolves the failing test.
+
+        {task_brief}
+      patcher: |-
+        Execute the Planner's strategy. You MUST actually invoke the tools -- do NOT describe tool calls in text or emit JSON blobs. Every str_replace + file_read should be a real tool invocation.
+
+        Workflow:
+          1. CALL file_read on the target file to confirm the      exact lines (they may have shifted from the      Investigator's pointer).
+          2. CALL str_replace(path, old, new) to make a targeted      edit. Include enough surrounding context in `old` so      the match is unique.
+          3. If str_replace returns an error (not found /      ambiguous), CALL file_read again and retry with more      context.
+          4. Keep changes minimal. file_write is not available;      str_replace is the only edit tool.
+        After the edit lands, produce a short text summary -- do NOT re-emit the JSON arguments.
+
+        {task_brief}
+      test_designer: |-
+        After the patcher emits an edit, propose 1-3 unit tests that would catch the original bug AND a regression. Read the patched file via file_read; do not save the tests.
+
+        {task_brief}
+      patch_reviewer: |-
+        After the patcher emits an edit, review the diff for correctness and minimality. Use file_read to inspect the touched file. Output: APPROVE / REQUEST_CHANGES with specific issues.
+
+        {task_brief}
+      tester: |-
+        Sanity-check the patched workdir. Run shell_exec with a Python syntax check (e.g. `python -m py_compile <file>`) and, if feasible, a lightweight import smoke test. Inspect `git diff HEAD` to confirm the patch makes sense. Report any obvious breakage; the Patcher can re-read this, but you do NOT edit files yourself.
+
+        {task_brief}
+      regression_checker: |-
+        After the tester runs the failing tests, run the broader test directory containing the modified file via shell_exec. Output: REGRESSION_FREE / REGRESSIONS_FOUND with specific failures.
+
+        {task_brief}
+      commit_summarizer: |-
+        After regression_checker finishes, write a clean commit message: SUBJECT (one line) + BODY (paragraph) explaining root cause + fix + tests.
+
+        {task_brief}
+    sizes:
+      2:
+        - {role: investigator, tools: [file_read, list_dir, search_repo]}
+        - {role: patcher, tools: [file_read, str_replace]}
+      4:
+        - {role: investigator, tools: [file_read, list_dir, search_repo]}
+        - {role: planner, tools: []}
+        - {role: patcher, tools: [file_read, str_replace]}
+        - {role: tester, tools: [shell_exec, file_read]}
+      8:
+        - {role: issue_parser, tools: []}
+        - {role: investigator, tools: [file_read, list_dir, search_repo]}
+        - {role: root_cause_analyzer, tools: [file_read]}
+        - {role: planner, tools: []}
+        - {role: patcher, tools: [file_read, str_replace]}
+        - {role: patch_reviewer, tools: [file_read]}
+        - {role: tester, tools: [shell_exec, file_read]}
+        - {role: regression_checker, tools: [shell_exec, file_read]}
+      10:
+        - {role: issue_parser, tools: []}
+        - {role: investigator, tools: [file_read, list_dir, search_repo]}
+        - {role: root_cause_analyzer, tools: [file_read]}
+        - {role: planner, tools: []}
+        - {role: patcher, tools: [file_read, str_replace]}
+        - {role: test_designer, tools: [file_read]}
+        - {role: patch_reviewer, tools: [file_read]}
+        - {role: tester, tools: [shell_exec, file_read]}
+        - {role: regression_checker, tools: [shell_exec, file_read]}
+        - {role: commit_summarizer, tools: []}
+
+  centralized:
+    recursion_limit: 30
+    manager_tools: [file_read, list_dir, search_repo]
+    worker_tools: [file_read, list_dir, search_repo]
+    tools_by_worker:
+      patcher_worker: [file_read, str_replace]
+      tester_worker: [shell_exec, file_read]
+      regression_check_worker: [shell_exec, file_read]
+      issue_parser_worker: []
+      commit_summarizer_worker: []
+    prompt_suffixes:
+      patcher_worker: "\n\nYou speak only to the manager. Always file_read the target file BEFORE str_replace; str_replace requires an exact-unique `old` substring. Include enough surrounding context in `old` to make the match unique. Do NOT emit TERMINATE — the manager decides when the task is done."
+      tester_worker: "\n\nYou speak only to the manager. Do NOT emit TERMINATE."
+    delegates:
+      navigator_worker: |-
+        Hand the next turn to the navigator_worker. Use this when you need
+            the navigator to explore the repo (list_dir / search_repo / file_read)
+            and localize the bug or gather context.
+
+            Args:
+                instructions: what you want the navigator to look up this turn.
+      patcher_worker: |-
+        Hand the next turn to the patcher_worker. Use this when you know
+            which file(s) and line(s) to edit; the patcher has file_read +
+            str_replace (narrow-anchor edit — ambiguous matches are rejected).
+
+            Args:
+                instructions: what edit the patcher should make this turn.
+      tester_worker: |-
+        Hand the next turn to the tester_worker. Use this when a patch
+            has been applied and you want sanity checks (syntax compile, import
+            smoke, git diff inspection) via shell_exec + file_read.
+
+            Args:
+                instructions: what check the tester should run this turn.
+      issue_parser_worker: |-
+        Hand the next turn to the issue_parser_worker.
+
+            Args:
+                instructions: what you want the issue_parser_worker to do this turn.
+      root_cause_worker: |-
+        Hand the next turn to the root_cause_worker.
+
+            Args:
+                instructions: what you want the root_cause_worker to do this turn.
+      patch_review_worker: |-
+        Hand the next turn to the patch_review_worker.
+
+            Args:
+                instructions: what you want the patch_review_worker to do this turn.
+      regression_check_worker: |-
+        Hand the next turn to the regression_check_worker.
+
+            Args:
+                instructions: what you want the regression_check_worker to do this turn.
+      test_designer_worker: |-
+        Hand the next turn to the test_designer_worker.
+
+            Args:
+                instructions: what you want the test_designer_worker to do this turn.
+      commit_summarizer_worker: |-
+        Hand the next turn to the commit_summarizer_worker.
+
+            Args:
+                instructions: what you want the commit_summarizer_worker to do this turn.
+    sizes:
+      2:
+        manager: manager
+        max_turns: 15
+        workers: [patcher_worker]
+      4:
+        manager: manager
+        max_turns: 30
+        workers: [navigator_worker, patcher_worker, tester_worker]
+      8:
+        manager: manager_r8
+        max_turns: 30
+        workers:
+          - navigator_worker
+          - patcher_worker
+          - tester_worker
+          - issue_parser_worker
+          - root_cause_worker
+          - patch_review_worker
+          - regression_check_worker
+      10:
+        manager: manager_r10
+        max_turns: 30
+        workers:
+          - navigator_worker
+          - patcher_worker
+          - tester_worker
+          - issue_parser_worker
+          - root_cause_worker
+          - patch_review_worker
+          - regression_check_worker
+          - test_designer_worker
+          - commit_summarizer_worker

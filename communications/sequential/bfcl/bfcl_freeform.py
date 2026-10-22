@@ -1,0 +1,5 @@
+"""Communications pair: sequential BFCL with freeform inter-agent reports."""
+
+from communications import communication_formats
+
+communication_formats.install(globals(), topology="sequential", dataset="bfcl", fmt="freeform")

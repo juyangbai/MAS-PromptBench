@@ -1,2 +1,1 @@
 """Decentralized LCB msg baselines."""
-

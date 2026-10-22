@@ -1,0 +1,4 @@
+# Build the docs site from the repo root: pip install -r docs/requirements.txt && mkdocs serve -f docs/mkdocs.yml
+mkdocs==1.6.1
+pymdown-extensions==10.21.2
+Pygments==2.19.2

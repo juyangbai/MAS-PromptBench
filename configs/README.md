@@ -1,14 +1,15 @@
 # Initial System Prompts
 
-This folder holds every agent's **initial system prompt** — one per `(topology, dataset, role)`. The prompts are **written by an LLM from a structured definition** (the YAML files below), not manually, and serve as the seeds that GEPA/MIPRO later optimize. At runtime, each topology runner loads its prompts from `configs/prompts/<topology>/<dataset>/<role>.txt`.
+This folder holds every agent's **initial system prompt** — one per `(topology, dataset, role)`. The prompts are **written by an LLM from a structured definition** (the YAML files below), not manually, and serve as the seeds that the prompt optimizers later optimize. At runtime, each topology runner loads its prompts from `configs/prompts/<topology>/<dataset>/<role>.txt` (`core/prompts.py` adds the role's protected final-output contract).
 
 ## Layout
 
-Four source files define the spec; the generator writes one prompt file per role (**227 total**).
+Four source files define the spec; the generator writes one prompt file per `(topology, dataset, role)` (**225 total** over 5 topologies × 9 datasets).
 
 ```
 configs/
 ├── generate_role_prompts.py            # the generator (run to reproduce)
+├── teams/<dataset>.yaml                # team specs (see Team specs below)
 └── prompts/
     ├── meta_prompt.txt                 # template: {DOMAIN_BACKGROUND} {TOPOLOGY_DESC} {TOOLS} {ROLE} {ROLE_DESC}
     ├── domains.yaml                    # one-line domain description per dataset
@@ -36,7 +37,7 @@ For each `(topology, dataset, role)` in `roles.yaml`, `configs/generate_role_pro
 
 Design notes:
 
-- **Authored by a stronger model than runtime.** Generation uses Qwen3.5-122B while dataset runs use the 9B, and is deterministic, so re-runs reproduce identical prompts. Exact settings are in [§3 Configuration](#configuration).
+- **Authored by a stronger model than runtime.** Generation uses Qwen3.5-122B while dataset runs use the 9B; exact settings are in [Configuration](#configuration).
 - **Tool-faithful.** The meta-prompt forbids referencing any tool not listed for the pair (no invented web search / code executors); if the tool list is `None`, the agent must reason directly from the prompt.
 - **Seeds, not finals.** `tools.yaml` entries are intentionally minimal to leave room for the downstream optimizer.
 
@@ -51,7 +52,7 @@ Design notes:
 
 ```bash
 bash models/serve_qwen3_5_122b.sh
-export PROMPT_GEN_BASE_URL=http://localhost:8000/v1
+export PROMPT_GEN_BASE_URL=http://localhost:8200/v1
 ```
 
 ### Configuration
@@ -60,9 +61,9 @@ The committed prompts were authored with the defaults below. Each is overridable
 
 | Setting | Default | Override |
 |---|---|---|
-| Model | `Qwen/Qwen3.5-122B-A10B-FP8` | `PROMPT_GEN_MODEL` |
-| Endpoint | `http://lai:8000/v1` | `PROMPT_GEN_BASE_URL` |
-| API key | `EMPTY` | `PROMPT_GEN_API_KEY` |
+| Model | `Qwen/Qwen3.5-122B-A10B-FP8` | `PROMPT_GEN_MODEL` or `--model` |
+| Endpoint | `http://localhost:8200/v1` | `PROMPT_GEN_BASE_URL` or `--base-url` |
+| API key | `EMPTY` | `PROMPT_GEN_API_KEY` or `--api-key` |
 | Temperature | `0.0` | `--temperature` |
 | Seed | `42` | `--seed` |
 
@@ -82,4 +83,8 @@ python configs/generate_role_prompts.py --only sequential/gpqa
 python configs/generate_role_prompts.py --only single/gpqa --only independent/gpqa
 ```
 
-Existing files are skipped unless `--force`.
+---
+
+## Team specs
+
+[`teams/`](teams/README.md) declares each dataset's team for every multi-agent topology and team size `r ∈ {2, 4, 8, 10}`: the `topologies/` runners (all but CrewAI) use `r = 4`, the [`teamsizes/`](../teamsizes/README.md) runners every r.

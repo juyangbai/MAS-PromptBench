@@ -2,7 +2,7 @@
 
 This MAS-PromptBench study measures how **team size `r`** — the number of agents in a multi-agent system — affects each `(topology, dataset)` pair. It mirrors the LangGraph variants in [`topologies/`](../topologies/README.md), swept over `r ∈ {2, 4, 8, 10}`.
 
-Like the base pairs, these are **optimizer targets** — GEPA and MIPRO mutate the per-role prompts in `configs/prompts/` and re-run a pair to measure improvement.
+Like the base pairs, the HotpotQA, LCB, BFCL, API-Bank and ToolHop team sizes are **optimizer targets** for the prompt optimizers in [`optimizers/`](../optimizers/README.md).
 
 ## Overview
 
@@ -20,17 +20,17 @@ Like the base pairs, these are **optimizer targets** — GEPA and MIPRO mutate t
 ```
 teamsizes/
 ├── output_contracts.py          # per-dataset final-answer contracts
-├── apibank_common.py            # apibank team-size wrapper (N replicas + majority vote)
-├── toolhop_common.py            # toolhop team-size wrapper
+├── apibank_common.py            # API-Bank team sizes: majority vote over r replicas
+├── toolhop_common.py            # ToolHop team sizes: majority vote over r replicas
 ├── centralized/<ds>/<ds>_r{2,4,8,10}.py
 ├── decentralized/<ds>/<ds>_r{2,4,8,10}.py
 ├── sequential/<ds>/<ds>_r{2,4,8,10}.py
 └── independent/
-    ├── langgraph_base.py        # shared fan-out / fan-in scaffold
+    ├── langgraph_base.py        # LangGraph fan-out / fan-in template
     └── <ds>/<ds>_r{2,4,8,10}.py
 ```
 
-Path pattern: `teamsizes/<topology>/<dataset>/<dataset>_r{2,4,8,10}.py`.
+Path pattern: `teamsizes/<topology>/<dataset>/<dataset>_r{2,4,8,10}.py`. Each module is a few lines: it runs the `topologies/` LangGraph runner with the size-`r` team of [`configs/teams/<dataset>.yaml`](../configs/teams/README.md), or, for API-Bank and ToolHop, r seeded replicas of the answering role and a majority vote.
 
 
 ---
@@ -65,26 +65,24 @@ export MODEL_ID=Qwen/Qwen3.5-9B
 
 ### Run a baseline
 
-Every pair ships a no-arg smoke demo and a `--batch` mode:
+Without `--batch`, GPQA, HotpotQA, MATH, LiveCodeBench and APPS pairs run a canned demo, and BFCL, SWE-bench, API-Bank and ToolHop pairs a small batch:
 
 ```bash
-python teamsizes/centralized/math/math_r4.py                     # smoke demo
-python teamsizes/centralized/math/math_r4.py --batch --limit 10  # real batch
+python -m teamsizes.centralized.math.math_r4                     # canned demo
+python -m teamsizes.centralized.math.math_r4 --batch --limit 10  # real batch
 ```
 
-`toolhop` requires `TOOLHOP_ALLOW_DATASET_EXEC=1`. Per-dataset setup and scoring are documented once in [`topologies/README.md`](../topologies/README.md#3-datasets).
+`toolhop` requires `TOOLHOP_ALLOW_DATASET_EXEC=1`. Per-dataset setup and scoring: [`benchmarks/README.md`](../benchmarks/README.md); command line: [`topologies/README.md`](../topologies/README.md#cli-flags).
 
 ### Output
 
-Each run writes under `results/teamsizes_r{N}/<dataset>/<topology>_r{N}/`:
+`scripts/run_teamsizes.sh` writes each cell under `results/teamsizes/r{N}/<topology>_<dataset>/` (BFCL: one sub-folder per AST category); a runner run directly uses its own default under `results/` (e.g. `results/math_centralized_r8/`):
 
 ```
-├── predictions.jsonl    # per-row prediction payload
-├── results.jsonl        # per-row metrics + telemetry
-├── traces/<idx>.txt     # multi-stage agent transcripts
-├── (BFCL only) <category>/
-└── (SWE only) shard_<i>/patches/<iid>.diff
+├── predictions.jsonl             # one JSON line per instance
+├── results.jsonl                 # BFCL, SWE-bench, API-Bank and ToolHop only
+├── traces/                       # per-instance; BFCL, SWE-bench, API-Bank and ToolHop only
+└── (SWE only) patches/<instance_id>.diff
 ```
 
 ---
-

@@ -1,8 +1,8 @@
 """Protected final-output contracts shared by team-size runners."""
+
 from __future__ import annotations
 
-
-OUTPUT_CONTRACT_VERSION = 1
+import re
 
 CONTRACT_GUARD = (
     "This contract is not optional. Keep reasoning concise enough that the "
@@ -33,7 +33,14 @@ CENTRALIZED_FINAL_ROLES_BY_DATASET = {
     "apps": {"manager", "coder_worker", "tester_worker", "code_reviewer"},
     "lcb": {"manager", "coder_worker", "tester_worker", "code_reviewer"},
     "swe": {"manager", "tester_worker", "patcher_worker", "commit_summarizer"},
-    "toolhop": {"manager", "manager_r8", "manager_r10", "caller_worker", "validator_worker", "answer_normalizer_worker"},
+    "toolhop": {
+        "manager",
+        "manager_r8",
+        "manager_r10",
+        "caller_worker",
+        "validator_worker",
+        "answer_normalizer_worker",
+    },
     "apibank": {"manager", "manager_r8", "manager_r10", "caller_worker", "validator_worker", "call_normalizer_worker"},
 }
 SEQUENTIAL_FINAL_ROLES = {
@@ -55,14 +62,12 @@ def output_contract(dataset: str, topology: str, role: str) -> str:
     role_key = (role or "").strip().lower()
     if topology_key in {"single", "independent"}:
         is_final_role = role_key in PRIMARY_FINAL_ROLES
-    elif topology_key in {"decentralized", "decentralized_openai"}:
+    elif topology_key in {"decentralized", "decentralized_openai_agents"}:
         is_final_role = role_key in DECENTRALIZED_FINAL_ROLES
     elif topology_key in {"sequential", "sequential_crewai"}:
         is_final_role = role_key in SEQUENTIAL_FINAL_ROLES.get(dataset_key, set())
     elif topology_key in {"centralized", "centralized_autogen"}:
-        is_final_role = role_key in CENTRALIZED_FINAL_ROLES_BY_DATASET.get(
-            dataset_key, CENTRALIZED_FINAL_ROLES
-        )
+        is_final_role = role_key in CENTRALIZED_FINAL_ROLES_BY_DATASET.get(dataset_key, CENTRALIZED_FINAL_ROLES)
     else:
         is_final_role = False
     if not is_final_role:
@@ -93,9 +98,10 @@ def append_output_contract_from_path(prompt: str, path: str, role: str) -> str:
         if idx + 1 < len(parts):
             topology = parts[idx + 1]
         known = set(DATASET_CONTRACTS)
-        for part in parts[idx + 1:]:
+        for part in parts[idx + 1 :]:
             if part in known:
                 dataset = part
                 break
-    base_role = role.rsplit("_r", 1)[0] if "_r" in role else role
+    # Strip only a team-size suffix (manager_r8 -> manager); "code_reviewer" stays intact.
+    base_role = re.sub(r"_r\d+$", "", role)
     return append_output_contract(prompt, dataset, topology, base_role)

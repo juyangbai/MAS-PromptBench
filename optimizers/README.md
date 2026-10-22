@@ -1,92 +1,69 @@
 # Prompt Optimization
 
-Two prompt optimizers — **GEPA** and **MIPRO** — improve the seed prompts in `configs/prompts/` by running the **real** topology runners and re-scoring. Each mutates a pair's per-role prompts and measures the gain on the actual multi-agent runner — not a mirrored copy of it — so improvements transfer directly back to the benchmark.
+Eight prompt optimizers — **GEPA**, **MIPRO**, **MAPRO**, **MASPO**, **HiveMind**, **MAMUT-GEPA**, **MASPOB** and **TAVO** — improve the seed prompts in `configs/prompts/` by running the **real** topology runners and re-scoring. Each mutates a pair's per-role prompts and measures the gain on the actual multi-agent runner — not a mirrored copy of it — so an optimized prompt runs unchanged in the benchmark.
 
-These workspaces are **optional** — they are not required to run the base benchmark (see [topologies/](../topologies/)). Every `(topology, dataset)` pair from `topologies/` is an optimizer target.
+This part is **optional** — the base benchmark runs without it (see [topologies/](../topologies/)). Every `(topology, dataset)` pair is an optimizer target, including the [`teamsizes/`](../teamsizes/) and [`communications/`](../communications/) variants.
 
 ## Overview
 
-| Optimizer | Method | Workspace | Run interface |
-|---|---|---|---|
-| **GEPA** | reflective prompt evolution | [`gepa/`](gepa/) | [`gepa/README.md`](gepa/README.md) |
-| **MIPRO** | MIPROv2 (instruction + few-shot example search) | [`mipro/`](mipro/) | [`mipro/README.md`](mipro/README.md) |
+| Method | Key | Approach | Code | Cells |
+|---|---|---|---|---|
+| **GEPA** | `gepa` | reflective prompt evolution (DSPy) | [`gepa/`](gepa/) | all (Tables 2–7) + Llama |
+| **MIPRO** | `mipro` | MIPROv2 instruction + few-shot search (DSPy) | [`mipro/`](mipro/) | all (Tables 2–7) + Llama |
+| **MAPRO** | `mapro` | per-role prompt pools, max-product belief propagation, blame-driven mutation | [`mapro/`](mapro/) | all (Tables 2–7) + Llama |
+| **MASPO** | `maspo` | role-wise evolutionary beam search with pairwise judging | [`maspo/`](maspo/) | all (Tables 2–7) + Llama |
+| **HiveMind** | `hivemind` | coalition (Shapley) credit, lesson-based refinement of the lowest-credit role | [`hivemind/`](hivemind/) | Table 6 |
+| **MAMUT-GEPA** | `mamut_gepa` | one joint GEPA search over all role prompts | [`mamut_gepa/`](mamut_gepa/) | Table 6 |
+| **MASPOB** | `maspob` | prompt-variant bandit with a GATv2 surrogate (LinUCB) | [`maspob/`](maspob/) | Table 6 |
+| **TAVO** | `tavo` | trajectory credit assignment + shared verbalized-policy overlay | [`tavo/`](tavo/) | Table 6 |
 
-The two workspaces are **separate on purpose** — their dataset and LM internals have diverged, so merging them would change optimization behavior. Each ships a self-contained real-runner bridge, a sweep launcher, and its own README.
+All eight share one [run protocol](protocol/README.md) — 600 rollouts per job, deployment only if strictly better than the seeds on validation, scoring on a held-out test split — each with its method's upstream settings. MASPOB also needs `torch`, `torch_geometric` and `sentence-transformers` (CPU is enough).
 
 ### Directory layout
 
 ```
 optimizers/
-├── gepa/                       # GEPA — reflective prompt evolution
-│   ├── run_gepa.sh                 # sweep launcher
-│   ├── real_runner_gepa/           # the bridge (adapters/ datasets/ registry.py …)
-│   │   └── pilots/run_gepa_dataset.py   # generic per-pair entrypoint
-│   ├── docs/  templates/  scripts/
-│   └── README.md
-└── mipro/                      # MIPROv2 — instruction + few-shot example search
-    ├── run_mipro.sh                # sweep launcher
-    ├── real_runner_mipro/          # the bridge
-    │   └── pilots/run_mipro_dataset.py
-    └── README.md
+├── gepa/                       # GEPA
+├── mipro/                      # MIPRO
+├── mapro/                      # MAPRO
+├── maspo/                      # MASPO
+├── hivemind/                   # HiveMind
+├── mamut_gepa/                 # MAMUT-GEPA
+├── maspob/                     # MASPOB
+├── tavo/                       # TAVO
+├── protocol/                   # the shared run protocol
+│   └── methods/                    # method registry, identity, shared DSPy plumbing
+└── bridge/                     # the shared real-runner bridge
 ```
-
-Path pattern: `optimizers/<optimizer>/real_runner_<optimizer>/` is the bridge; `run_<optimizer>.sh` is the sweep launcher. Runtime `cache/` and `results/` are gitignored.
 
 ---
 
 ## How it works
 
-Each optimizer wraps the topology runners in a **small adapter layer** that plugs them into the optimizer's interface without re-implementing the agent framework:
+Every rollout runs through the shared [real-runner bridge](bridge/README.md), a **small adapter layer** that wraps the topology runners instead of re-implementing them: an adapter exposes a pair's per-role prompts, the optimizer rewrites them, and every candidate is scored on the **actual** runner ([how it works](bridge/README.md#how-it-works)).
 
-1. An **adapter** owns one `(topology, dataset)` pair and exposes its per-role prompts as mutable predictors (`roles()` / `get_prompt()` / `set_prompt()`).
-2. A **program** registers one predictor per mutable role, so the optimizer discovers and mutates the role instructions through `named_predictors()`.
-3. `forward()` syncs the candidate prompts into the adapter, runs the **actual** runner once, and emits optimizer-readable traces per role.
-
-Because every candidate is scored by running the real multi-agent runner, the resulting prompts transfer back to the benchmark unchanged.
+The protocol scores LiveCodeBench, APPS and SWE-bench with cheaper checks than the topology runners; see [Scoring](protocol/README.md#scoring).
 
 ---
 
 ## Usage
 
-### Point at an endpoint
-
-Both optimizers need a reflection/proposal model in addition to the task model:
-
 ```bash
-export VLLM_BASE_URL=http://localhost:8000/v1        # task model (the runner)
-export GEPA_REFL_ENDPOINT=http://localhost:8000/v1   # GEPA reflection model
-export MIPRO_REFL_ENDPOINT=http://localhost:8000/v1  # MIPRO proposal model
+# from the repository root
+export TASK_ENDPOINTS=http://localhost:8000/v1             # task model (or --task-endpoints)
+export REFLECTION_MODEL_BASE_URL=http://localhost:8200/v1  # reflection model
+
+python -m optimizers.protocol.run --method mapro --dataset hotpotqa --topology centralized \
+    --model qwen --seed 0 --out runs/mapro/hotpotqa/centralized/qwen/0
+python -m optimizers.protocol.aggregate runs/ --out runs/summary.json
 ```
 
-### Run one optimization
-
-```bash
-# GEPA — from optimizers/gepa/
-python -m real_runner_gepa.pilots.run_gepa_dataset \
-  --dataset math --topology single --train-size 25 --val-size 25 \
-  --max-full-evals 5 --out results/gepa/single_math
-
-# MIPRO — from optimizers/mipro/
-python -m real_runner_mipro.pilots.run_mipro_dataset \
-  --dataset math --topology single --train-size 25 --val-size 25 \
-  --num-candidates 3 --num-trials 3 --out results/mipro/single_math
-```
-
-### Run a sweep
-
-Each launcher runs one process per `(dataset, topology)` pair:
-
-```bash
-DATASETS="math gpqa" TOPOLOGIES="single centralized" bash gepa/run_gepa.sh
-DATASETS="math gpqa" TOPOLOGIES="single centralized" bash mipro/run_mipro.sh
-```
-
-See each workspace's README for the full set of environment settings.
+`--method` is a key of the [Overview](#overview) table or `identity` (the seed prompts). Every option is in the protocol's [Usage](protocol/README.md#usage), every method knob in its [Settings](protocol/README.md#settings).
 
 ---
 
 ## Inputs and outputs
 
-- **Input** — `configs/prompts/<topology>/<dataset>/<role>.txt`, the seed prompts. **Read-only**: neither optimizer modifies `configs/`.
-- **Output** — compiled prompts and scores under `results/{gepa,mipro}/<topology>_<dataset>/` (**gitignored**). Optimized prompts do **not** ship; the repo ships only the seeds.
-- **Eval protection** — train/val splits draw from `benchmarks/<dataset>/<dataset>_eval_ids.json`, so optimization never trains on reported eval IDs (enable with `GEPA_EXCLUDE_REAL_EVAL_IDS=1` / `MIPRO_EXCLUDE_REAL_EVAL_IDS=1`).
+- **Input** — `configs/prompts/<topology>/<dataset>/<role>.txt`, the seed prompts. **Read-only**: no optimizer modifies `configs/`.
+- **Splits** — fixed train / validation / test ids in `benchmarks/<dataset>/<dataset>_splits.json`; `test` is the reported evaluation set, so optimization never sees a reported instance.
+- **Output** — job artifacts under `--out` (`runs/` is **gitignored**); the repository ships only the seeds.

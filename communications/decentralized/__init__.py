@@ -1,2 +1,1 @@
 """Decentralized-topology msg baselines."""
-

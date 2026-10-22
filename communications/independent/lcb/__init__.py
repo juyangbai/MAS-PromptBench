@@ -1,2 +1,1 @@
 """Independent LCB msg baselines."""
-

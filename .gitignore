@@ -50,7 +50,17 @@ temp/
 
 # Project outputs
 results/
+runs/
+
+# DSPy disk caches (kept under each run's output directory)
+dspy_cache/
+
+# Isolated OpenAI Agents SDK install (pip install --target vendor/openai_agents)
+vendor/
 
 # Claude and Codex
 .claude/
 .codex
+
+# Docs: the local build output
+/docs/site/

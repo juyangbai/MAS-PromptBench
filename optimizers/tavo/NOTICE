@@ -1,0 +1,51 @@
+Third-party notice for optimizers/tavo
+======================================
+
+The optimizer logic in this directory is a port of the TRUCE / TAVO trajectory-aware
+verbalized prompt optimizer. The following prompt texts in driver.py are copied or
+adapted from that MIT-licensed code (the public TRUCE release,
+https://github.com/Bingo-W/TRUCE, commit 6428a6fc4dbca4f6e7fcebae493193c363accc8a,
+which is built on MARBLE / MultiAgentBench):
+
+  * the agent credit-assignment prompt (credit_assign), from
+    marble/evaluator/agent_history_evaluator.py
+    (AgentHistoryEvaluator.evaluate_agent_with_result_context);
+  * the sub-trajectory (local iteration) evaluation prompt (_EQ3_PROMPT), from the
+    local_iteration_evaluation template used by marble/evaluator/result_evaluator.py;
+  * the salience ranking prompt (_get_most_salient_by_llm) and the per-agent
+    refinement prompts (refine_agent_prompt, refine_with_meta_knowledge), from
+    marble/evaluator/prompt_refiner.py (PromptRefiner);
+  * the verbalized-policy overlay prompt and its TRUCE_VERBALIZED_POLICY /
+    MARBLE_VERBALIZED_POLICY block markers (build_overlay_from_meta,
+    strip_overlay_blocks, append_overlay), from truce/optimization/overlays.py
+    (OverlayMixin).
+
+The surrounding control flow (meta-suggestion merging, adoption gate, retry and
+patience) follows the same release. The benchmark adaptations (dataset metric in place
+of MARBLE's result evaluator, protocol budget ledger, source-tagged transcripts) are
+not part of the upstream code. Those portions are used under the following license:
+
+--------------------------------------------------------------------------------
+
+MIT License
+
+Copyright (c) 2024 Haofei Yu
+Copyright (c) 2026 Bin Wu, Haoran Xu, Xiang Zhuang, Zonghao Chen, Zhu Li, Emine Yilmaz, and Qiang Zhang
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

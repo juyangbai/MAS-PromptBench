@@ -1,170 +1,102 @@
-"""Decentralized debate topology for HotpotQA (LangGraph)."""
+"""Decentralized HotpotQA runner (LangGraph): N peers debate for R rounds.
+
+Every peer is the same Wikipedia ReAct debater with its own history. From the
+second round on, each peer sees the other peers' previous final responses and
+may revise; the answer is the normalized-answer majority of the final round. N
+is the team size (``configs/teams/hotpotqa.yaml``, r=4; ``DECENTRALIZED_N_AGENTS``
+overrides) and R is ``DECENTRALIZED_N_ROUNDS`` (default 2).
+``teamsizes/decentralized/hotpotqa`` runs this module with r = 2, 4, 8 and 10.
+"""
 
 from __future__ import annotations
 
-import argparse
-import json
-import os
-import re
-import string
-import sys
-import time
-from collections import Counter
 from pathlib import Path
 
-from topologies.output_contracts import append_output_contract_from_path
-from typing import Optional
-
-from typing_extensions import TypedDict
-
-import wikipedia
-from langchain_core.messages import (
-    AIMessage,
-    BaseMessage,
-    HumanMessage,
-)
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import create_react_agent
+from typing_extensions import TypedDict
 
-# Shared telemetry.
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_TOPO_ROOT = str(_REPO_ROOT)
-if _TOPO_ROOT not in sys.path:
-    sys.path.insert(0, _TOPO_ROOT)
-from topologies.telemetry import langchain_telemetry, normalize  # noqa: E402
-from communications.communication_formats import format_handoff  # noqa: E402
+from core import cli, prompts, settings, teams
+from core.batch import attempt
+from core.communication import CommPolicy
+from core.llm import chat_openai
+from core.paths import RESULTS_DIR
+from core.tasks import hotpotqa as task
+from core.tasks.hotpotqa import (  # noqa: F401  (runner API)
+    best_of_n,
+    exact_match_score,
+    extract_answer,
+    f1_score,
+    load_instances,
+    normalize_answer,
+)
+from core.telemetry import langchain_telemetry, normalize
 
+TOPOLOGY = "decentralized"
+TEAM_SIZE = globals().get("TEAM_SIZE")  # preset by the teamsizes/ variants (core.variant)
+TEAM = teams.spec(TOPOLOGY, task.DATASET, TEAM_SIZE)
+DEFAULT_PREDICTIONS = (
+    RESULTS_DIR
+    / ("hotpotqa_decentralized_langgraph" if TEAM_SIZE is None else f"hotpotqa_decentralized_r{TEAM_SIZE}")
+    / "predictions.jsonl"
+)
 
-VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://n12:8000/v1")
-MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
-COMMUNICATION_FORMAT = "freeform"
+VLLM_BASE_URL = settings.base_url()
+MODEL_ID = settings.model_id()
+COMMUNICATION_FORMAT = globals().get("COMMUNICATION_FORMAT", "freeform")  # preset by the communications/ entries
+COMMUNICATION = CommPolicy(COMMUNICATION_FORMAT, task.DATASET, TOPOLOGY)
+N_AGENTS = settings.decentralized_n_agents(TEAM.n_agents)
+N_ROUNDS = settings.decentralized_n_rounds(TEAM.n_rounds)
 
-N_AGENTS = int(os.environ.get("DECENTRALIZED_N_AGENTS", "4"))
-N_ROUNDS = int(os.environ.get("DECENTRALIZED_N_ROUNDS", "2"))
+# Each peer turn's ReAct recursion limit: about three messages per tool loop,
+# for the four tool loops of the Agents SDK debate.
+_RECURSION_LIMIT = TEAM.recursion_limit
 
-# max_tool_loops=4, as in the openai sibling. create_react_agent has its own
-# recursion_limit; roughly 3x the loop budget covers the alternating AI/Tool
-# messages.
-_MAX_TOOL_LOOPS = 4
-_RECURSION_LIMIT = _MAX_TOOL_LOOPS * 3
-
-_PAGE_CHAR_BUDGET = 4000
-
-_PROMPTS_DIR = _REPO_ROOT / "configs" / "prompts" / "decentralized" / "hotpotqa"
+_OUTPUT_FORMAT_NUDGE = task.OUTPUT_FORMAT_NUDGE
 
 
 def _load_prompt(role: str) -> str:
-    return append_output_contract_from_path((_PROMPTS_DIR / f"{role}.txt").read_text().strip(), __file__, role)
+    return prompts.role_prompt(TOPOLOGY, task.DATASET, role)
 
 
-# Same short-form nudge as single/independent/centralized hotpotqa. Without
-# it Qwen3.5-9B peers answer in prose ("Yes, both were American"), which
-# scores EM=0 on yes/no questions.
-_OUTPUT_FORMAT_NUDGE = (
-    "\n\nFINAL OUTPUT FORMAT:\n"
-    "After your reasoning, end with a single line exactly of the form:\n"
-    "  Answer: <short-form>\n"
-    "The short-form MUST be the minimal string needed to answer — typically "
-    "1-5 words. Examples of correct short-forms:\n"
-    "  - For yes/no questions: 'yes' or 'no' (lowercase, no punctuation).\n"
-    "  - For 'when/year' questions: just the year, e.g. '1997'.\n"
-    "  - For 'who' questions: the person's full name, e.g. 'Paul McCartney'.\n"
-    "  - For 'where/what city' questions: the place name, e.g. 'Paris'.\n"
-    "Do NOT include explanations, lists, or sentences on the Answer line. "
-    "Do NOT put the answer inside brackets, quotes, or markdown emphasis."
-)
+SYSTEM_PROMPT = COMMUNICATION.system_prompt(_load_prompt(TEAM.role) + _OUTPUT_FORMAT_NUDGE)
 
-SYSTEM_PROMPT = _load_prompt("debater") + _OUTPUT_FORMAT_NUDGE
-
-
-# Tools (LangChain @tool; bodies verbatim from openai sibling)
-@tool
-def wikipedia_search(query: str, top_k: int = 3) -> str:
-    """Search Wikipedia; titles + ~2-sentence summaries of top matches."""
-    try:
-        titles = wikipedia.search(query, results=top_k)
-    except Exception as e:
-        return f"ERROR: {e}"
-    if not titles:
-        return f"[no Wikipedia results for '{query}']"
-    chunks = []
-    for title in titles:
-        try:
-            summary = wikipedia.summary(title, sentences=2, auto_suggest=False)
-            chunks.append(f"- {title}: {summary}")
-        except wikipedia.DisambiguationError as e:
-            chunks.append(f"- {title}: disambiguation page; options include {e.options[:3]}")
-        except wikipedia.PageError:
-            chunks.append(f"- {title}: (no page)")
-        except Exception as e:
-            chunks.append(f"- {title}: error ({e})")
-    return "\n".join(chunks)
-
-
-@tool
-def wikipedia_page(title: str) -> str:
-    """Full Wikipedia article text by exact title, truncated to ~4000 chars."""
-    try:
-        page = wikipedia.page(title, auto_suggest=False)
-    except wikipedia.DisambiguationError as e:
-        return f"ERROR: '{title}' is a disambiguation page; options: {e.options[:5]}"
-    except wikipedia.PageError:
-        return f"ERROR: no Wikipedia page titled '{title}'"
-    except Exception as e:
-        return f"ERROR: {e}"
-    content = page.content
-    return content[:_PAGE_CHAR_BUDGET] + ("..." if len(content) > _PAGE_CHAR_BUDGET else "")
-
-
+wikipedia_search = tool(task.make_wikipedia_search(task.SEARCH_DOC_SHORT))
+wikipedia_page = tool(task.make_wikipedia_page(task.PAGE_DOC_SHORT, options_label="options:"))
 TOOLS = [wikipedia_search, wikipedia_page]
 
 
-# LLM
 def _build_llm() -> ChatOpenAI:
-    return ChatOpenAI(
-        model=MODEL_ID,
-        base_url=VLLM_BASE_URL,
-        api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
-        temperature=0.2,
-        top_p=0.9,
-        seed=0,
-        max_tokens=4096,
-        extra_body={
-            "repetition_penalty": 1.05,
-            "chat_template_kwargs": {"enable_thinking": False},
-        },
-    )
+    return chat_openai(model=MODEL_ID, base_url=VLLM_BASE_URL)
 
 
 def _build_agent():
-    """One stateless react agent shared by all peers and rounds; each peer
-    keeps its own message history.
-    """
+    """The debater agent shared by all peers of a round (each peer passes its own history)."""
     return create_react_agent(model=_build_llm(), tools=TOOLS, prompt=SYSTEM_PROMPT)
 
 
-# Peer injection (aligned template to openai sibling)
+def _peer_report(i: int, content: str) -> str:
+    """Peer ``i``'s previous final response as the other peers see it."""
+    if COMMUNICATION_FORMAT == "freeform":
+        return f"\nPeer {i + 1}:\n```\n{content}\n```"
+    rendered = COMMUNICATION.handoff(
+        f"peer_{i + 1}",
+        content,
+        next_action="Use this previous-round peer report when deciding whether to revise.",
+        payload={"handoff": "peer_previous_round", "peer": i + 1},
+    )
+    return f"\nPeer {i + 1}:\n{rendered}"
+
+
 def _peer_injection(others_final: list[BaseMessage], question: str) -> HumanMessage:
+    """The message showing a peer the other peers' previous final responses."""
     body = ["These are the final responses from other peer agents in the previous round:"]
     for i, m in enumerate(others_final):
         content = getattr(m, "content", "") or ""
-        if not isinstance(content, str):
-            content = str(content)
-        if COMMUNICATION_FORMAT == "freeform":
-            body.append(f"\nPeer {i + 1}:\n```\n{content}\n```")
-        else:
-            rendered = format_handoff(
-                f"peer_{i + 1}",
-                content,
-                fmt=COMMUNICATION_FORMAT,
-                dataset="hotpotqa",
-                topology="decentralized",
-                next_action="Use this previous-round peer report when deciding whether to revise.",
-                payload={"handoff": "peer_previous_round", "peer": i + 1},
-            )
-            body.append(f"\nPeer {i + 1}:\n{rendered}")
+        body.append(_peer_report(i, content if isinstance(content, str) else str(content)))
     body.append(
         "\nCompare their reasoning + Wikipedia evidence against your own. "
         "Revise your answer ONLY if a peer cites concretely stronger "
@@ -174,20 +106,18 @@ def _peer_injection(others_final: list[BaseMessage], question: str) -> HumanMess
     return HumanMessage(content="\n".join(body))
 
 
-# State + round node
 class DebateState(TypedDict, total=False):
-    contexts: list[list[BaseMessage]]       # per-peer message histories (sans system)
-    round_finals: list[list[BaseMessage]]   # per-round final AIMessages (one per peer)
+    contexts: list[list[BaseMessage]]  # per-peer message histories (without the system prompt)
+    round_finals: list[list[BaseMessage]]  # per round, each peer's final AIMessage
     round: int
     question: str
 
 
 def _last_ai(msgs: list[BaseMessage]) -> BaseMessage | None:
-    """Return the last AIMessage with non-empty content (no tool_calls)."""
+    """The last AIMessage with content and no tool calls, else the last AIMessage."""
     for m in reversed(msgs):
         if isinstance(m, AIMessage) and (m.content or "") and not getattr(m, "tool_calls", None):
             return m
-    # Fallback: any AIMessage.
     for m in reversed(msgs):
         if isinstance(m, AIMessage):
             return m
@@ -197,33 +127,18 @@ def _last_ai(msgs: list[BaseMessage]) -> BaseMessage | None:
 def _round_node(state: DebateState) -> dict:
     agent = _build_agent()
     r = int(state.get("round", 0))
-    question = state["question"]
     contexts = [list(c) for c in state["contexts"]]
     prev_finals = state.get("round_finals") or []
-
     this_round_finals: list[BaseMessage] = []
-
     for i in range(len(contexts)):
         ctx = contexts[i]
         if r > 0 and prev_finals:
             others = [prev_finals[-1][j] for j in range(len(contexts)) if j != i]
-            ctx = ctx + [_peer_injection(others, question)]
-
-        result = agent.invoke(
-            {"messages": ctx},
-            config={"recursion_limit": _RECURSION_LIMIT},
-        )
-        # result["messages"] includes the input ctx + all new AI/Tool messages.
+            ctx = ctx + [_peer_injection(others, state["question"])]
+        result = agent.invoke({"messages": ctx}, config={"recursion_limit": _RECURSION_LIMIT})
         contexts[i] = result["messages"]
-
-        final = _last_ai(contexts[i]) or AIMessage(content="")
-        this_round_finals.append(final)
-
-    return {
-        "contexts": contexts,
-        "round_finals": prev_finals + [this_round_finals],
-        "round": r + 1,
-    }
+        this_round_finals.append(_last_ai(contexts[i]) or AIMessage(content=""))
+    return {"contexts": contexts, "round_finals": prev_finals + [this_round_finals], "round": r + 1}
 
 
 def _route(state: DebateState) -> str:
@@ -238,344 +153,102 @@ def _build_graph():
     return g.compile()
 
 
-# Output parsing (aligned to openai sibling)
-_ANSWER_RE = re.compile(
-    r"\banswer\b\s*(?:is\s+)?[:\s]+\**\s*(.+?)\s*\**\s*(?:\n|$)",
-    re.IGNORECASE,
-)
-
-
-def extract_answer(text: str) -> str | None:
-    matches = _ANSWER_RE.findall(text)
-    if matches:
-        return matches[-1].strip().rstrip(".,")
-    lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
-    return lines[-1] if lines else None
-
-
-# Scoring (aligned to single/hotpotqa, HotpotQA official)
-def normalize_answer(s: str) -> str:
-    s = s.lower()
-    s = "".join(ch for ch in s if ch not in set(string.punctuation))
-    s = re.sub(r"\b(a|an|the)\b", " ", s)
-    s = " ".join(s.split())
-    return s
-
-
-def exact_match_score(pred: str, gold: str) -> float:
-    return float(normalize_answer(pred) == normalize_answer(gold))
-
-
-def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
-    np_pred = normalize_answer(pred)
-    np_gold = normalize_answer(gold)
-    zero = (0.0, 0.0, 0.0)
-    if np_pred in {"yes", "no", "noanswer"} and np_pred != np_gold:
-        return zero
-    if np_gold in {"yes", "no", "noanswer"} and np_pred != np_gold:
-        return zero
-    pred_tokens = np_pred.split()
-    gold_tokens = np_gold.split()
-    common = Counter(pred_tokens) & Counter(gold_tokens)
-    num_same = sum(common.values())
-    if num_same == 0:
-        return zero
-    precision = num_same / len(pred_tokens)
-    recall = num_same / len(gold_tokens)
-    f1 = 2 * precision * recall / (precision + recall)
-    return f1, precision, recall
-
-
-# Aggregation (aligned to openai sibling)
-def best_of_n(answers: list[str]) -> str | None:
-    """Majority vote over normalized answer buckets.
-
-    Returns the raw answer of the first peer in the winning bucket (keeps
-    capitalization for EM/F1). `max()` returns the first largest bucket, so
-    ties go to the lowest peer index.
-    """
-    valid = [a for a in answers if a]
-    if not valid:
-        return None
-    buckets: list[list[str]] = []
-    for a in valid:
-        na = normalize_answer(a)
-        for b in buckets:
-            if normalize_answer(b[0]) == na:
-                b.append(a)
-                break
-        else:
-            buckets.append([a])
-    best = max(buckets, key=len)
-    return best[0]
-
-
-# Orchestration
 def _init_contexts(n: int, question: str) -> list[list[BaseMessage]]:
-    """Start each peer with [HumanMessage(question)]. create_react_agent adds
-    the system prompt via `prompt=`.
-    """
+    """Each peer starts from the question alone; the agent supplies the system prompt."""
     return [[HumanMessage(content=question)] for _ in range(n)]
 
 
-def solve(question: str) -> dict:
-    """Run the N-peer x R-round debate on one HotpotQA question.
+def _peer_answer(ctx: list[BaseMessage], final: str) -> str | None:
+    """The answer of a peer's final response, else of its latest message that has one."""
+    answer = extract_answer(final)
+    if answer is not None:
+        return answer
+    for m in reversed(ctx):
+        content = getattr(m, "content", "") or ""
+        answer = extract_answer(content if isinstance(content, str) else "")
+        if answer is not None:
+            return answer
+    return None
 
-    Returns a dict with:
-        answer:       round-R bucket-majority answer (str) or None
-        per_peer:     [{peer, answer, raw}]
-        all_contexts: per-peer LangChain message histories
-        telemetry:    normalized 5-key token/call counts
+
+def solve(question: str) -> dict:
+    """Run the debate on one question.
+
+    Returns ``{"answer", "per_peer", "all_contexts", "telemetry"}``: the majority
+    final-round answer, each peer's ``{peer, answer, raw}``, the peers' histories
+    and token/call counts over all of them.
     """
-    compiled = _build_graph()
     init_state: DebateState = {
         "contexts": _init_contexts(N_AGENTS, question),
         "round_finals": [],
         "round": 0,
         "question": question,
     }
-    result = compiled.invoke(init_state)
+    result = _build_graph().invoke(init_state)
     contexts = result.get("contexts") or []
-
     per_peer = []
-    answers = []
     for i, ctx in enumerate(contexts):
         final_msg = _last_ai(ctx)
         final = getattr(final_msg, "content", "") or "" if final_msg else ""
-        ans = extract_answer(final)
-        if ans is None:
-            for m in reversed(ctx):
-                content = getattr(m, "content", "") or ""
-                a = extract_answer(content if isinstance(content, str) else "")
-                if a is not None:
-                    ans = a
-                    break
-        per_peer.append({"peer": i, "answer": ans, "raw": final})
-        if ans:
-            answers.append(ans)
-
-    # Aggregate telemetry across all peers' full histories.
-    flat_msgs: list[BaseMessage] = []
-    for ctx in contexts:
-        flat_msgs.extend(ctx)
-
+        per_peer.append({"peer": i, "answer": _peer_answer(ctx, final), "raw": final})
     return {
-        "answer": best_of_n(answers),
+        "answer": best_of_n([p["answer"] for p in per_peer]),
         "per_peer": per_peer,
         "all_contexts": contexts,
-        "telemetry": normalize(langchain_telemetry(flat_msgs)),
+        "telemetry": normalize(langchain_telemetry([m for ctx in contexts for m in ctx])),
     }
 
 
-# Dataset loader (same row ids as other hotpotqa topologies)
-_HF_DATASET = "hotpot_qa"
-_HF_CONFIG = "distractor"
-_HF_SPLIT = "validation"
+def run_batch(instances: list[dict], out_path: Path | None = None, verbose: bool = True) -> dict:
+    """Solve and score every instance; records keep the last 300 characters of each peer's response."""
 
-
-def load_instances(
-    limit: int | None = None,
-    offset: int = 0,
-    only: list[str] | None = None,
-) -> list[dict]:
-    """Load HotpotQA dev rows.
-
-    Rows keep HotpotQA's stable string ids, and the first 100 at offset=0
-    are the same questions the other hotpotqa topologies use.
-    """
-    from datasets import load_dataset
-
-    ds = load_dataset(_HF_DATASET, _HF_CONFIG, trust_remote_code=True)[_HF_SPLIT]
-    rows: list[dict] = []
-    for row in ds:
-        rid = row.get("id")
-        if only is not None and rid not in set(only):
-            continue
-        q = (row.get("question") or "").strip()
-        a = (row.get("answer") or "").strip()
-        if not q or not a:
-            continue
-        rows.append({
-            "id": rid,
-            "question": q,
-            "answer": a,
-            "type": row.get("type"),
-            "level": row.get("level"),
-            "raw": {k: row.get(k) for k in ("id", "question", "answer", "type", "level")},
-        })
-    rows = rows[offset:]
-    if limit is not None:
-        rows = rows[:limit]
-    return rows
-
-
-# Batch eval
-def run_batch(
-    instances: list[dict],
-    out_path: Path | None = None,
-    verbose: bool = True,
-) -> dict:
-    """Run the debate on every instance and score the bucket-majority answer
-    (EM and F1 vs gold). Returns an aggregate summary and, if `out_path` is
-    set, writes per-instance predictions to JSONL.
-    """
-    per_instance: list[dict] = []
-    n = len(instances)
-    em_sum = 0.0
-    f1_sum = 0.0
-    n_extracted = 0
-    start = time.time()
-
-    out_f = None
-    if out_path is not None:
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_f = open(out_path, "w")
-
-    try:
-        for i, inst in enumerate(instances):
-            t0 = time.time()
-            try:
-                out = solve(inst["question"])
-                error = None
-            except Exception as e:
-                out = {"answer": None, "per_peer": [], "all_contexts": [], "telemetry": {}}
-                error = f"{type(e).__name__}: {e}"
-            latency_s = time.time() - t0
-
-            pred = out["answer"]
-            gold = inst["answer"]
-            if pred is not None:
-                n_extracted += 1
-                em = exact_match_score(pred, gold)
-                f1, prec, rec = f1_score(pred, gold)
-            else:
-                em = 0.0
-                f1 = prec = rec = 0.0
-            em_sum += em
-            f1_sum += f1
-
-            compact_per_peer = [
-                {
-                    "peer": p["peer"], "answer": p["answer"],
-                    "raw_tail": (p["raw"] or "")[-300:],
-                }
+    def row(_, inst: dict) -> dict:
+        out, latency_s, error = attempt(lambda: solve(inst["question"]))
+        return task.record(
+            inst,
+            out["answer"],
+            per_peer=[
+                {"peer": p["peer"], "answer": p["answer"], "raw_tail": (p["raw"] or "")[-300:]}
                 for p in out.get("per_peer") or []
-            ]
-            rec_out = {
-                "id": inst["id"],
-                "question": inst["question"],
-                "gold_answer": gold,
-                "predicted_answer": pred,
-                "em": em,
-                "f1": round(f1, 4),
-                "precision": round(prec, 4),
-                "recall": round(rec, 4),
-                "per_peer": compact_per_peer,
-                "type": inst.get("type"),
-                "level": inst.get("level"),
-                "latency_s": round(latency_s, 2),
-                **(out.get("telemetry") or {}),
-                "error": error,
-            }
-            per_instance.append(rec_out)
-            if out_f is not None:
-                out_f.write(json.dumps(rec_out) + "\n")
-                out_f.flush()
-
-            if verbose:
-                running_em = em_sum / (i + 1)
-                running_f1 = f1_sum / (i + 1)
-                mark = "OK" if em == 1.0 else ("~" if f1 > 0 else ("?" if pred is None else "X"))
-                peer_ans = [(p["answer"] or "-")[:10] for p in compact_per_peer]
-                pred_disp = (pred or "-")[:30]
-                gold_disp = gold[:30]
-                print(
-                    f"[{i + 1:>3}/{n}] {inst['id']} {mark}  "
-                    f"em={em:.0f} f1={f1:.2f}  "
-                    f"pred={pred_disp!r} gold={gold_disp!r}  "
-                    f"peers=[{','.join(peer_ans)}]  "
-                    f"EM={running_em:.3f} F1={running_f1:.3f} lat={latency_s:.1f}s",
-                    flush=True,
-                )
-    finally:
-        if out_f is not None:
-            out_f.close()
-
-    elapsed = time.time() - start
-    summary = {
-        "n": n,
-        "n_extracted": n_extracted,
-        "em_sum": em_sum,
-        "f1_sum": round(f1_sum, 4),
-        "em": (em_sum / n) if n else 0.0,
-        "f1": (f1_sum / n) if n else 0.0,
-        "extracted_em": (em_sum / n_extracted) if n_extracted else 0.0,
-        "extracted_f1": (f1_sum / n_extracted) if n_extracted else 0.0,
-        "total_s": round(elapsed, 1),
-        "per_instance": per_instance,
-    }
-    if verbose:
-        print(
-            f"\n=== decentralized/HotpotQA batch complete "
-            f"(N={N_AGENTS} peers x R={N_ROUNDS} rounds) ===\n"
-            f"  n={summary['n']}  n_extracted={summary['n_extracted']}\n"
-            f"  EM={summary['em']:.3f}  F1={summary['f1']:.3f}  "
-            f"(on extracted only: EM={summary['extracted_em']:.3f}  "
-            f"F1={summary['extracted_f1']:.3f})\n"
-            f"  total_s={summary['total_s']}\n"
+            ],
+            **task.meta(inst),
+            latency_s=round(latency_s, 2),
+            **(out.get("telemetry") or {}),
+            error=error,
         )
-    return summary
+
+    return task.run_batch(
+        instances,
+        row,
+        out_path=out_path,
+        verbose=verbose,
+        label="decentralized/HotpotQA",
+        team=f"(N={N_AGENTS} peers x R={N_ROUNDS} rounds)",
+        marks=task.ASCII_MARKS,
+        width=30,
+        detail=task.peers_detail,
+    )
 
 
-# Demo
 def _canned_demo() -> None:
-    question = "Were Scott Derrickson and Ed Wood of the same nationality?"
-    expected = "yes"
-    out = solve(question)
+    out = solve(task.DEMO_QUESTION)
     print(f"\n=== Debate: N={N_AGENTS} peers x R={N_ROUNDS} rounds ===")
     for p in out["per_peer"]:
-        ans = p["answer"] or "(none)"
-        print(f"  peer {p['peer']}: answer={ans!r}")
-    print(f"\n=== Majority-vote final answer: {out['answer']!r}  (expected: {expected!r}) ===")
-    if out["answer"]:
-        em = exact_match_score(out["answer"], expected)
-        f1, precision, recall = f1_score(out["answer"], expected)
-        print(f"=== EM: {em:.2f}   F1: {f1:.2f}   P: {precision:.2f}   R: {recall:.2f} ===")
+        print(f"  peer {p['peer']}: answer={p['answer'] or '(none)'!r}")
+    task.print_demo_answer(out["answer"], label="Majority-vote final answer")
+
+
+def main(argv: list[str] | None = None) -> int:
+    return cli.main(
+        argv,
+        description="Decentralized-topology HotpotQA runner (LangGraph debate).",
+        load_instances=load_instances,
+        run_batch=run_batch,
+        demo=_canned_demo,
+        source=task.SOURCE,
+        predictions=DEFAULT_PREDICTIONS,
+    )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Decentralized-topology HotpotQA runner (LangGraph debate)."
-    )
-    parser.add_argument(
-        "--batch", action="store_true",
-        help="Run the real HotpotQA eval (else: one canned demo).",
-    )
-    parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--offset", type=int, default=0)
-    parser.add_argument("--out", type=str, default=None)
-    parser.add_argument("--only", nargs="*", default=None)
-    args = parser.parse_args()
-
-    if not args.batch:
-        _canned_demo()
-        sys.exit(0)
-
-    print(
-        f"loading HotpotQA from {_HF_DATASET} [{_HF_CONFIG}/{_HF_SPLIT}] "
-        f"(base_url={VLLM_BASE_URL}, N={N_AGENTS} peers x R={N_ROUNDS} rounds) ..."
-    )
-    instances = load_instances(
-        limit=args.limit, offset=args.offset, only=args.only,
-    )
-    if not instances:
-        print("no instances loaded (check --limit/--offset/--only)", file=sys.stderr)
-        sys.exit(1)
-    print(f"  loaded {len(instances)} instance(s)")
-    _default_out = str(
-        Path(__file__).resolve().parents[4] / "results" / "hotpotqa_decentralized_langgraph" / "predictions.jsonl"
-    )
-    out_path = Path(args.out) if args.out else Path(_default_out)
-    run_batch(instances, out_path=out_path)
-    if out_path:
-        print(f"  predictions written to {out_path}")
+    raise SystemExit(main())

@@ -1,0 +1,102 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mas-promptbench"
+version = "0.1.0"
+description = "A benchmark of prompt optimization for multi-agent LLM systems."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+# Mirrors environment.yml (pip section). LangGraph, CrewAI and AutoGen are
+# installed there from pinned upstream commits (see README "Install").
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "openai>=2.0.0,<3",
+    "pydantic>=2.11,<3",
+    "pydantic-settings>=2.10,<3",
+    "pyyaml>=6",
+    "httpx>=0.28,<0.29",
+    "tokenizers>=0.21,<1",
+    "chromadb>=1.1,<2",
+    "protobuf>=5.29,<6",
+    "langchain-core>=1.3.0a2,<2",
+    "langchain-openai>=1.0.0a0,<2",
+    "wikipedia>=1.4,<2",
+    "datasets>=2.20,<4",
+    "swebench>=4.0,<5",
+    "bfcl-eval>=2026.3.23",
+    "dspy[optuna]==3.2.0",
+    "gepa==0.0.27",
+]
+
+[project.optional-dependencies]
+serve = ["vllm>=0.19"]
+maspob = ["torch>=2.0", "torch_geometric>=2.4", "sentence-transformers>=3.0"]
+dev = ["pytest>=7", "ruff>=0.12"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+namespaces = false
+include = ["core*", "topologies*", "teamsizes*", "communications*", "optimizers*"]
+exclude = [
+    "tests",
+    "tests.*",
+    "*.tests",
+    "*.tests.*",
+    "optimizers.maspob.upstream*",
+]
+
+[tool.setuptools.package-data]
+"topologies.sequential.crewai.crewai_base" = ["config/*.yaml"]
+"optimizers.hivemind" = ["prompts/*.txt"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+force-exclude = true
+extend-exclude = [
+    "benchmarks/apibank/apibank_upstream",
+    "optimizers/maspob/upstream",
+    "optimizers/maspo/upstream.py",
+    "vendor",
+    "tests/golden/data",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "RUF100"]
+ignore = [
+    "E501",  # prompts, output contracts and tool descriptions are long string literals that reach the
+             # model verbatim; splitting them risks changing the text. The formatter wraps all code.
+    "E741",  # the ported optimizers keep the papers' index names (i, j, k, l)
+    "B905",  # zip() without strict=: adding strict=True would change runtime behavior, strict=False is noise
+    "UP038", # isinstance(x, (A, B)) -> A | B: deprecated upstream (slower, no clarity gain)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "core",
+    "topologies",
+    "teamsizes",
+    "communications",
+    "optimizers",
+    "tests",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "optimizers"]
+addopts = "-p no:cacheprovider"
+markers = [
+    "golden: golden behavior-snapshot cell (tests/golden)",
+    "golden_fast: small representative subset of the golden cells (~1 min)",
+]

@@ -1,209 +1,89 @@
-"""Centralized topology for HotpotQA (LangGraph)."""
+"""Centralized HotpotQA runner (LangGraph): a manager delegating to Wikipedia workers.
+
+The team is the team spec (``configs/teams/hotpotqa.yaml``): at r=4 a manager with
+retriever, reasoner and writer workers. The manager hands a turn to a worker by
+calling its ``delegate_to_<worker>`` tool; every worker reports back to the
+manager, which ends the run with ``TERMINATE`` or after the spec's ``max_turns``.
+``teamsizes/centralized/hotpotqa`` runs this module with r = 2, 4, 8 and 10.
+"""
 
 from __future__ import annotations
 
-import argparse
-import json
-import os
-import re
-import string
-import sys
-import time
-from collections import Counter
 from pathlib import Path
+from typing import Annotated
 
-from topologies.output_contracts import append_output_contract_from_path
-from typing import Annotated, Optional
-
-from typing_extensions import TypedDict
-
-import wikipedia
-from langchain_core.messages import (
-    AIMessage,
-    BaseMessage,
-    HumanMessage,
-    SystemMessage,
-)
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, create_react_agent
+from typing_extensions import TypedDict
 
-# Shared telemetry.
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_TOPO_ROOT = str(_REPO_ROOT)
-if _TOPO_ROOT not in sys.path:
-    sys.path.insert(0, _TOPO_ROOT)
-from topologies.telemetry import langchain_telemetry, normalize  # noqa: E402
-from communications.communication_formats import format_handoff  # noqa: E402
+from core import cli, prompts, settings, teams
+from core.batch import attempt
+from core.communication import CommPolicy
+from core.llm import chat_openai
+from core.paths import RESULTS_DIR
+from core.tasks import hotpotqa as task
+from core.tasks.hotpotqa import exact_match_score, f1_score, load_instances, normalize_answer  # noqa: F401
+from core.tasks.hotpotqa import extract_manager_answer as extract_answer
+from core.telemetry import langchain_telemetry, normalize
+
+TOPOLOGY = "centralized"
+TEAM_SIZE = globals().get("TEAM_SIZE")  # preset by the teamsizes/ variants (core.variant)
+TEAM = teams.spec(TOPOLOGY, task.DATASET, TEAM_SIZE)
+DEFAULT_PREDICTIONS = (
+    RESULTS_DIR
+    / ("hotpotqa_centralized_langgraph" if TEAM_SIZE is None else f"hotpotqa_centralized_r{TEAM_SIZE}")
+    / "predictions.jsonl"
+)
+
+VLLM_BASE_URL = settings.base_url()
+MODEL_ID = settings.model_id()
+COMMUNICATION_FORMAT = globals().get("COMMUNICATION_FORMAT", "freeform")  # preset by the communications/ entries
+COMMUNICATION = CommPolicy(COMMUNICATION_FORMAT, task.DATASET, TOPOLOGY)
+MAX_TURNS = TEAM.max_turns
+
+wikipedia_search = tool(task.make_wikipedia_search(task.SEARCH_DOC_CENTRALIZED))
+wikipedia_page = tool(task.make_wikipedia_page(task.PAGE_DOC_CENTRALIZED))
+TOOLS = {"wikipedia_search": wikipedia_search, "wikipedia_page": wikipedia_page}
 
 
-VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://n12:8000/v1")
-MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
-COMMUNICATION_FORMAT = "freeform"
+def _delegate_tool(worker: teams.Worker):
+    """The manager's ``delegate_to_<worker>`` tool: it passes the instructions on as the worker's handoff."""
 
-_PROMPTS_DIR = _REPO_ROOT / "configs" / "prompts" / "centralized" / "hotpotqa"
+    def delegate(instructions: str) -> str:
+        return _format_interagent_handoff("manager", instructions, target=worker.role)
 
-# Same cap as AutoGen sibling's MaxMessageTermination(18), leaving room
-# for manager planning, multi-hop retrieval, reasoning and the answer.
-MAX_TURNS = 18
+    delegate.__doc__ = worker.delegate
+    return tool(f"delegate_to_{worker.role}")(delegate)
+
+
+DELEGATION_TOOLS = [_delegate_tool(worker) for worker in TEAM.workers]
+globals().update((t.name, t) for t in DELEGATION_TOOLS)  # each tool is also an attribute: delegate_to_<worker>
+DELEGATION_NAMES = {t.name for t in DELEGATION_TOOLS}
+MANAGER_TOOLS = [TOOLS[name] for name in TEAM.manager_tools] + DELEGATION_TOOLS
+_manager_tool_node = ToolNode(MANAGER_TOOLS)
+
+_MANAGER_TERMINATE_NUDGE = task.TERMINATE_NUDGE + "\n\n" + TEAM.delegation_note
 
 
 def _load_prompt(role: str) -> str:
-    return append_output_contract_from_path((_PROMPTS_DIR / f"{role}.txt").read_text().strip(), __file__, role)
+    return COMMUNICATION.system_prompt(prompts.role_prompt(TOPOLOGY, task.DATASET, role))
 
 
-# Tools
-_PAGE_CHAR_BUDGET = 4000  # per-page cap to keep retrieval output small
-
-
-@tool
-def wikipedia_search(query: str, top_k: int = 3) -> str:
-    """Search Wikipedia for articles matching `query`.
-
-    Returns titles + short (~2-sentence) summaries for the top matching
-    articles. Use this first to locate the relevant article, then call
-    wikipedia_page on its exact title for full details.
-    """
-    try:
-        titles = wikipedia.search(query, results=top_k)
-    except Exception as e:
-        return f"ERROR: {e}"
-    if not titles:
-        return f"[no Wikipedia results for '{query}']"
-    chunks = []
-    for title in titles:
-        try:
-            summary = wikipedia.summary(title, sentences=2, auto_suggest=False)
-            chunks.append(f"- {title}: {summary}")
-        except wikipedia.DisambiguationError as e:
-            chunks.append(f"- {title}: disambiguation page; options include {e.options[:3]}")
-        except wikipedia.PageError:
-            chunks.append(f"- {title}: (no page)")
-        except Exception as e:
-            chunks.append(f"- {title}: error ({e})")
-    return "\n".join(chunks)
-
-
-@tool
-def wikipedia_page(title: str) -> str:
-    """Return the full text of a Wikipedia article by its exact title.
-
-    Output is truncated to ~4000 characters. Use the exact title
-    returned by wikipedia_search.
-    """
-    try:
-        page = wikipedia.page(title, auto_suggest=False)
-    except wikipedia.DisambiguationError as e:
-        return f"ERROR: '{title}' is a disambiguation page; options include {e.options[:5]}"
-    except wikipedia.PageError:
-        return f"ERROR: no Wikipedia page titled '{title}'"
-    except Exception as e:
-        return f"ERROR: {e}"
-    content = page.content
-    return content[:_PAGE_CHAR_BUDGET] + ("..." if len(content) > _PAGE_CHAR_BUDGET else "")
-
-
-WIKI_TOOLS = [wikipedia_search, wikipedia_page]
-
-
-# Delegation tools (routing markers). The manager calls one to hand off to
-# a worker; the echoed instructions become a ToolMessage the worker reads,
-# and the router after `manager_tools` picks the worker by tool name.
-@tool("delegate_to_retriever_worker")
-def delegate_to_retriever_worker(instructions: str) -> str:
-    """Hand the next turn to the retriever_worker. Use this when you need
-    a single Wikipedia lookup (search or page fetch) performed and the
-    results returned as structured facts.
-
-    Args:
-        instructions: what you want the retriever to look up this turn.
-    """
-    return _format_interagent_handoff("manager", instructions, target="retriever_worker")
-
-
-@tool("delegate_to_reasoner_worker")
-def delegate_to_reasoner_worker(instructions: str) -> str:
-    """Hand the next turn to the reasoner_worker. Use this when you have
-    enough retrieved facts and want them chained into a logical derivation
-    that answers the question.
-
-    Args:
-        instructions: what reasoning you want the reasoner to perform this turn.
-    """
-    return _format_interagent_handoff("manager", instructions, target="reasoner_worker")
-
-
-@tool("delegate_to_writer_worker")
-def delegate_to_writer_worker(instructions: str) -> str:
-    """Hand the next turn to the writer_worker. Use this when the answer
-    is determined and you want the final short-form answer formatted.
-
-    Args:
-        instructions: what the writer should format this turn.
-    """
-    return _format_interagent_handoff("manager", instructions, target="writer_worker")
-
-
-DELEGATION_TOOLS = [
-    delegate_to_retriever_worker,
-    delegate_to_reasoner_worker,
-    delegate_to_writer_worker,
-]
-DELEGATION_NAMES = {t.name for t in DELEGATION_TOOLS}
-
-MANAGER_TOOLS = WIKI_TOOLS + DELEGATION_TOOLS
-
-
-# LLM
 def _build_llm() -> ChatOpenAI:
-    return ChatOpenAI(
-        model=MODEL_ID,
-        base_url=VLLM_BASE_URL,
-        api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
-        temperature=0.2,
-        top_p=0.9,
-        seed=0,
-        max_tokens=4096,
-        extra_body={
-            "repetition_penalty": 1.05,
-            "chat_template_kwargs": {"enable_thinking": False},
-        },
-    )
+    return chat_openai(model=MODEL_ID, base_url=VLLM_BASE_URL)
 
 
-# Manager nudge (short-form answer + TERMINATE contract)
-_MANAGER_TERMINATE_NUDGE = (
-    "\n\nFINAL OUTPUT FORMAT:\n"
-    "Synthesize the workers' findings and end YOUR final message with a "
-    "single line of the form:\n"
-    "  Answer: <short-form>\n"
-    "then immediately follow with the literal string TERMINATE on its own "
-    "line so the group-chat knows to stop.\n"
-    "The short-form MUST be the minimal string needed to answer — typically "
-    "1-5 words:\n"
-    "  - For yes/no questions: 'yes' or 'no' (lowercase, no punctuation).\n"
-    "  - For 'when/year' questions: just the year, e.g. '1997'.\n"
-    "  - For 'who' questions: the person's full name, e.g. 'Paul McCartney'.\n"
-    "  - For 'where/what city' questions: the place name, e.g. 'Paris'.\n"
-    "Do NOT include explanations, lists, or sentences on the Answer line. "
-    "Do NOT put the answer inside brackets, quotes, or markdown emphasis.\n\n"
-    "Delegation: when you want a specific worker to act, call the "
-    "matching delegate_to_<worker> tool with clear instructions "
-    "(instead of merely addressing them in free-form text). The three "
-    "workers are: retriever_worker, reasoner_worker, writer_worker."
-)
-
-
-# State + nodes
 class CentralizedState(TypedDict, total=False):
     messages: Annotated[list[BaseMessage], add_messages]
     turn_count: int
 
 
 def _tag_source(msg: BaseMessage, source: str) -> None:
-    """Attach an AutoGen-style `source` field via additional_kwargs."""
+    """Record the speaking agent as ``additional_kwargs["source"]`` (AutoGen-style)."""
     try:
         kw = dict(getattr(msg, "additional_kwargs", None) or {})
         kw["source"] = source
@@ -212,23 +92,17 @@ def _tag_source(msg: BaseMessage, source: str) -> None:
         pass
 
 
-def _active_communications_format() -> str | None:
-    return COMMUNICATION_FORMAT if COMMUNICATION_FORMAT != "freeform" else None
-
-
 def _format_interagent_handoff(role: str, text: str, *, target: str) -> str:
-    return format_handoff(
+    return COMMUNICATION.handoff(
         role,
         text,
-        fmt=COMMUNICATION_FORMAT,
-        dataset="hotpotqa",
-        topology="centralized",
         next_action=f"Use this report as the handoff context for {target}.",
         payload={"handoff": "manager_worker", "target": target},
     )
 
 
 def _last_content_ai(messages: list[BaseMessage]) -> AIMessage | None:
+    """The last AIMessage with content and no tool calls, else the last AIMessage with content."""
     for msg in reversed(messages):
         if isinstance(msg, AIMessage) and (msg.content or "") and not getattr(msg, "tool_calls", None):
             return msg
@@ -239,19 +113,14 @@ def _last_content_ai(messages: list[BaseMessage]) -> AIMessage | None:
 
 
 def _manager_system() -> str:
-    return _load_prompt("manager") + _MANAGER_TERMINATE_NUDGE
+    return _load_prompt(TEAM.manager) + _MANAGER_TERMINATE_NUDGE
 
 
 def _manager_node(state: CentralizedState) -> dict:
     llm = _build_llm().bind_tools(MANAGER_TOOLS)
-    sys_msg = SystemMessage(content=_manager_system())
-    ai = llm.invoke([sys_msg] + state["messages"])
-    # Mimic AutoGen's `.source` field so traces render the same way.
+    ai = llm.invoke([SystemMessage(content=_manager_system())] + state["messages"])
     _tag_source(ai, "manager")
     return {"messages": [ai], "turn_count": int(state.get("turn_count", 0)) + 1}
-
-
-_manager_tool_node = ToolNode(MANAGER_TOOLS)
 
 
 def _route_from_manager(state: CentralizedState) -> str:
@@ -267,176 +136,67 @@ def _route_from_manager(state: CentralizedState) -> str:
             return END
         if getattr(last, "tool_calls", None):
             return "manager_tools"
-    # No tool call and no TERMINATE: loop back so the manager tries again.
     return "manager"
 
 
 def _route_from_manager_tools(state: CentralizedState) -> str:
-    # Check the latest AIMessage with tool_calls for a delegation request.
+    """The delegated worker of the manager's latest tool calls, else back to the manager."""
     for m in reversed(state["messages"]):
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
                 name = tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", None)
                 if name in DELEGATION_NAMES:
                     return name.removeprefix("delegate_to_")
-            # Only real-tool calls were made; loop back to manager.
             return "manager"
     return "manager"
 
 
 def _make_worker_node(name: str, tools: list, llm: ChatOpenAI):
-    sys_prompt = _load_prompt(name)
-    agent = create_react_agent(model=llm, tools=tools, prompt=sys_prompt)
+    agent = create_react_agent(model=llm, tools=tools, prompt=_load_prompt(name))
 
     def node(state: CentralizedState) -> dict:
-        # create_react_agent returns the full history, input included, so keep
-        # only the messages it appended.
         prior = list(state["messages"])
-        result = agent.invoke(
-            {"messages": prior},
-            config={"recursion_limit": 30},
-        )
-        full = result["messages"]
-        new_msgs = full[len(prior):]
-        # Tag worker outputs with source for trace rendering.
+        result = agent.invoke({"messages": prior}, config={"recursion_limit": TEAM.recursion_limit})
+        new_msgs = result["messages"][len(prior) :]
         for m in new_msgs:
             if isinstance(m, AIMessage):
                 _tag_source(m, name)
-        if _active_communications_format():
+        if COMMUNICATION_FORMAT != "freeform":
             final = _last_content_ai(new_msgs)
-            rendered = _format_interagent_handoff(
-                name,
-                getattr(final, "content", "") if final else "",
-                target="manager",
-            )
-            handoff = AIMessage(content=rendered)
+            report = getattr(final, "content", "") if final else ""
+            handoff = AIMessage(content=_format_interagent_handoff(name, report, target="manager"))
             _tag_source(handoff, name)
-            return {
-                "messages": [handoff],
-                "turn_count": int(state.get("turn_count", 0)) + 1,
-            }
-        # Each new AIMessage counts as one turn; tool-executions don't.
+            return {"messages": [handoff], "turn_count": int(state.get("turn_count", 0)) + 1}
         n_turns = sum(1 for m in new_msgs if isinstance(m, AIMessage))
         return {"messages": new_msgs, "turn_count": int(state.get("turn_count", 0)) + n_turns}
 
     return node
 
 
-def _build_graph(llm: Optional[ChatOpenAI] = None):
+def _build_graph(llm: ChatOpenAI | None = None):
+    """Compile the manager/worker graph; returns ``(graph, roles)``."""
     if llm is None:
         llm = _build_llm()
-
+    workers = [worker.role for worker in TEAM.workers]
     graph = StateGraph(CentralizedState)
     graph.add_node("manager", _manager_node)
     graph.add_node("manager_tools", _manager_tool_node)
-
-    worker_specs = [
-        ("retriever_worker", WIKI_TOOLS),
-        ("reasoner_worker", WIKI_TOOLS),
-        ("writer_worker", WIKI_TOOLS),
-    ]
-    for name, tools in worker_specs:
-        graph.add_node(name, _make_worker_node(name, tools, llm))
-
+    for worker in TEAM.workers:
+        graph.add_node(worker.role, _make_worker_node(worker.role, [TOOLS[t] for t in worker.tools], llm))
     graph.add_edge(START, "manager")
     graph.add_conditional_edges(
-        "manager",
-        _route_from_manager,
-        {
-            "manager_tools": "manager_tools",
-            "manager": "manager",
-            END: END,
-        },
+        "manager", _route_from_manager, {"manager_tools": "manager_tools", "manager": "manager", END: END}
     )
     graph.add_conditional_edges(
-        "manager_tools",
-        _route_from_manager_tools,
-        {
-            "retriever_worker": "retriever_worker",
-            "reasoner_worker": "reasoner_worker",
-            "writer_worker": "writer_worker",
-            "manager": "manager",
-        },
+        "manager_tools", _route_from_manager_tools, {**{name: name for name in workers}, "manager": "manager"}
     )
-    for name, _ in worker_specs:
+    for name in workers:
         graph.add_edge(name, "manager")
-
-    return graph.compile(), ["manager"] + [n for n, _ in worker_specs]
-
-
-# Output parsing
-# Matches "Answer: X", "The answer is X", "**Answer:** X", etc.
-_ANSWER_RE = re.compile(
-    r"\banswer\b\s*(?:is\s+)?[:\s]+\**\s*(.+?)\s*\**\s*(?:\n|$)",
-    re.IGNORECASE,
-)
+    return graph.compile(), ["manager", *workers]
 
 
-def extract_answer(text: str) -> str | None:
-    """Return the short-form answer from the manager's final message.
-
-    Takes the last 'Answer: X' match, else the last non-empty line of the
-    cleaned text (same as single/hotpotqa).
-    """
-    # Drop any trailing TERMINATE so it doesn't pollute the fallback path.
-    text = re.sub(r"\bTERMINATE\b", "", text).strip()
-    matches = _ANSWER_RE.findall(text)
-    if matches:
-        return matches[-1].strip().rstrip(".,")
-    lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
-    return lines[-1] if lines else None
-
-
-# Scoring (aligned to single/hotpotqa, HotpotQA official)
-def normalize_answer(s: str) -> str:
-    """HotpotQA normalization (verbatim from hotpot_evaluate_v1.py).
-
-    Lowercase, remove punctuation, remove articles (a/an/the), fix
-    whitespace.
-    """
-    s = s.lower()
-    s = "".join(ch for ch in s if ch not in set(string.punctuation))
-    s = re.sub(r"\b(a|an|the)\b", " ", s)
-    s = " ".join(s.split())
-    return s
-
-
-def exact_match_score(pred: str, gold: str) -> float:
-    """HotpotQA EM (official): 1.0 iff normalized strings match, else 0.0."""
-    return float(normalize_answer(pred) == normalize_answer(gold))
-
-
-def f1_score(pred: str, gold: str) -> tuple[float, float, float]:
-    """HotpotQA token-level F1 (official): returns (f1, precision, recall).
-
-    On yes/no/noanswer questions a non-matching prediction scores
-    (0, 0, 0), with no partial credit for token overlap.
-    """
-    normalized_pred = normalize_answer(pred)
-    normalized_gold = normalize_answer(gold)
-
-    zero = (0.0, 0.0, 0.0)
-    if normalized_pred in {"yes", "no", "noanswer"} and normalized_pred != normalized_gold:
-        return zero
-    if normalized_gold in {"yes", "no", "noanswer"} and normalized_pred != normalized_gold:
-        return zero
-
-    pred_tokens = normalized_pred.split()
-    gold_tokens = normalized_gold.split()
-    common = Counter(pred_tokens) & Counter(gold_tokens)
-    num_same = sum(common.values())
-    if num_same == 0:
-        return zero
-    precision = num_same / len(pred_tokens)
-    recall = num_same / len(gold_tokens)
-    f1 = 2 * precision * recall / (precision + recall)
-    return f1, precision, recall
-
-
-# Orchestration
 def _communications_source(m: BaseMessage) -> str:
-    kw = getattr(m, "additional_kwargs", None) or {}
-    src = kw.get("source")
+    src = (getattr(m, "additional_kwargs", None) or {}).get("source")
     if src:
         return src
     t = getattr(m, "type", None)
@@ -445,19 +205,24 @@ def _communications_source(m: BaseMessage) -> str:
 
 def _communications_to_record(m: BaseMessage) -> dict:
     content = getattr(m, "content", "") or ""
-    if not isinstance(content, str):
-        content = str(content)
-    return {"source": _communications_source(m), "content": content}
+    return {"source": _communications_source(m), "content": content if isinstance(content, str) else str(content)}
+
+
+def _last_answer(records: list[dict]) -> str | None:
+    """The short-form answer of the latest message that has one."""
+    for r in reversed(records):
+        answer = extract_answer(r["content"] or "")
+        if answer is not None:
+            return answer
+    return None
 
 
 def solve(question: str) -> dict:
-    """Run the centralized team on one HotpotQA question.
+    """Run the team on one question.
 
-    Returns a dict with:
-        answer     short-form answer (str), or None
-        raw        manager's last message
-        messages   {source, content} for every turn
-        telemetry  normalized 5-key token/call counts
+    Returns ``{"answer", "raw", "messages", "telemetry"}``: the short-form answer
+    of the manager's last message (else of the latest message that has one),
+    that message, every turn as ``{source, content}`` and token/call counts.
     """
     compiled, _ = _build_graph()
     result = compiled.invoke(
@@ -466,16 +231,11 @@ def solve(question: str) -> dict:
     )
     msgs = result.get("messages") or []
     rendered = [_communications_to_record(m) for m in msgs]
-
     manager_msgs = [r for r in rendered if r["source"] == "manager"]
     final = manager_msgs[-1]["content"] if manager_msgs else ""
     answer = extract_answer(final)
     if answer is None:
-        for r in reversed(rendered):
-            a = extract_answer(r["content"] or "")
-            if a is not None:
-                answer = a
-                break
+        answer = _last_answer(rendered)
     return {
         "answer": answer,
         "raw": final,
@@ -484,208 +244,53 @@ def solve(question: str) -> dict:
     }
 
 
-# Dataset loader (same row ids as single/indep/seq hotpotqa)
-_HF_DATASET = "hotpot_qa"
-_HF_CONFIG = "distractor"
-_HF_SPLIT = "validation"
+def run_batch(instances: list[dict], out_path: Path | None = None, verbose: bool = True) -> dict:
+    """Solve and score every instance."""
 
-
-def load_instances(
-    limit: int | None = None,
-    offset: int = 0,
-    only: list[str] | None = None,
-) -> list[dict]:
-    """Load HotpotQA dev rows.
-
-    Rows keep HotpotQA's stable string ids, and the first 100 at offset=0
-    are the same questions the other hotpotqa topologies use.
-    """
-    from datasets import load_dataset
-
-    ds = load_dataset(_HF_DATASET, _HF_CONFIG, trust_remote_code=True)[_HF_SPLIT]
-    rows: list[dict] = []
-    for row in ds:
-        rid = row.get("id")
-        if only is not None and rid not in set(only):
-            continue
-        q = (row.get("question") or "").strip()
-        a = (row.get("answer") or "").strip()
-        if not q or not a:
-            continue
-        rows.append({
-            "id": rid,
-            "question": q,
-            "answer": a,
-            "type": row.get("type"),
-            "level": row.get("level"),
-            "raw": {k: row.get(k) for k in ("id", "question", "answer", "type", "level")},
-        })
-    rows = rows[offset:]
-    if limit is not None:
-        rows = rows[:limit]
-    return rows
-
-
-# Batch eval
-def run_batch(
-    instances: list[dict],
-    out_path: Path | None = None,
-    verbose: bool = True,
-) -> dict:
-    """Run the centralized team on every instance and score EM/F1 vs gold.
-
-    Returns an aggregate summary; if `out_path` is set, per-instance
-    predictions are also written there as JSONL.
-    """
-    per_instance: list[dict] = []
-    n = len(instances)
-    em_sum = 0.0
-    f1_sum = 0.0
-    n_extracted = 0
-    start = time.time()
-
-    out_f = None
-    if out_path is not None:
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_f = open(out_path, "w")
-
-    try:
-        for i, inst in enumerate(instances):
-            t0 = time.time()
-            try:
-                out = solve(inst["question"])
-                error = None
-            except Exception as e:
-                out = {"answer": None, "raw": "", "messages": [], "telemetry": {}}
-                error = f"{type(e).__name__}: {e}"
-            latency_s = time.time() - t0
-
-            pred = out["answer"]
-            gold = inst["answer"]
-            if pred is not None:
-                n_extracted += 1
-                em = exact_match_score(pred, gold)
-                f1, prec, rec = f1_score(pred, gold)
-            else:
-                em = 0.0
-                f1 = prec = rec = 0.0
-            em_sum += em
-            f1_sum += f1
-
-            rec_out = {
-                "id": inst["id"],
-                "question": inst["question"],
-                "gold_answer": gold,
-                "predicted_answer": pred,
-                "em": em,
-                "f1": round(f1, 4),
-                "precision": round(prec, 4),
-                "recall": round(rec, 4),
-                "type": inst.get("type"),
-                "level": inst.get("level"),
-                "raw": out.get("raw") or "",
-                "n_messages": len(out.get("messages") or []),
-                "latency_s": round(latency_s, 2),
-                **(out.get("telemetry") or {}),
-                "error": error,
-            }
-            per_instance.append(rec_out)
-            if out_f is not None:
-                out_f.write(json.dumps(rec_out) + "\n")
-                out_f.flush()
-
-            if verbose:
-                running_em = em_sum / (i + 1)
-                running_f1 = f1_sum / (i + 1)
-                mark = "OK" if em == 1.0 else ("~" if f1 > 0 else ("?" if pred is None else "X"))
-                pred_disp = (pred or "-")[:40]
-                gold_disp = gold[:40]
-                print(
-                    f"[{i + 1:>3}/{n}] {inst['id']} {mark}  "
-                    f"em={em:.0f} f1={f1:.2f}  "
-                    f"pred={pred_disp!r} gold={gold_disp!r}  "
-                    f"msgs={rec_out['n_messages']}  "
-                    f"EM={running_em:.3f} F1={running_f1:.3f} lat={latency_s:.1f}s",
-                    flush=True,
-                )
-    finally:
-        if out_f is not None:
-            out_f.close()
-
-    elapsed = time.time() - start
-    summary = {
-        "n": n,
-        "n_extracted": n_extracted,
-        "em_sum": em_sum,
-        "f1_sum": round(f1_sum, 4),
-        "em": (em_sum / n) if n else 0.0,
-        "f1": (f1_sum / n) if n else 0.0,
-        "extracted_em": (em_sum / n_extracted) if n_extracted else 0.0,
-        "extracted_f1": (f1_sum / n_extracted) if n_extracted else 0.0,
-        "total_s": round(elapsed, 1),
-        "per_instance": per_instance,
-    }
-    if verbose:
-        print(
-            f"\n=== centralized/HotpotQA batch complete ===\n"
-            f"  n={summary['n']}  n_extracted={summary['n_extracted']}\n"
-            f"  EM={summary['em']:.3f}  F1={summary['f1']:.3f}  "
-            f"(on extracted only: EM={summary['extracted_em']:.3f}  "
-            f"F1={summary['extracted_f1']:.3f})\n"
-            f"  total_s={summary['total_s']}\n"
+    def row(_, inst: dict) -> dict:
+        out, latency_s, error = attempt(lambda: solve(inst["question"]))
+        return task.record(
+            inst,
+            out["answer"],
+            **task.meta(inst),
+            raw=out.get("raw") or "",
+            n_messages=len(out.get("messages") or []),
+            latency_s=round(latency_s, 2),
+            **(out.get("telemetry") or {}),
+            error=error,
         )
-    return summary
+
+    return task.run_batch(
+        instances,
+        row,
+        out_path=out_path,
+        verbose=verbose,
+        label="centralized/HotpotQA",
+        marks=task.ASCII_MARKS,
+        detail=task.messages_detail,
+    )
 
 
-# Demo
 def _canned_demo() -> None:
-    question = "Were Scott Derrickson and Ed Wood of the same nationality?"
-    expected = "yes"
-    out = solve(question)
-    print(f"\n=== Extracted answer: {out['answer']!r}  (expected: {expected!r}) ===")
-    if out["answer"] is not None:
-        em = exact_match_score(out["answer"], expected)
-        f1, precision, recall = f1_score(out["answer"], expected)
-        print(f"=== EM: {em:.2f}   F1: {f1:.2f}   P: {precision:.2f}   R: {recall:.2f} ===")
+    out = solve(task.DEMO_QUESTION)
+    task.print_demo_answer(out["answer"])
     print(f"=== {len(out['messages'])} messages across the group chat ===")
     for m in out["messages"]:
         snippet = m["content"][:300].replace("\n", " ")
         print(f"  [{m['source']}] {snippet}")
 
 
+def main(argv: list[str] | None = None) -> int:
+    return cli.main(
+        argv,
+        description="Centralized-topology HotpotQA runner (LangGraph manager/worker).",
+        load_instances=load_instances,
+        run_batch=run_batch,
+        demo=_canned_demo,
+        source=task.SOURCE,
+        predictions=DEFAULT_PREDICTIONS,
+    )
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Centralized-topology HotpotQA runner (LangGraph manager/worker)."
-    )
-    parser.add_argument(
-        "--batch", action="store_true",
-        help="Run the real HotpotQA eval (else: one canned demo).",
-    )
-    parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--offset", type=int, default=0)
-    parser.add_argument("--out", type=str, default=None)
-    parser.add_argument("--only", nargs="*", default=None)
-    args = parser.parse_args()
-
-    if not args.batch:
-        _canned_demo()
-        sys.exit(0)
-
-    print(
-        f"loading HotpotQA from {_HF_DATASET} [{_HF_CONFIG}/{_HF_SPLIT}] "
-        f"(base_url={VLLM_BASE_URL}) ..."
-    )
-    instances = load_instances(
-        limit=args.limit, offset=args.offset, only=args.only,
-    )
-    if not instances:
-        print("no instances loaded (check --limit/--offset/--only)", file=sys.stderr)
-        sys.exit(1)
-    print(f"  loaded {len(instances)} instance(s)")
-    _default_out = str(
-        Path(__file__).resolve().parents[4] / "results" / "hotpotqa_centralized_langgraph" / "predictions.jsonl"
-    )
-    out_path = Path(args.out) if args.out else Path(_default_out)
-    run_batch(instances, out_path=out_path)
-    if out_path:
-        print(f"  predictions written to {out_path}")
+    raise SystemExit(main())

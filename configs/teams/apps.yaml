@@ -1,0 +1,183 @@
+# Team specs for apps; schema in configs/teams/README.md. Text is sent to the model verbatim.
+
+apps:
+  independent:
+    role: coder
+    recursion_limit: 20
+
+  decentralized:
+    role: debater
+    n_rounds: 2
+    recursion_limit: 18
+
+  sequential:
+    recursion_limit: 50
+    tasks:
+      requirements_parser: |-
+        Parse the problem to extract INPUT_FORMAT, OUTPUT_FORMAT, CONSTRAINTS, and OBVIOUS_EDGE_CASES. Output a structured summary; do NOT propose an algorithm.
+
+        PROBLEM:
+        {problem_prompt}
+      analyzer: |-
+        Read the programming problem below. Pick a correct algorithmic approach: name the data structures, target complexity, and the edge cases that will bite a naive implementation. Do NOT write code — the Coder handles that.
+
+        PROBLEM:
+        {problem_prompt}
+      algorithm_designer: |-
+        Propose an algorithm in pseudocode with complexity analysis. Pick one approach with rationale.
+
+        PROBLEM:
+        {problem_prompt}
+      coder: |-
+        Implement the Analyzer's plan in Python. Follow the I/O format specified in the problem (stdin or starter_code call-based). Emit the complete Python program inside a fenced ```python ... ``` block.
+
+        PROBLEM:
+        {problem_prompt}
+      complexity_analyzer: |-
+        Analyze the time/space complexity of the coder's draft. Output: TIME_COMPLEXITY (Big-O), SPACE_COMPLEXITY, BOTTLENECK, and FLAG if too slow for the constraints.
+
+        PROBLEM:
+        {problem_prompt}
+      edge_case_thinker: |-
+        After the coder drafts code, enumerate 5-10 specific edge cases the implementation should handle.
+
+        PROBLEM:
+        {problem_prompt}
+      tester: |-
+        Construct 3-5 targeted test cases for the Coder's program, including at least one edge case. Run each case via python_exec. Report which cases pass or fail with the stdout/stderr evidence. Do NOT modify the program.
+
+        PROBLEM:
+        {problem_prompt}
+      debugger: |-
+        If the Tester reported failures, fix the Coder's program to address them (use python_exec to verify your fix). If the Tester reported all-pass, pass the Coder's program through unchanged. Your final output MUST contain the final Python program inside a fenced ```python ... ``` block (the extractor takes the last one).
+
+        PROBLEM:
+        {problem_prompt}
+      optimizer: |-
+        After the debugger fixes correctness, suggest 1-3 micro-optimizations and validate them via python_exec. Output: SUGGESTIONS + optimized code (only if it tests cleanly).
+
+        PROBLEM:
+        {problem_prompt}
+      code_reviewer: |-
+        Review the debugger's output for correctness, efficiency, and style. Emit the FINAL fenced ```python``` block — this is what gets submitted.
+
+        PROBLEM:
+        {problem_prompt}
+    sizes:
+      2:
+        - {role: coder, tools: []}
+        - {role: debugger, tools: [python_exec]}
+      4:
+        - {role: analyzer, tools: []}
+        - {role: coder, tools: []}
+        - {role: tester, tools: [python_exec]}
+        - {role: debugger, tools: [python_exec]}
+      8:
+        - {role: requirements_parser, tools: []}
+        - {role: analyzer, tools: []}
+        - {role: algorithm_designer, tools: []}
+        - {role: coder, tools: []}
+        - {role: edge_case_thinker, tools: []}
+        - {role: tester, tools: [python_exec]}
+        - {role: debugger, tools: [python_exec]}
+        - {role: code_reviewer, tools: []}
+      10:
+        - {role: requirements_parser, tools: []}
+        - {role: analyzer, tools: []}
+        - {role: algorithm_designer, tools: []}
+        - {role: coder, tools: []}
+        - {role: complexity_analyzer, tools: []}
+        - {role: edge_case_thinker, tools: []}
+        - {role: tester, tools: [python_exec]}
+        - {role: debugger, tools: [python_exec]}
+        - {role: optimizer, tools: [python_exec]}
+        - {role: code_reviewer, tools: []}
+
+  centralized:
+    recursion_limit: 30
+    manager_tools: [python_exec]
+    worker_tools: [python_exec]
+    delegates:
+      analyzer_worker: |-
+        Hand the next turn to the analyzer_worker. Use this when you need
+            an algorithmic approach, complexity analysis, or edge-case enumeration
+            for the current problem.
+
+            Args:
+                instructions: what you want the analyzer to produce this turn.
+      coder_worker: |-
+        Hand the next turn to the coder_worker. Use this when you want a
+            Python implementation written to match a specification.
+
+            Args:
+                instructions: what you want the coder to implement this turn.
+      tester_worker: |-
+        Hand the next turn to the tester_worker. Use this when you want
+            candidate code run against specific test inputs and the results
+            reported back.
+
+            Args:
+                instructions: which code to run against which inputs this turn.
+      design_worker: |-
+        Hand the next turn to the design_worker.
+
+            Args:
+                instructions: what you want the design_worker to do this turn.
+      edge_case_worker: |-
+        Hand the next turn to the edge_case_worker.
+
+            Args:
+                instructions: what you want the edge_case_worker to do this turn.
+      debug_worker: |-
+        Hand the next turn to the debug_worker.
+
+            Args:
+                instructions: what you want the debug_worker to do this turn.
+      review_worker: |-
+        Hand the next turn to the review_worker.
+
+            Args:
+                instructions: what you want the review_worker to do this turn.
+      complexity_analyzer_worker: |-
+        Hand the next turn to the complexity_analyzer_worker.
+
+            Args:
+                instructions: what you want the complexity_analyzer_worker to do this turn.
+      optimizer_worker: |-
+        Hand the next turn to the optimizer_worker.
+
+            Args:
+                instructions: what you want the optimizer_worker to do this turn.
+    sizes:
+      2:
+        manager: manager
+        max_turns: 13
+        workers: [coder_worker]
+      4:
+        manager: manager
+        max_turns: 26
+        workers: [analyzer_worker, coder_worker, tester_worker]
+      8:
+        manager: manager_r8
+        max_turns: 26
+        workers:
+          - analyzer_worker
+          - coder_worker
+          - tester_worker
+          - design_worker
+          - edge_case_worker
+          - debug_worker
+          - review_worker
+      10:
+        manager: manager_r10
+        max_turns: 26
+        workers:
+          - analyzer_worker
+          - coder_worker
+          - tester_worker
+          - design_worker
+          - edge_case_worker
+          - debug_worker
+          - review_worker
+          - complexity_analyzer_worker
+          - optimizer_worker

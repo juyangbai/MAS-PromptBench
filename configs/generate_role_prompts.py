@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import re
 import sys
 import time
 from pathlib import Path
@@ -12,19 +11,20 @@ from pathlib import Path
 import yaml
 from openai import OpenAI
 
-
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 
-def strip_thinking(text: str) -> str:
-    """Strip Qwen3-style reasoning from a model reply.
 
-    Qwen3's vLLM chat template puts the opening <think> in the assistant
-    prefix, so the reply starts mid-reasoning and only the closing </think>
-    appears. Keep everything after the last </think>.
+def strip_thinking(text: str) -> str:
+    """Remove Qwen3-style reasoning from a model reply.
+
+    Qwen3's vLLM chat template injects the opening <think> as part of the
+    assistant prefix, so the model's response begins with reasoning (no
+    opening tag) and ends that block with </think> before the final answer.
+    Cut everything up through the last </think>.
     """
     index = text.lower().rfind("</think>")
     if index >= 0:
-        text = text[index + len("</think>"):]
+        text = text[index + len("</think>") :]
     return text.strip()
 
 
@@ -37,15 +37,16 @@ def render(template: str, **variables: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    # Prompt generation defaults to the 122B model: role prompts are written
-    # once per (topology, benchmark, role) and benefit from stronger
-    # instruction-following. Dataset runs use the 9B via VLLM_BASE_URL /
-    # MODEL_ID. Those are deliberately not read here, so dataset env vars
-    # can't switch the generator to the smaller model. Override with
-    # PROMPT_GEN_BASE_URL / PROMPT_GEN_MODEL.
+    # Prompt generation uses the 122B model by default: role prompts are
+    # written once per (topology, benchmark, role) and benefit from a
+    # stronger model's instruction-following. Dataset runtime uses the
+    # 9B via VLLM_BASE_URL / MODEL_ID; we deliberately DON'T read those
+    # here so dataset env vars can't silently flip the generator onto a
+    # smaller model. Override the generator-side defaults with
+    # PROMPT_GEN_BASE_URL / PROMPT_GEN_MODEL if needed.
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("PROMPT_GEN_BASE_URL", "http://lai:8000/v1"),
+        default=os.environ.get("PROMPT_GEN_BASE_URL", "http://localhost:8200/v1"),
     )
     parser.add_argument(
         "--api-key",
@@ -89,8 +90,7 @@ def main() -> int:
     run_start_time = time.time()
 
     print(
-        f"generator: model={args.model}  base_url={args.base_url}  "
-        f"temperature={args.temperature}  seed={args.seed}",
+        f"generator: model={args.model}  base_url={args.base_url}  temperature={args.temperature}  seed={args.seed}",
         file=sys.stderr,
     )
 
@@ -106,7 +106,8 @@ def main() -> int:
                 continue
             dataset_roles = benchmarks.get(dataset)
             if not dataset_roles:
-                # No roles for this benchmark (unsupported or not filled in yet).
+                # Topology doesn't define roles for this benchmark (either
+                # unsupported or not yet filled in); skip silently.
                 continue
             cell_tools = tools_config.get(topology, {}).get(dataset, "None.")
             for role, role_description in dataset_roles.items():

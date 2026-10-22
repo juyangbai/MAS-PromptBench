@@ -1,6 +1,5 @@
-from communications.communication_formats import install_proxy, cli_main
+"""Communications pair: centralized SWE-bench Verified with semi_structured inter-agent reports."""
 
-install_proxy(globals(), topology="centralized", dataset="swe", fmt="semi_structured")
+from communications import communication_formats
 
-if __name__ == "__main__":
-    raise SystemExit(cli_main(globals()))
+communication_formats.install(globals(), topology="centralized", dataset="swe", fmt="semi_structured")

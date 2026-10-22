@@ -1,0 +1,182 @@
+# Team specs for math; schema in configs/teams/README.md. Text is sent to the model verbatim.
+
+math:
+  independent:
+    role: solver
+    recursion_limit: 15
+
+  decentralized:
+    role: debater
+    n_rounds: 2
+    recursion_limit: 12
+
+  sequential:
+    recursion_limit: 50
+    tasks:
+      problem_reader: |-
+        Read the LaTeX-formatted problem and restate it in plain English. Output: RESTATEMENT and TARGET (the quantity sought).
+
+        PROBLEM:
+        {problem}
+      decomposer: |-
+        Decompose the problem below into a short ordered list of computational sub-steps. Number each step. Do NOT compute the result — that is the next stage's job. Do NOT emit a final answer.
+
+        PROBLEM:
+        {problem}
+      algebraist: |-
+        Handle symbolic manipulation BEFORE numeric computation: simplify expressions, manipulate equations, set up the calculation. Use calculator for any mid-derivation numeric checks.
+
+        PROBLEM:
+        {problem}
+      unit_normalizer: |-
+        After the algebraist sets up expressions, normalize units across the calculation. Output: UNIT_TABLE + expression rewritten in normalized units.
+
+        PROBLEM:
+        {problem}
+      computer: |-
+        Execute each sub-step from the Decomposer's list, in order. For each step, call the calculator tool on the numeric expression and report the result. End with your best current answer. Do NOT emit the final \boxed{{...}} yet — that is the Verifier's job.
+
+        PROBLEM:
+        {problem}
+      arithmetic_checker: |-
+        Independently re-evaluate 1-3 key numeric steps from the computer's output via calculator. Report AGREE/DISAGREE per step.
+
+        PROBLEM:
+        {problem}
+      checker: |-
+        Re-derive the final answer via an ALTERNATIVE path — either a symbolic simplification, a different decomposition, or a sanity-check identity. Use the calculator to verify your alternative. Report whether your result agrees with the Computer's; do NOT emit the final \boxed{{...}} yet.
+
+        PROBLEM:
+        {problem}
+      alternative_solver: |-
+        Re-derive the answer via a DIFFERENT method/path than what the prior chain used. Output: alternative derivation + the answer it yields.
+
+        PROBLEM:
+        {problem}
+      simplifier: |-
+        After alternative_solver re-derives the answer, simplify the final form (reduce fractions, rationalize, factor radicals). Output: SIMPLIFIED form.
+
+        PROBLEM:
+        {problem}
+      verifier: |-
+        Reconcile the Computer's and Checker's results. If they agree, confirm. If they disagree, use the calculator to resolve (re-run the critical arithmetic). Your output MUST end with the final answer inside \boxed{{...}}.
+
+        PROBLEM:
+        {problem}
+    sizes:
+      2:
+        - {role: computer, tools: [calculator]}
+        - {role: verifier, tools: [calculator]}
+      4:
+        - {role: decomposer, tools: []}
+        - {role: computer, tools: [calculator]}
+        - {role: checker, tools: [calculator]}
+        - {role: verifier, tools: [calculator]}
+      8:
+        - {role: problem_reader, tools: []}
+        - {role: decomposer, tools: []}
+        - {role: algebraist, tools: [calculator]}
+        - {role: computer, tools: [calculator]}
+        - {role: arithmetic_checker, tools: [calculator]}
+        - {role: checker, tools: [calculator]}
+        - {role: alternative_solver, tools: [calculator]}
+        - {role: verifier, tools: []}
+      10:
+        - {role: problem_reader, tools: []}
+        - {role: decomposer, tools: []}
+        - {role: algebraist, tools: [calculator]}
+        - {role: unit_normalizer, tools: [calculator]}
+        - {role: computer, tools: [calculator]}
+        - {role: arithmetic_checker, tools: [calculator]}
+        - {role: checker, tools: [calculator]}
+        - {role: alternative_solver, tools: [calculator]}
+        - {role: simplifier, tools: [calculator]}
+        - {role: verifier, tools: []}
+
+  centralized:
+    recursion_limit: 30
+    manager_tools: [calculator]
+    worker_tools: [calculator]
+    delegates:
+      decomposer_worker: |-
+        Hand the next turn to the decomposer_worker. Use this when you need
+            the problem broken into an ordered list of arithmetic sub-steps.
+
+            Args:
+                instructions: what you want the decomposer to plan this turn.
+      computation_worker: |-
+        Hand the next turn to the computation_worker. Use this when a
+            specific arithmetic sub-expression needs to be evaluated.
+
+            Args:
+                instructions: what the computation worker should compute this turn.
+      verifier_worker: |-
+        Hand the next turn to the verifier_worker. Use this when a
+            candidate answer exists and needs to be re-derived via an
+            alternative path to cross-check.
+
+            Args:
+                instructions: what the verifier should independently re-derive.
+      problem_reader_worker: |-
+        Hand the next turn to the problem_reader_worker.
+
+            Args:
+                instructions: what you want the problem_reader_worker to do this turn.
+      algebraist_worker: |-
+        Hand the next turn to the algebraist_worker.
+
+            Args:
+                instructions: what you want the algebraist_worker to do this turn.
+      arithmetic_check_worker: |-
+        Hand the next turn to the arithmetic_check_worker.
+
+            Args:
+                instructions: what you want the arithmetic_check_worker to do this turn.
+      alternative_solver_worker: |-
+        Hand the next turn to the alternative_solver_worker.
+
+            Args:
+                instructions: what you want the alternative_solver_worker to do this turn.
+      unit_normalizer_worker: |-
+        Hand the next turn to the unit_normalizer_worker.
+
+            Args:
+                instructions: what you want the unit_normalizer_worker to do this turn.
+      simplifier_worker: |-
+        Hand the next turn to the simplifier_worker.
+
+            Args:
+                instructions: what you want the simplifier_worker to do this turn.
+    sizes:
+      2:
+        manager: manager
+        max_turns: 9
+        workers: [computation_worker]
+      4:
+        manager: manager
+        max_turns: 18
+        workers: [decomposer_worker, computation_worker, verifier_worker]
+      8:
+        manager: manager_r8
+        max_turns: 18
+        workers:
+          - decomposer_worker
+          - computation_worker
+          - verifier_worker
+          - problem_reader_worker
+          - algebraist_worker
+          - arithmetic_check_worker
+          - alternative_solver_worker
+      10:
+        manager: manager_r10
+        max_turns: 18
+        workers:
+          - decomposer_worker
+          - computation_worker
+          - verifier_worker
+          - problem_reader_worker
+          - algebraist_worker
+          - arithmetic_check_worker
+          - alternative_solver_worker
+          - unit_normalizer_worker
+          - simplifier_worker

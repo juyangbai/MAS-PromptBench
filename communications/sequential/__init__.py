@@ -1,2 +1,1 @@
 """Sequential-topology msg baselines."""
-

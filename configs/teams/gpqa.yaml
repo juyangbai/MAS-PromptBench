@@ -1,0 +1,186 @@
+# Team specs for gpqa; schema in configs/teams/README.md. Text is sent to the model verbatim.
+
+gpqa:
+  independent:
+    role: solver
+    recursion_limit: 15
+
+  decentralized:
+    role: debater
+    n_rounds: 2
+    recursion_limit: 12
+
+  sequential:
+    recursion_limit: 50
+    tasks:
+      question_clarifier: |-
+        Restate the MCQ in your own words. Output: RESTATEMENT, KEY_TERMS (defined briefly), TYPE.
+
+        QUESTION:
+        {question}
+      analyzer: |-
+        Analyze the multiple-choice question below. Enumerate the scientific principles at play and describe, option by option (A, B, C, D), how each candidate answer would be derived. Do NOT commit to a final letter.
+
+        QUESTION:
+        {question}
+      domain_expert: |-
+        Provide BACKGROUND (3-5 lines of relevant facts/principles needed to answer).
+
+        QUESTION:
+        {question}
+      evidence_gatherer: |-
+        After the domain_expert provides background, list facts/evidence supporting OR opposing each of the 4 letter choices.
+
+        QUESTION:
+        {question}
+      solver: |-
+        Using the Analyzer's principles, select the single correct option and emit your reasoning + final letter. Your output MUST end with a line matching 'Answer: X' where X is one of A, B, C, D.
+
+        QUESTION:
+        {question}
+      alternative_explorer: |-
+        For each of the OTHER 3 letter choices the solver did not pick, write 1-2 lines on why it is incorrect (or arguments for it). Conclude: KEEP <letter> or SWITCH TO <letter>.
+
+        QUESTION:
+        {question}
+      critic: |-
+        Challenge the Solver's pick. Given the Analyzer's principles and the Solver's tentative letter + reasoning, identify any concrete errors in the Solver's logic and — for each REJECTED option — describe the strongest argument that would have defended it. Do NOT declare a new final letter.
+
+        QUESTION:
+        {question}
+      consistency_checker: |-
+        Cross-check the critic's reasoning against the original question + background facts. Output: CONSISTENT or INCONSISTENT (with the contradiction).
+
+        QUESTION:
+        {question}
+      confidence_reporter: |-
+        After consistency_checker runs, score the chain's confidence (HIGH/MEDIUM/LOW) + state the strongest residual counter-argument.
+
+        QUESTION:
+        {question}
+      verifier: |-
+        Reconcile the Solver's pick with the Critic's challenges. If the Critic exposed a concrete error, override; otherwise confirm. Your output MUST end with a line matching 'Final answer: X' where X is one of A, B, C, D.
+
+        QUESTION:
+        {question}
+    sizes:
+      2:
+        - {role: solver, tools: [calculator]}
+        - {role: verifier, tools: [calculator]}
+      4:
+        - {role: analyzer, tools: [calculator]}
+        - {role: solver, tools: [calculator]}
+        - {role: critic, tools: [calculator]}
+        - {role: verifier, tools: [calculator]}
+      8:
+        - {role: question_clarifier, tools: [calculator]}
+        - {role: analyzer, tools: [calculator]}
+        - {role: domain_expert, tools: [calculator]}
+        - {role: solver, tools: [calculator]}
+        - {role: alternative_explorer, tools: [calculator]}
+        - {role: critic, tools: [calculator]}
+        - {role: consistency_checker, tools: [calculator]}
+        - {role: verifier, tools: [calculator]}
+      10:
+        - {role: question_clarifier, tools: [calculator]}
+        - {role: analyzer, tools: [calculator]}
+        - {role: domain_expert, tools: [calculator]}
+        - {role: evidence_gatherer, tools: [calculator]}
+        - {role: solver, tools: [calculator]}
+        - {role: alternative_explorer, tools: [calculator]}
+        - {role: critic, tools: [calculator]}
+        - {role: consistency_checker, tools: [calculator]}
+        - {role: confidence_reporter, tools: []}
+        - {role: verifier, tools: [calculator]}
+
+  centralized:
+    recursion_limit: 30
+    manager_tools: [calculator]
+    worker_tools: [calculator]
+    tools_by_worker:
+      confidence_reporter_worker: []
+    delegates:
+      analyzer_worker: |-
+        Hand the next turn to the analyzer_worker. Use this when you need
+            the analyzer to identify scientific principles and derive each of
+            the four options.
+
+            Args:
+                instructions: what you want the analyzer to analyze this turn.
+      solver_worker: |-
+        Hand the next turn to the solver_worker. Use this when you want
+            the solver to pick one letter + rationale given the analyzer's
+            output.
+
+            Args:
+                instructions: what you want the solver to decide this turn.
+      verifier_worker: |-
+        Hand the next turn to the verifier_worker. Use this when you want
+            the verifier to sanity-check the solver's letter against the
+            analyzer's output.
+
+            Args:
+                instructions: what the verifier should verify this turn.
+      domain_expert_worker: |-
+        Hand the next turn to the domain_expert_worker.
+
+            Args:
+                instructions: what you want the domain_expert_worker to do this turn.
+      alternative_solver_worker: |-
+        Hand the next turn to the alternative_solver_worker.
+
+            Args:
+                instructions: what you want the alternative_solver_worker to do this turn.
+      critic_worker: |-
+        Hand the next turn to the critic_worker.
+
+            Args:
+                instructions: what you want the critic_worker to do this turn.
+      consistency_check_worker: |-
+        Hand the next turn to the consistency_check_worker.
+
+            Args:
+                instructions: what you want the consistency_check_worker to do this turn.
+      evidence_gatherer_worker: |-
+        Hand the next turn to the evidence_gatherer_worker.
+
+            Args:
+                instructions: what you want the evidence_gatherer_worker to do this turn.
+      confidence_reporter_worker: |-
+        Hand the next turn to the confidence_reporter_worker.
+
+            Args:
+                instructions: what you want the confidence_reporter_worker to do this turn.
+    sizes:
+      2:
+        manager: manager
+        max_turns: 8
+        workers: [solver_worker]
+      4:
+        manager: manager
+        max_turns: 16
+        workers: [analyzer_worker, solver_worker, verifier_worker]
+      8:
+        manager: manager_r8
+        max_turns: 16
+        workers:
+          - analyzer_worker
+          - solver_worker
+          - verifier_worker
+          - domain_expert_worker
+          - alternative_solver_worker
+          - critic_worker
+          - consistency_check_worker
+      10:
+        manager: manager_r10
+        max_turns: 16
+        workers:
+          - analyzer_worker
+          - solver_worker
+          - verifier_worker
+          - domain_expert_worker
+          - alternative_solver_worker
+          - critic_worker
+          - consistency_check_worker
+          - evidence_gatherer_worker
+          - confidence_reporter_worker

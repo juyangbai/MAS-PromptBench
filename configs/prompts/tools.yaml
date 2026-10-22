@@ -1,6 +1,6 @@
 # Tool catalog per (topology, dataset).
-# Entries are kept minimal (name and a one-line purpose) so a prompt
-# optimizer has room to refine them.
+# Entries are intentionally minimal (name + one-line purpose) to leave room
+# for a downstream prompt optimizer to refine.
 
 _none: &none "None."
 
@@ -106,5 +106,3 @@ decentralized:
   toolhop:  *toolhop_dynamic_tools
   apibank:  *apibank_dynamic_apis
 
-decentralized_openai:
-  math:     *calculator_equation

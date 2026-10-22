@@ -1,382 +1,102 @@
-"""Single-agent ReAct topology specialized for BFCL (Berkeley Function Calling)."""
+"""Single-agent BFCL runner (LangGraph): one ReAct agent with the instance's functions as tools.
+
+Every function schema becomes a no-op tool; the prediction is the first turn's
+native tool calls in canonical form, scored by bfcl-eval's AST checker.
+"""
 
 from __future__ import annotations
 
-import argparse
 import json
-import os
-import re
-import sys
 import time
 from pathlib import Path
-from typing import Any, List, Optional
 
-from huggingface_hub import hf_hub_download
-from langchain_core.tools import StructuredTool
-from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-# Shared telemetry.
-_TOPO_ROOT = str(Path(__file__).resolve().parents[3])
-if _TOPO_ROOT not in sys.path:
-    sys.path.insert(0, _TOPO_ROOT)
-from topologies.telemetry import langchain_telemetry, normalize  # noqa: E402
-from topologies.output_contracts import append_output_contract_from_path  # noqa: E402
-import keyword
-from pydantic import Field, create_model
+from core import prompts, settings
+from core.llm import chat_openai
+from core.paths import RESULTS_DIR
+from core.tasks import bfcl as task
+from core.tasks.bfcl import (  # noqa: F401  (runner API)
+    AST_CATEGORIES,
+    HF_DATASET,
+    extract_first_tool_calls,
+    load_instances,
+    schema_to_tool,
+    to_canonical,
+)
+from core.telemetry import langchain_telemetry, normalize
 
-from bfcl_eval.constants.enums import Language
-from bfcl_eval.constants.model_config import MODEL_CONFIG_MAPPING, ModelConfig
-from bfcl_eval.eval_checker.ast_eval.ast_checker import ast_checker
+DEFAULT_OUT_DIR = RESULTS_DIR / "bfcl"
 
+VLLM_BASE_URL = settings.base_url()
+MODEL_ID = settings.model_id()
 
-VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://lai:8001/v1")
-MODEL_ID = os.environ.get("MODEL_ID", "Qwen/Qwen3.5-9B")
+SYSTEM_PROMPT = prompts.role_prompt("single", task.DATASET, "solver")
 
-
-def _register_model_with_bfcl(model_id: str) -> None:
-    """Register `model_id` in bfcl-eval's MODEL_CONFIG_MAPPING.
-
-    `ast_checker` -> `convert_func_name` looks the model up there to decide
-    whether to rewrite '.' to '_' in function names (a workaround for
-    FC-tuned models that can't emit dots). Qwen3.5-9B handles dots fine, like
-    the registered `qwen3-8b`/`qwen3-14b` entries, but its name isn't in the
-    registry, so any instance with a dotted function name (e.g.
-    `math.factorial`) raises KeyError.
-
-    Scoring only reads `underscore_to_dot` and never instantiates the
-    handler, so borrowing the `qwen3-8b` entry's handler reference is safe.
-    """
-    if model_id in MODEL_CONFIG_MAPPING:
-        return
-    template = MODEL_CONFIG_MAPPING["qwen3-8b"]
-    MODEL_CONFIG_MAPPING[model_id] = ModelConfig(
-        model_name=model_id,
-        display_name=model_id,
-        url=template.url,
-        org=template.org,
-        license=template.license,
-        model_handler=template.model_handler,
-        is_fc_model=True,
-        underscore_to_dot=False,
-    )
-
-
+_register_model_with_bfcl = task.register_model  # called again by callers that repoint MODEL_ID
 _register_model_with_bfcl(MODEL_ID)
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_PROMPT_PATH = _REPO_ROOT / "configs" / "prompts" / "single" / "bfcl" / "solver.txt"
 
-HF_DATASET = "gorilla-llm/Berkeley-Function-Calling-Leaderboard"
-
-# Phase 1: AST-scoreable single-turn subsets.
-AST_CATEGORIES = ("simple", "multiple", "parallel", "parallel_multiple")
-
-
-# System Prompt
-def _load_system_prompt() -> str:
-    if _PROMPT_PATH.exists():
-        return append_output_contract_from_path(_PROMPT_PATH.read_text(), __file__, _PROMPT_PATH.stem)
-    # Fallback if the prompt file hasn't been generated yet.
-    return append_output_contract_from_path(
-        (
-        "You are a function-calling assistant. You are given one or more function "
-        "schemas and a user request. Decide which function(s) need to be called to "
-        "satisfy the request and emit the call(s) with all required parameters set "
-        "to values implied by the request.\n\n"
-        "Rules:\n"
-        "- Only call functions that appear in the provided schemas.\n"
-        "- Set every required parameter; include optional parameters only when the "
-        "  request clearly implies a value.\n"
-        "- For parallel requests, emit all needed calls in a single response.\n"
-        "- Do not reply in plain text if a function call is required."
-        ),
-        __file__,
-        _PROMPT_PATH.stem,
-    )
-
-
-SYSTEM_PROMPT = _load_system_prompt()
-
-
-# Schema -> Tool Conversion
-# BFCL uses "dict" for the outer object type, plus a few aliases that aren't
-# standard JSON schema. Map them to Python types for pydantic.create_model.
-_PRIMITIVE_TYPE_MAP = {
-    "integer": int,
-    "string": str,
-    "float": float,
-    "number": float,
-    "boolean": bool,
-    "dict": dict,
-    "any": Any,
-}
-
-
-def _py_type_of(prop: dict) -> Any:
-    """Map a BFCL JSON-schema property fragment to a Python type annotation."""
-    t = (prop or {}).get("type", "any")
-    if t in ("array", "tuple"):
-        items = prop.get("items") or {}
-        item_type = _py_type_of(items) if items else Any
-        return List[item_type]
-    return _PRIMITIVE_TYPE_MAP.get(t, Any)
-
-
-def _sanitize_field_name(name: str) -> str:
-    """Return a pydantic-safe attribute name for `name`.
-
-    Pydantic v2 rejects field names that start with `_` (reserved for private
-    attrs) or are Python keywords, so strip leading underscores and append
-    `_` to keywords. The original name is kept via Field(alias=...) so the
-    JSON schema and tool_call args still match the BFCL schema.
-    """
-    safe = name.lstrip("_") or "field"
-    if keyword.iskeyword(safe):
-        safe = safe + "_"
-    return safe
-
-
-def schema_to_tool(schema: dict) -> StructuredTool:
-    """Convert a single BFCL function schema into a dummy LangChain tool.
-
-    The tool body returns an empty string — BFCL scores on whether the model
-    emitted the correct call, not on any tool output.
-    """
-    params = schema.get("parameters") or {}
-    properties = params.get("properties") or {}
-    required = set(params.get("required") or [])
-
-    fields: dict[str, Any] = {}
-    for name, prop in properties.items():
-        py_type = _py_type_of(prop)
-        desc = (prop or {}).get("description", "")
-        safe_name = _sanitize_field_name(name)
-        alias_kw = {"alias": name} if safe_name != name else {}
-        if name in required:
-            fields[safe_name] = (py_type, Field(..., description=desc, **alias_kw))
-        else:
-            fields[safe_name] = (Optional[py_type], Field(None, description=desc, **alias_kw))
-
-    # Sanitize the pydantic model name (pydantic rejects non-identifier chars).
-    safe_name = re.sub(r"\W+", "_", schema["name"]) + "Args"
-    args_model = create_model(safe_name, **fields) if fields else None
-
-    return StructuredTool.from_function(
-        func=lambda **_: "",
-        name=schema["name"],
-        description=schema.get("description", ""),
-        args_schema=args_model,
-    )
-
-
-# Agent
-def build_agent(tools: list[StructuredTool]):
-    llm = ChatOpenAI(
-        model=MODEL_ID,
-        base_url=VLLM_BASE_URL,
-        api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
-        # House default: light sampling with a fixed seed stays reproducible
-        # per seed and avoids greedy decoding's degenerate loops.
-        temperature=0.2,
-        top_p=0.9,
-        seed=0,
-        # Per-call token cap. BFCL only scores the first tool call; later
-        # ReAct turns see empty tool results and can otherwise keep generating
-        # until the context overflows.
-        max_tokens=1024,
-        extra_body={
-            "repetition_penalty": 1.05,
-            # Long thinking makes Qwen3 drift from the tool-call API and emit
-            # text-form calls that vLLM's qwen3_xml parser can't recognize.
-            "chat_template_kwargs": {"enable_thinking": False},
-        },
-    )
+def build_agent(tools: list):
+    """The ReAct agent over ``tools`` (thinking off: Qwen3 drifts into text-form calls when it thinks)."""
+    llm = chat_openai(model=MODEL_ID, base_url=VLLM_BASE_URL)
     return create_react_agent(model=llm, tools=tools, prompt=SYSTEM_PROMPT)
 
 
-# Output Parsing
-def extract_first_tool_calls(messages: list) -> list[dict]:
-    """Return tool_calls from the earliest AIMessage that has any."""
-    for msg in messages:
-        tcs = getattr(msg, "tool_calls", None) or []
-        if tcs:
-            return tcs
-    return []
+def score_one(function_schemas: list[dict], model_output: list[dict], ground_truth: list[dict], category: str) -> dict:
+    return task.score_one(function_schemas, model_output, ground_truth, category, MODEL_ID)
 
 
-def to_canonical(tool_calls: list[dict]) -> list[dict]:
-    """Convert LangChain tool_calls to BFCL's canonical form.
-
-    LangChain: [{"name": "fn", "args": {...}, "id": "..."}]
-    BFCL:      [{"fn": {"arg": value, ...}}, ...]
-    """
-    return [{tc["name"]: dict(tc.get("args") or {})} for tc in tool_calls]
-
-
-# Scoring
-def score_one(
-    function_schemas: list[dict],
-    model_output: list[dict],
-    ground_truth: list[dict],
-    category: str,
-) -> dict:
-    """Score with bfcl-eval's AST checker.
-
-    `ast_checker` branches on `category`: parallel* -> order-free parallel
-    match, *multiple* -> pick one, anything else -> single-call match.
-    """
-    return ast_checker(
-        function_schemas,
-        model_output,
-        ground_truth,
-        Language.PYTHON,
-        category,
-        MODEL_ID,
-    )
-
-
-# Orchestration
 def solve(instance: dict) -> dict:
-    """Run the react agent once; capture the first tool-call commitment."""
-    tools = [schema_to_tool(s) for s in instance["function"]]
-    agent = build_agent(tools)
-    messages = instance["question"][0]  # nested list: [[msgs...]]
+    """Run the agent on one instance.
 
+    Returns ``{"messages", "tool_calls", "model_output", "solve_s"}``: the
+    transcript, the first turn's tool calls, their canonical form and the
+    agent's wall time.
+    """
+    agent = build_agent([schema_to_tool(s) for s in instance["function"]])
     start = time.time()
-    result = agent.invoke(
-        {"messages": messages},
-        config={"recursion_limit": 25},
-    )
+    result = agent.invoke({"messages": instance["question"][0]}, config={"recursion_limit": 25})
     elapsed = time.time() - start
-
     tool_calls = extract_first_tool_calls(result["messages"])
     return {
         "messages": result["messages"],
         "tool_calls": tool_calls,
-        "model_output": to_canonical(tool_calls),
+        "model_output": to_canonical(tool_calls, instance["function"]),
         "solve_s": elapsed,
     }
 
 
-# Dataset Loader
-def load_instances(
-    category: str,
-    limit: int | None = None,
-    offset: int = 0,
-    only: list[str] | None = None,
-) -> tuple[list[dict], list[dict]]:
-    """Load (rows, ground_truths) for one BFCL subset.
-
-    Each file is JSONL; ground_truth is aligned by instance id.
-    """
-    main = Path(
-        hf_hub_download(HF_DATASET, f"BFCL_v3_{category}.json", repo_type="dataset")
-    )
-    ans = Path(
-        hf_hub_download(
-            HF_DATASET,
-            f"possible_answer/BFCL_v3_{category}.json",
-            repo_type="dataset",
-        )
-    )
-
-    rows = [json.loads(line) for line in main.read_text().splitlines() if line.strip()]
-    gt_by_id = {
-        json.loads(line)["id"]: json.loads(line)
-        for line in ans.read_text().splitlines()
-        if line.strip()
-    }
-
-    if only:
-        want = set(only)
-        rows = [r for r in rows if r["id"] in want]
-    rows = rows[offset:]
-    if limit is not None:
-        rows = rows[:limit]
-
-    missing = [r["id"] for r in rows if r["id"] not in gt_by_id]
-    if missing:
-        raise RuntimeError(f"no ground truth for ids: {missing[:5]}")
-
-    return rows, [gt_by_id[r["id"]] for r in rows]
-
-
-# Batch Runner
 def _format_trace(messages: list) -> str:
+    """Trace text of the transcript: each message under its type, tool calls as ``name(args)``."""
     lines: list[str] = []
     for msg in messages:
         kind = getattr(msg, "type", "unknown")
-        if kind == "human":
-            lines.append("=== HUMAN ===")
-            lines.append(str(msg.content))
-        elif kind == "system":
-            lines.append("=== SYSTEM ===")
-            lines.append(str(msg.content))
+        if kind in ("human", "system", "tool"):
+            lines += [f"=== {kind.upper()} ===", str(msg.content)]
         elif kind == "ai":
             lines.append("=== AI ===")
             for tc in getattr(msg, "tool_calls", None) or []:
-                lines.append(
-                    f"[tool_call] {tc['name']}({json.dumps(tc.get('args') or {})})"
-                )
-            content = getattr(msg, "content", "")
-            if content:
-                lines.append(str(content))
-        elif kind == "tool":
-            lines.append("=== TOOL ===")
-            lines.append(str(msg.content))
+                lines.append(f"[tool_call] {tc['name']}({json.dumps(tc.get('args') or {})})")
+            if getattr(msg, "content", ""):
+                lines.append(str(msg.content))
         lines.append("")
     return "\n".join(lines)
 
 
-def run_one(
-    instance: dict,
-    ground_truth: dict,
-    category: str,
-    out_dir: Path,
-) -> dict:
-    """Solve one instance and score its first tool-call commitment.
-
-    Writes the message trace to out_dir/traces/<id>.txt. Returns a summary
-    dict (never raises to the caller).
-    """
-    iid = instance["id"]
-    summary: dict = {"id": iid, "category": category}
-
+def run_one(instance: dict, ground_truth: dict, category: str, out_dir: Path) -> dict:
+    """Solve and score one instance and write its transcript to ``out_dir/traces/<id>.txt``."""
+    summary: dict = {"id": instance["id"], "category": category}
     try:
         solution = solve(instance)
     except Exception as e:
-        summary["error"] = f"{type(e).__name__}: {e}"
-        summary["stage"] = "solve"
-        return summary
-
+        return task.solve_failed(summary, e)
     summary["solve_s"] = round(solution["solve_s"], 1)
     summary["tool_calls"] = len(solution["tool_calls"])
     summary["model_output"] = solution["model_output"]
     summary.update(normalize(langchain_telemetry(solution.get("messages") or [])))
-
-    trace_path = out_dir / "traces" / f"{iid}.txt"
-    trace_path.parent.mkdir(parents=True, exist_ok=True)
-    trace_path.write_text(_format_trace(solution["messages"]))
-
-    try:
-        checker_result = score_one(
-            instance["function"],
-            solution["model_output"],
-            ground_truth["ground_truth"],
-            category,
-        )
-    except Exception as e:
-        summary["valid"] = False
-        summary["error"] = f"{type(e).__name__}: {e}"
-        summary["stage"] = "score"
-        return summary
-
-    summary["valid"] = bool(checker_result.get("valid"))
-    summary["error_type"] = checker_result.get("error_type")
-    if not summary["valid"]:
-        summary["score_error"] = (checker_result.get("error") or [])[:3]
-    return summary
+    task.write_trace(out_dir, instance["id"], _format_trace(solution["messages"]))
+    return task.add_verdict(summary, score_one, instance, ground_truth, category)
 
 
 def run_batch(
@@ -387,96 +107,21 @@ def run_batch(
     out_dir: Path | None = None,
     verbose: bool = True,
 ) -> dict:
-    """Iterate one AST subset; write predictions.jsonl + results.jsonl.
-
-    Returns an aggregate summary with {n, valid, valid_rate, per_category}.
-    """
-    out_dir = out_dir or (_REPO_ROOT / "results" / "bfcl")
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    rows, gts = load_instances(category, limit, offset, only)
-    if verbose:
-        print(f"loaded {len(rows)} instance(s) from {HF_DATASET} / {category}")
-
-    preds_path = out_dir / "predictions.jsonl"
-    results_path = out_dir / "results.jsonl"
-
-    valid = 0
-    with preds_path.open("a") as fp, results_path.open("a") as fr:
-        for i, (row, gt) in enumerate(zip(rows, gts), start=1):
-            if verbose:
-                print(f"\n[{i}/{len(rows)}] {row['id']}  ({category})")
-            summary = run_one(row, gt, category, out_dir)
-            if summary.get("valid"):
-                valid += 1
-
-            fp.write(json.dumps({
-                "id": row["id"],
-                "category": category,
-                "model_output": summary.get("model_output"),
-                "model_name_or_path": MODEL_ID,
-            }) + "\n")
-            fr.write(json.dumps(summary) + "\n")
-            fp.flush()
-            fr.flush()
-            if verbose:
-                print(f"  -> {json.dumps(summary)}")
-
-    if verbose:
-        print(
-            f"\ndone: valid {valid}/{len(rows)}"
-            f"\n      predictions -> {preds_path}"
-            f"\n      results     -> {results_path}"
-        )
-    return {
-        "n": len(rows),
-        "valid": valid,
-        "valid_rate": (valid / len(rows)) if rows else 0.0,
-        "category": category,
-    }
+    """Score a slice of one subset; writes predictions.jsonl and results.jsonl afresh in ``out_dir``."""
+    return task.evaluate(
+        run_one, category, limit, offset, only, out_dir or DEFAULT_OUT_DIR, model_id=MODEL_ID, verbose=verbose
+    )
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(
+def main(argv: list[str] | None = None) -> int:
+    return task.cli_main(
+        argv,
         description="Run the single-topology BFCL agent on one of the AST subsets.",
-        epilog=(
-            "Examples:\n"
-            "  python topologies/single/bfcl/langgraph_bfcl.py --category simple --limit 5\n"
-            "  python topologies/single/bfcl/langgraph_bfcl.py --only simple_0 --only simple_1\n"
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        run_one=run_one,
+        model_id=MODEL_ID,
+        default_out_dir=DEFAULT_OUT_DIR,
     )
-    parser.add_argument(
-        "--category",
-        default="simple",
-        choices=list(AST_CATEGORIES),
-        help="BFCL subset to evaluate (default: simple).",
-    )
-    parser.add_argument("--limit", type=int, default=5)
-    parser.add_argument("--offset", type=int, default=0)
-    parser.add_argument(
-        "--only",
-        action="append",
-        default=None,
-        metavar="INSTANCE_ID",
-        help="Restrict to these instance ids (repeatable).",
-    )
-    parser.add_argument(
-        "--out-dir",
-        default=str(_REPO_ROOT / "results" / "bfcl"),
-        help="Where to write predictions.jsonl / results.jsonl / traces/.",
-    )
-    args = parser.parse_args()
-
-    run_batch(
-        category=args.category,
-        limit=args.limit if not args.only else None,
-        offset=args.offset,
-        only=args.only,
-        out_dir=Path(args.out_dir),
-    )
-    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
