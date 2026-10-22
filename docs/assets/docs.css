@@ -159,6 +159,7 @@ kbd {
   transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
 .deepwiki-btn .i { color: var(--blue-2); width: 1.05em; height: 1.05em; }
+.github-btn .i { color: var(--ink); }
 .deepwiki-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); text-decoration: none; border-color: var(--line-strong); }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: none;
