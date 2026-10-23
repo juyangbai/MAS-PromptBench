@@ -16,14 +16,23 @@
 <details open>
 <summary><b>Contents</b></summary>
 
-1. [Introduction](#-introduction)
-2. [Code Structure](#-code-structure)
-3. [Quickstart](#-quickstart)
-4. [How to Extend](#-how-to-extend)
-5. [Referenced Resources](#-referenced-resources)
-6. [Citation](#-citation)
+1. [News and Updates](#-news-and-updates)
+2. [Introduction](#-introduction)
+3. [Code Structure](#-code-structure)
+4. [Quickstart](#-quickstart)
+5. [How to Extend](#-how-to-extend)
+6. [Referenced Resources](#-referenced-resources)
+7. [Contributing](#-contributing)
+8. [Citation](#-citation)
 
 </details>
+
+---
+
+## 🔔 News and Updates
+
+- **[2026-10-22]** — Supports eight prompt optimizers under a unified run protocol, with a codebase refactored onto a shared core.
+- **[2026-06-22]** — Initial public release of the code!
 
 ---
 
@@ -164,6 +173,20 @@ MAS-PromptBench builds on the agent frameworks and libraries below, which retain
   <tr><td rowspan="2"><b>Library</b></td><td><a href="https://github.com/vllm-project/vllm">vLLM</a></td><td>model serving (the <code>models/</code> endpoints)</td></tr>
   <tr><td><a href="https://github.com/stanfordnlp/dspy">DSPy</a></td><td>the optimization backend of GEPA and MIPRO</td></tr>
 </table>
+
+---
+
+## 🤝 Contributing
+
+Contributions are very welcome — a new topology, dataset, or optimizer, a framework integration, a bug fix, or even a typo fix.
+
+A few tips for a smooth contribution:
+
+- For anything substantial, open an issue first so we can talk through the approach together.
+- Follow the existing conventions — the [How to Extend](#-how-to-extend) guides and [topologies/README.md](topologies/README.md) are great starting points.
+- Before opening a PR, run the relevant smoke demo, a small `--batch --limit` slice, and the [tests](tests/golden/README.md).
+
+Every contribution helps researchers compare multi-agent systems on a shared, reproducible benchmark. 🙌
 
 ---
 
